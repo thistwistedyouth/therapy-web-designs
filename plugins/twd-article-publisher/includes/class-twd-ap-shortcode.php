@@ -64,7 +64,15 @@ class TWD_AP_Shortcode {
 				?>
 				<a class="twd-ap-article-card" href="<?php echo esc_url( get_permalink() ); ?>">
 					<?php if ( has_post_thumbnail() ) : ?>
-						<span class="twd-ap-article-thumb" style="background-image: url('<?php echo esc_url( get_the_post_thumbnail_url( get_the_ID(), 'medium_large' ) ); ?>');"></span>
+						<span class="twd-ap-article-thumb" style="background-image: url('<?php echo esc_url( get_the_post_thumbnail_url( get_the_ID(), 'large' ) ); ?>');"></span>
+					<?php else : ?>
+						<span class="twd-ap-article-thumb twd-ap-article-thumb-placeholder" aria-hidden="true">
+							<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
+								<rect x="3" y="4" width="18" height="16" rx="2" />
+								<circle cx="8.5" cy="9.5" r="1.5" />
+								<path d="M21 16l-5.5-5.5-4 4L8 11l-5 5" />
+							</svg>
+						</span>
 					<?php endif; ?>
 					<span class="twd-ap-article-body">
 						<span class="twd-ap-article-date"><?php echo esc_html( get_the_date() ); ?></span>
@@ -116,9 +124,17 @@ class TWD_AP_Shortcode {
 				display: block !important;
 				width: 100% !important;
 				height: 170px !important;
+				flex-shrink: 0 !important;
 				background-color: #f3f4f6 !important;
 				background-size: cover !important;
 				background-position: center !important;
+			}
+			.twd-ap-article-thumb-placeholder {
+				display: flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				background: linear-gradient(135deg, #eef2ff, #f3f4f6) !important;
+				color: #9ca3af !important;
 			}
 			.twd-ap-article-body {
 				display: flex !important;
