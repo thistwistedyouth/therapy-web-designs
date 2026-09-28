@@ -678,6 +678,7 @@
 			els.adminEditLink.hidden = true;
 		}
 		els.overlay.hidden = false;
+		document.documentElement.style.overflow = 'hidden';
 		document.body.style.overflow = 'hidden';
 		setTimeout(function () {
 			els.title.focus();
@@ -729,6 +730,7 @@
 		deselectImage();
 		els.overlay.hidden = true;
 		els.helpOverlay.hidden = true;
+		document.documentElement.style.overflow = '';
 		document.body.style.overflow = '';
 	}
 

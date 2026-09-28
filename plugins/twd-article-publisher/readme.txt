@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.11.0
+Stable tag: 1.11.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,11 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.11.1): scrolling inside the popup could bleed through and scroll
+the page behind it once you reached the top or bottom of the popup's
+own content. Now contained to the popup itself, and the page behind is
+locked from scrolling more reliably across different themes.
 
 NEW (1.11.0): the popup is renamed "Resource Maker" and restyled with a
 softer, calmer colour palette (sage green, warm cream, dusty blue) in
