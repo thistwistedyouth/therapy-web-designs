@@ -55,6 +55,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<textarea id="twd-ap-html-editor" class="twd-ap-html-editor" hidden placeholder="<?php esc_attr_e( 'Paste formatted HTML here', 'twd-article-publisher' ); ?>"></textarea>
 			<div id="twd-ap-json-panel" class="twd-ap-json-panel" hidden>
 				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (or anywhere producing the same shape) to fill in the title, excerpt, SEO fields, category, tags and content below in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
+				<p class="twd-ap-muted">
+					<a href="<?php echo esc_url( TWD_AP_ARTICLE_ASSIST_URL ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Draft with Article Assist', 'twd-article-publisher' ); ?> &#8599;</a>
+					<?php esc_html_e( '(opens in a new tab, needs a Therapy Resource Directory account)', 'twd-article-publisher' ); ?>
+				</p>
 				<textarea id="twd-ap-json-input" class="twd-ap-html-editor" rows="8" placeholder='{"title": "...", "seo_title": "...", "meta_description": "...", "category": "...", "tags": "...", "html": "..."}'></textarea>
 				<div class="twd-ap-btn-row twd-ap-spaced">
 					<button type="button" id="twd-ap-json-fill-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Fill fields from JSON', 'twd-article-publisher' ); ?></button>

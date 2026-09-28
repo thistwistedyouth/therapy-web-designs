@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.10.1
+Stable tag: 1.10.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,13 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.10.2): the Import JSON tab now has a "Draft with Article Assist"
+link that opens Therapy Resource Directory's Article Assist tool in a
+new tab, landing straight in the popup ready to write. Needs a Therapy
+Resource Directory account (Resource Creator plan or above). A plain
+new-tab link on purpose, not an embedded popup, since Article Assist
+needs the visitor logged into that separate site.
 
 NEW (1.10.1): a "Check for updates" link now sits right on the plugin's
 own row on the main Plugins list (next to Deactivate), so you no longer
