@@ -1,0 +1,39 @@
+name: Deploy TWD Article Publisher
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugins/twd-article-publisher/**"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: PHP syntax check
+        run: |
+          php -l plugins/twd-article-publisher/twd-article-publisher.php
+          for f in plugins/twd-article-publisher/includes/*.php plugins/twd-article-publisher/templates/*.php; do
+            php -l "$f"
+          done
+
+      - name: JS syntax check
+        run: node --check plugins/twd-article-publisher/assets/publisher.js
+
+      - name: Deploy over FTPS to therapyresourcedirectory.com
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ftp.gb.stackcp.com
+          username: ${{ secrets.TWD_FTP_USERNAME }}
+          password: ${{ secrets.TWD_FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: plugins/twd-article-publisher/
+          server-dir: public_html/wp-content/plugins/twd-article-publisher/
+          exclude: |
+            **/CLAUDE.md
+            **/.git*
+            **/.git*/**
