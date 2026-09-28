@@ -19,9 +19,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div id="twd-ap-overlay" class="twd-ap-overlay" hidden>
 	<div id="twd-ap-modal" class="twd-ap-modal" role="dialog" aria-modal="true" aria-labelledby="twd-ap-modal-title">
 		<div class="twd-ap-modal-header">
-			<p id="twd-ap-modal-title" class="twd-ap-modal-title"><?php esc_html_e( 'New Article', 'twd-article-publisher' ); ?></p>
-			<a href="#" id="twd-ap-admin-edit-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Edit in WordPress ↗', 'twd-article-publisher' ); ?></a>
-			<button type="button" id="twd-ap-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
+			<div class="twd-ap-modal-title-wrap">
+				<?php
+				$twd_ap_logo_id  = get_theme_mod( 'custom_logo' );
+				$twd_ap_logo_src = $twd_ap_logo_id ? wp_get_attachment_image_url( $twd_ap_logo_id, 'medium' ) : '';
+				?>
+				<?php if ( $twd_ap_logo_src ) : ?>
+					<span class="twd-ap-modal-logo"><img src="<?php echo esc_url( $twd_ap_logo_src ); ?>" alt="" /></span>
+				<?php endif; ?>
+				<span class="twd-ap-modal-title-text">
+					<p id="twd-ap-modal-title" class="twd-ap-modal-title"><?php esc_html_e( 'Resource Maker', 'twd-article-publisher' ); ?></p>
+					<p id="twd-ap-modal-subtitle" class="twd-ap-modal-subtitle"><?php esc_html_e( 'New article', 'twd-article-publisher' ); ?></p>
+				</span>
+			</div>
+			<div class="twd-ap-modal-header-actions">
+				<a href="#" id="twd-ap-admin-edit-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Edit in WordPress ↗', 'twd-article-publisher' ); ?></a>
+				<a href="<?php echo esc_url( TWD_AP_ARTICLE_ASSIST_URL ); ?>" class="twd-ap-assist-btn" target="_blank" rel="noopener"><?php esc_html_e( 'Article Assist', 'twd-article-publisher' ); ?></a>
+				<button type="button" id="twd-ap-help-btn" class="twd-ap-help-icon-btn" aria-label="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>">?</button>
+				<button type="button" id="twd-ap-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
+			</div>
 		</div>
 
 		<div class="twd-ap-modal-body">
@@ -54,11 +70,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div id="twd-ap-visual-editor" class="twd-ap-visual-editor" contenteditable="true" data-placeholder="<?php esc_attr_e( 'Write, or paste AI-formatted HTML using the HTML tab above', 'twd-article-publisher' ); ?>"></div>
 			<textarea id="twd-ap-html-editor" class="twd-ap-html-editor" hidden placeholder="<?php esc_attr_e( 'Paste formatted HTML here', 'twd-article-publisher' ); ?>"></textarea>
 			<div id="twd-ap-json-panel" class="twd-ap-json-panel" hidden>
-				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (or anywhere producing the same shape) to fill in the title, excerpt, SEO fields, category, tags and content below in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
-				<p class="twd-ap-muted">
-					<a href="<?php echo esc_url( TWD_AP_ARTICLE_ASSIST_URL ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Draft with Article Assist', 'twd-article-publisher' ); ?> &#8599;</a>
-					<?php esc_html_e( '(opens in a new tab, needs a Therapy Resource Directory account)', 'twd-article-publisher' ); ?>
-				</p>
+				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (the button above, or anywhere producing the same shape) to fill in the title, excerpt, SEO fields, category, tags and content below in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
 				<textarea id="twd-ap-json-input" class="twd-ap-html-editor" rows="8" placeholder='{"title": "...", "seo_title": "...", "meta_description": "...", "category": "...", "tags": "...", "html": "..."}'></textarea>
 				<div class="twd-ap-btn-row twd-ap-spaced">
 					<button type="button" id="twd-ap-json-fill-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Fill fields from JSON', 'twd-article-publisher' ); ?></button>
@@ -122,7 +134,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<div class="twd-ap-modal-footer">
-			<button type="button" id="twd-ap-help-btn" class="twd-ap-btn-text twd-ap-help-btn"><?php esc_html_e( 'Instructions for use', 'twd-article-publisher' ); ?></button>
 			<div class="twd-ap-footer-spacer"></div>
 			<button type="button" id="twd-ap-draft-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Save Draft', 'twd-article-publisher' ); ?></button>
 			<button type="button" id="twd-ap-publish-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Publish', 'twd-article-publisher' ); ?></button>

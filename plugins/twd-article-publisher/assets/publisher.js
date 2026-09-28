@@ -30,6 +30,7 @@
 
 		els.modal = document.getElementById('twd-ap-modal');
 		els.modalTitle = document.getElementById('twd-ap-modal-title');
+		els.modalSubtitle = document.getElementById('twd-ap-modal-subtitle');
 		els.status = document.getElementById('twd-ap-status');
 		els.title = document.getElementById('twd-ap-title');
 		els.featuredPreview = document.getElementById('twd-ap-featured-preview');
@@ -661,7 +662,7 @@
 		resetForm();
 		if (mode === 'edit' && postId) {
 			state.editingId = postId;
-			els.modalTitle.textContent = 'Edit Article';
+			els.modalSubtitle.textContent = 'Editing article';
 			els.publishBtn.textContent = 'Update';
 			els.draftBtn.textContent = 'Save as Draft';
 			loadPostForEdit(postId);
@@ -671,7 +672,7 @@
 			}
 		} else {
 			state.editingId = null;
-			els.modalTitle.textContent = 'New Article';
+			els.modalSubtitle.textContent = 'New article';
 			els.publishBtn.textContent = 'Publish';
 			els.draftBtn.textContent = 'Save Draft';
 			els.adminEditLink.hidden = true;
@@ -814,7 +815,7 @@
 				state.dirty = false;
 				var label = status === 'draft' ? 'Draft saved.' : status === 'future' ? 'Article scheduled.' : 'Article published.';
 				showStatus(label + ' You can keep editing or close this window.', true);
-				els.modalTitle.textContent = 'Edit Article';
+				els.modalSubtitle.textContent = 'Editing article';
 				els.draftBtn.textContent = 'Save as Draft';
 				els.publishBtn.textContent = els.scheduleToggle.checked ? 'Schedule' : 'Update';
 			})

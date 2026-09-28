@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.10.2
+Stable tag: 1.11.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Lets approved users publish and edit blog articles from the live site in a popup
 
 == Description ==
 
-Adds a "New Article" button and, on any article the current user can edit, an "Edit This Article" button, both shown only to logged-in users on the site's front end.
+Adds a "New Article" button and, on any article the current user can edit, an "Edit This Article" button, both shown only to logged-in users on the site's front end. Both open the same popup, titled "Resource Maker", styled in a calm, therapy-friendly palette and showing the site's own logo (from Customize > Site Identity) if one is set.
 
 The popup lets you:
 
@@ -54,7 +54,16 @@ for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
 
-NEW (1.10.2): the Import JSON tab now has a "Draft with Article Assist"
+NEW (1.11.0): the popup is renamed "Resource Maker" and restyled with a
+softer, calmer colour palette (sage green, warm cream, dusty blue) in
+place of the old bright blue. It now shows the site's own logo (from
+Customize > Site Identity) next to the heading if one is set. The
+"Instructions for use" link is now a small circular "?" icon in the
+header instead of a text link at the bottom. The "Draft with Article
+Assist" link is now a proper button, always visible in the header, not
+just on the Import JSON tab.
+
+NEW (1.10.2): the Import JSON tab has a "Draft with Article Assist"
 link that opens Therapy Resource Directory's Article Assist tool in a
 new tab, landing straight in the popup ready to write. Needs a Therapy
 Resource Directory account (Resource Creator plan or above). A plain
