@@ -379,13 +379,29 @@ class TWD_AP_REST {
 			'post_status'    => 'publish',
 			'posts_per_page' => $per_page,
 			'paged'          => $page,
-			// A plain meta_key (no meta_query) LEFT JOINs postmeta rather than
-			// filtering by it, so posts with no featured flag still show up,
-			// sorted after the featured ones instead of being excluded.
-			'meta_key'       => '_twd_ap_featured',
+			// A bare 'meta_key' query var is NOT a LEFT JOIN: WP_Query turns it
+			// into an implicit meta_query clause that INNER JOINs postmeta,
+			// which excludes every post that doesn't have that meta row at
+			// all. Since _twd_ap_featured only ever exists on posts someone
+			// explicitly featured, that silently excluded every other post
+			// from the grid. The fix is an explicit OR between "has the key"
+			// and "doesn't have the key", a named clause, so every post
+			// matches one branch or the other, while still being orderable
+			// by whether it matched the first branch.
+			'meta_query'     => array(
+				'relation'        => 'OR',
+				'featured_clause' => array(
+					'key'     => '_twd_ap_featured',
+					'compare' => 'EXISTS',
+				),
+				array(
+					'key'     => '_twd_ap_featured',
+					'compare' => 'NOT EXISTS',
+				),
+			),
 			'orderby'        => array(
-				'meta_value_num' => 'DESC',
-				'date'           => 'DESC',
+				'featured_clause' => 'DESC',
+				'date'            => 'DESC',
 			),
 		);
 

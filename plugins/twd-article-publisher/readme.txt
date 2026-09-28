@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,10 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+IMPORTANT FIX (1.9.1): the [twd_articles] grid was silently excluding
+almost every article that had never been marked "Feature this article",
+on every site, since v1.8.0. Update to this version as soon as possible.
 
 Em dashes and en dashes are now automatically stripped from every field
 (title, excerpt, tags, article body, category names, Yoast fields) before
