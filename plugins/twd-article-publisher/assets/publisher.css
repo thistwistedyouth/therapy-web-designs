@@ -190,6 +190,16 @@
   gap: 10px;
   align-items: center;
 }
+.twd-ap-btn-row .twd-ap-input {
+  flex: 1 1 auto !important;
+  width: auto !important;
+}
+
+.twd-ap-section {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--twd-ap-border);
+}
 
 .twd-ap-btn-secondary {
   border: 1px solid var(--twd-ap-border) !important;

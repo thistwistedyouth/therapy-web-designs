@@ -29,28 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<label class="twd-ap-label" for="twd-ap-title"><?php esc_html_e( 'Title', 'twd-article-publisher' ); ?></label>
 			<input type="text" id="twd-ap-title" class="twd-ap-input" placeholder="<?php esc_attr_e( 'Article title', 'twd-article-publisher' ); ?>" />
 
-			<div class="twd-ap-field-row">
-				<div class="twd-ap-field-col">
-					<label class="twd-ap-label"><?php esc_html_e( 'Featured image', 'twd-article-publisher' ); ?></label>
-					<div id="twd-ap-featured-preview" class="twd-ap-featured-preview"></div>
-					<div class="twd-ap-btn-row">
-						<button type="button" id="twd-ap-featured-select" class="twd-ap-btn-secondary"><?php esc_html_e( 'Choose Image', 'twd-article-publisher' ); ?></button>
-						<button type="button" id="twd-ap-featured-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
-					</div>
-				</div>
-
-				<div class="twd-ap-field-col">
-					<label class="twd-ap-label"><?php esc_html_e( 'Categories', 'twd-article-publisher' ); ?></label>
-					<div id="twd-ap-categories" class="twd-ap-categories">
-						<span class="twd-ap-muted"><?php esc_html_e( 'Loading…', 'twd-article-publisher' ); ?></span>
-					</div>
-				</div>
-			</div>
-
-			<label class="twd-ap-label twd-ap-spaced" for="twd-ap-tags"><?php esc_html_e( 'Tags (comma separated)', 'twd-article-publisher' ); ?></label>
-			<input type="text" id="twd-ap-tags" class="twd-ap-input" placeholder="<?php esc_attr_e( 'anxiety, self-care, mindfulness', 'twd-article-publisher' ); ?>" />
-
-			<label class="twd-ap-label"><?php esc_html_e( 'Article content', 'twd-article-publisher' ); ?></label>
+			<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Article content', 'twd-article-publisher' ); ?></label>
 			<div class="twd-ap-editor-tabs">
 				<button type="button" id="twd-ap-tab-visual" class="twd-ap-tab twd-ap-tab-active" data-tab="visual"><?php esc_html_e( 'Visual', 'twd-article-publisher' ); ?></button>
 				<button type="button" id="twd-ap-tab-html" class="twd-ap-tab" data-tab="html"><?php esc_html_e( 'HTML', 'twd-article-publisher' ); ?></button>
@@ -67,6 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<button type="button" data-block="blockquote" title="<?php esc_attr_e( 'Quote', 'twd-article-publisher' ); ?>">&ldquo;&rdquo;</button>
 				<button type="button" id="twd-ap-link-btn" title="<?php esc_attr_e( 'Insert link', 'twd-article-publisher' ); ?>"><?php esc_html_e( 'Link', 'twd-article-publisher' ); ?></button>
 				<button type="button" id="twd-ap-image-btn" title="<?php esc_attr_e( 'Insert image', 'twd-article-publisher' ); ?>"><?php esc_html_e( 'Image', 'twd-article-publisher' ); ?></button>
+				<button type="button" id="twd-ap-youtube-btn" title="<?php esc_attr_e( 'Insert YouTube video', 'twd-article-publisher' ); ?>"><?php esc_html_e( 'YouTube', 'twd-article-publisher' ); ?></button>
 			</div>
 
 			<div id="twd-ap-visual-editor" class="twd-ap-visual-editor" contenteditable="true" data-placeholder="<?php esc_attr_e( 'Write, or paste AI-formatted HTML using the HTML tab above', 'twd-article-publisher' ); ?>"></div>
@@ -74,6 +54,36 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<label class="twd-ap-label twd-ap-spaced" for="twd-ap-excerpt"><?php esc_html_e( 'Excerpt (shown on article cards)', 'twd-article-publisher' ); ?></label>
 			<textarea id="twd-ap-excerpt" class="twd-ap-textarea-small" placeholder="<?php esc_attr_e( 'A short summary of the article', 'twd-article-publisher' ); ?>"></textarea>
+
+			<div class="twd-ap-section">
+				<p class="twd-ap-section-heading"><?php esc_html_e( 'Details', 'twd-article-publisher' ); ?></p>
+
+				<div class="twd-ap-field-row">
+					<div class="twd-ap-field-col">
+						<label class="twd-ap-label"><?php esc_html_e( 'Featured image', 'twd-article-publisher' ); ?></label>
+						<div id="twd-ap-featured-preview" class="twd-ap-featured-preview"></div>
+						<div class="twd-ap-btn-row">
+							<button type="button" id="twd-ap-featured-select" class="twd-ap-btn-secondary"><?php esc_html_e( 'Choose Image', 'twd-article-publisher' ); ?></button>
+							<button type="button" id="twd-ap-featured-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
+						</div>
+					</div>
+
+					<div class="twd-ap-field-col">
+						<label class="twd-ap-label"><?php esc_html_e( 'Categories', 'twd-article-publisher' ); ?></label>
+						<div id="twd-ap-categories" class="twd-ap-categories">
+							<span class="twd-ap-muted"><?php esc_html_e( 'Loading…', 'twd-article-publisher' ); ?></span>
+						</div>
+						<div class="twd-ap-btn-row twd-ap-spaced">
+							<input type="text" id="twd-ap-cat-add-input" class="twd-ap-input" placeholder="<?php esc_attr_e( 'New category name', 'twd-article-publisher' ); ?>" />
+							<button type="button" id="twd-ap-cat-add-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Add', 'twd-article-publisher' ); ?></button>
+						</div>
+					</div>
+				</div>
+
+				<label class="twd-ap-label twd-ap-spaced" for="twd-ap-tags"><?php esc_html_e( 'Tags (comma separated)', 'twd-article-publisher' ); ?></label>
+				<input type="text" id="twd-ap-tags" class="twd-ap-input" list="twd-ap-tag-datalist" placeholder="<?php esc_attr_e( 'anxiety, self-care, mindfulness', 'twd-article-publisher' ); ?>" />
+				<datalist id="twd-ap-tag-datalist"></datalist>
+			</div>
 
 			<div id="twd-ap-yoast-fields" class="twd-ap-yoast-fields" hidden>
 				<p class="twd-ap-section-heading"><?php esc_html_e( 'SEO', 'twd-article-publisher' ); ?></p>

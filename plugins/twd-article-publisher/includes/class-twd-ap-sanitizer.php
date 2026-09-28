@@ -36,7 +36,10 @@ class TWD_AP_Sanitizer {
 			'li'         => array(),
 			'blockquote' => array(),
 			'hr'         => array(),
-			'figure'     => array( 'class' => array() ),
+			'figure'     => array(
+				'class'            => array(),
+				'data-youtube-id'  => array(),
+			),
 			'figcaption' => array(),
 			'a'          => array(
 				'href'   => array(),

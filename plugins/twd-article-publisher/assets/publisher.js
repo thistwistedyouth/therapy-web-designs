@@ -33,7 +33,11 @@
 		els.featuredSelect = document.getElementById('twd-ap-featured-select');
 		els.featuredRemove = document.getElementById('twd-ap-featured-remove');
 		els.categories = document.getElementById('twd-ap-categories');
+		els.catAddInput = document.getElementById('twd-ap-cat-add-input');
+		els.catAddBtn = document.getElementById('twd-ap-cat-add-btn');
 		els.tags = document.getElementById('twd-ap-tags');
+		els.tagDatalist = document.getElementById('twd-ap-tag-datalist');
+		els.youtubeBtn = document.getElementById('twd-ap-youtube-btn');
 		els.tabVisual = document.getElementById('twd-ap-tab-visual');
 		els.tabHtml = document.getElementById('twd-ap-tab-html');
 		els.toolbar = document.getElementById('twd-ap-toolbar');
@@ -111,6 +115,33 @@
 			openInlineImageFrame();
 		});
 
+		els.youtubeBtn.addEventListener('click', function () {
+			saveSelection();
+			var url = window.prompt('YouTube video URL');
+			if (!url) {
+				return;
+			}
+			var videoId = extractYoutubeId(url);
+			if (!videoId) {
+				showStatus('That does not look like a YouTube URL.', false);
+				return;
+			}
+			els.visualEditor.focus();
+			restoreSelection();
+			var html = '<figure class="twd-ap-yt-embed" data-youtube-id="' + videoId + '" contenteditable="false">' +
+				'<img src="https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg" alt="YouTube video" /></figure>';
+			document.execCommand('insertHTML', false, html);
+			markDirty();
+		});
+
+		els.catAddBtn.addEventListener('click', addCategory);
+		els.catAddInput.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				addCategory();
+			}
+		});
+
 		els.featuredSelect.addEventListener('click', openFeaturedImageFrame);
 		els.featuredRemove.addEventListener('click', function () {
 			state.featuredMediaId = 0;
@@ -136,6 +167,7 @@
 		});
 
 		fetchCategories();
+		fetchTags();
 	}
 
 	function markDirty() {
@@ -248,6 +280,73 @@
 			.join('');
 	}
 
+	function addCategory() {
+		var name = els.catAddInput.value.trim();
+		if (!name) {
+			return;
+		}
+		var checkedIds = getCheckedCategoryIds();
+		els.catAddBtn.disabled = true;
+		fetch(TWD_AP.restUrl + '/categories', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': TWD_AP.nonce,
+			},
+			body: JSON.stringify({ name: name }),
+		})
+			.then(function (r) {
+				return r.json().then(function (data) {
+					return { ok: r.ok, data: data };
+				});
+			})
+			.then(function (result) {
+				els.catAddBtn.disabled = false;
+				if (!result.ok) {
+					showStatus(result.data && result.data.message ? result.data.message : 'Could not add that category.', false);
+					return;
+				}
+				var exists = state.categories.some(function (c) {
+					return c.id === result.data.id;
+				});
+				if (!exists) {
+					state.categories.push({ id: result.data.id, name: result.data.name });
+				}
+				checkedIds.push(result.data.id);
+				renderCategories(checkedIds);
+				els.catAddInput.value = '';
+			})
+			.catch(function () {
+				els.catAddBtn.disabled = false;
+				showStatus('Could not add that category.', false);
+			});
+	}
+
+	function extractYoutubeId(url) {
+		var match = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+		return match ? match[1] : null;
+	}
+
+	function fetchTags() {
+		fetch(TWD_AP.restUrl + '/tags', {
+			headers: { 'X-WP-Nonce': TWD_AP.nonce },
+		})
+			.then(function (r) {
+				return r.json();
+			})
+			.then(function (data) {
+				if (!Array.isArray(data)) {
+					return;
+				}
+				els.tagDatalist.innerHTML = data
+					.map(function (name) {
+						return '<option value="' + escapeHtml(name) + '"></option>';
+					})
+					.join('');
+			})
+			.catch(function () {});
+	}
+
 	function getCheckedCategoryIds() {
 		var boxes = els.categories.querySelectorAll('input[type="checkbox"]:checked');
 		return Array.prototype.map.call(boxes, function (b) {
@@ -267,6 +366,7 @@
 		els.htmlEditor.value = '';
 		els.excerpt.value = '';
 		els.tags.value = '';
+		els.catAddInput.value = '';
 		els.yoastTitle.value = '';
 		els.yoastDesc.value = '';
 		els.scheduleToggle.checked = false;

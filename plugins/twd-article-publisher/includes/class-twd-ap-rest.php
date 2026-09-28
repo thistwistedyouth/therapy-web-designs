@@ -24,8 +24,25 @@ class TWD_AP_REST {
 			self::NAMESPACE,
 			'/categories',
 			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $this, 'get_categories' ),
+					'permission_callback' => array( $this, 'check_permission' ),
+				),
+				array(
+					'methods'             => 'POST',
+					'callback'            => array( $this, 'create_category' ),
+					'permission_callback' => array( $this, 'check_permission' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/tags',
+			array(
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_categories' ),
+				'callback'            => array( $this, 'get_tags' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 			)
 		);
@@ -98,6 +115,44 @@ class TWD_AP_REST {
 				'id'   => $cat->term_id,
 				'name' => $cat->name,
 			);
+		}
+		return rest_ensure_response( $out );
+	}
+
+	public function create_category( $request ) {
+		$name = isset( $request['name'] ) ? sanitize_text_field( wp_unslash( $request['name'] ) ) : '';
+		if ( '' === trim( $name ) ) {
+			return new WP_Error( 'twd_ap_missing_name', __( 'Please enter a category name.', 'twd-article-publisher' ), array( 'status' => 400 ) );
+		}
+
+		$existing = get_term_by( 'name', $name, 'category' );
+		if ( $existing ) {
+			return rest_ensure_response(
+				array(
+					'id'   => $existing->term_id,
+					'name' => $existing->name,
+				)
+			);
+		}
+
+		$result = wp_insert_term( $name, 'category' );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return rest_ensure_response(
+			array(
+				'id'   => (int) $result['term_id'],
+				'name' => $name,
+			)
+		);
+	}
+
+	public function get_tags() {
+		$tags = get_tags( array( 'hide_empty' => false ) );
+		$out  = array();
+		foreach ( $tags as $tag ) {
+			$out[] = $tag->name;
 		}
 		return rest_ensure_response( $out );
 	}

@@ -36,6 +36,14 @@ class TWD_AP_Article_Style {
 			array(),
 			TWD_AP_VERSION
 		);
+
+		wp_enqueue_script(
+			'twd-ap-article-style',
+			TWD_AP_URL . 'assets/article-content.js',
+			array(),
+			TWD_AP_VERSION,
+			true
+		);
 	}
 
 	public function wrap_content( $content ) {
