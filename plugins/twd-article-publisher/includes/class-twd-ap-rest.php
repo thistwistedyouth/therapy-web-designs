@@ -140,7 +140,7 @@ class TWD_AP_REST {
 	}
 
 	public function create_category( $request ) {
-		$name = isset( $request['name'] ) ? sanitize_text_field( wp_unslash( $request['name'] ) ) : '';
+		$name = isset( $request['name'] ) ? TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( wp_unslash( $request['name'] ) ) ) : '';
 		if ( '' === trim( $name ) ) {
 			return new WP_Error( 'twd_ap_missing_name', __( 'Please enter a category name.', 'twd-article-publisher' ), array( 'status' => 400 ) );
 		}
@@ -178,9 +178,9 @@ class TWD_AP_REST {
 	}
 
 	private function build_post_args( $request, $existing_id = 0 ) {
-		$title   = isset( $request['title'] ) ? sanitize_text_field( wp_unslash( $request['title'] ) ) : '';
+		$title   = isset( $request['title'] ) ? TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( wp_unslash( $request['title'] ) ) ) : '';
 		$content = isset( $request['content_html'] ) ? TWD_AP_Sanitizer::clean( wp_unslash( $request['content_html'] ) ) : '';
-		$excerpt = isset( $request['excerpt'] ) ? sanitize_textarea_field( wp_unslash( $request['excerpt'] ) ) : '';
+		$excerpt = isset( $request['excerpt'] ) ? TWD_AP_Sanitizer::strip_dashes( sanitize_textarea_field( wp_unslash( $request['excerpt'] ) ) ) : '';
 		$status  = isset( $request['status'] ) ? sanitize_key( $request['status'] ) : 'draft';
 
 		if ( ! in_array( $status, array( 'draft', 'publish', 'future' ), true ) ) {
@@ -284,7 +284,7 @@ class TWD_AP_REST {
 
 		// Tags.
 		if ( isset( $request['tags'] ) ) {
-			$raw_tags = sanitize_text_field( wp_unslash( $request['tags'] ) );
+			$raw_tags = TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( wp_unslash( $request['tags'] ) ) );
 			$tag_names = array_filter( array_map( 'trim', explode( ',', $raw_tags ) ) );
 			wp_set_post_tags( $post_id, $tag_names, false );
 		}
@@ -311,7 +311,7 @@ class TWD_AP_REST {
 		// Yoast fields, only if Yoast SEO is active on this site.
 		if ( defined( 'WPSEO_VERSION' ) ) {
 			if ( isset( $request['yoast_title'] ) ) {
-				$val = sanitize_text_field( wp_unslash( $request['yoast_title'] ) );
+				$val = TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( wp_unslash( $request['yoast_title'] ) ) );
 				if ( '' !== $val ) {
 					update_post_meta( $post_id, '_yoast_wpseo_title', $val );
 				} else {
@@ -319,7 +319,7 @@ class TWD_AP_REST {
 				}
 			}
 			if ( isset( $request['yoast_desc'] ) ) {
-				$val = sanitize_textarea_field( wp_unslash( $request['yoast_desc'] ) );
+				$val = TWD_AP_Sanitizer::strip_dashes( sanitize_textarea_field( wp_unslash( $request['yoast_desc'] ) ) );
 				if ( '' !== $val ) {
 					update_post_meta( $post_id, '_yoast_wpseo_metadesc', $val );
 				} else {

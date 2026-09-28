@@ -11,10 +11,39 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class TWD_AP_Sanitizer {
 
+	/**
+	 * Em and en dashes read as a tell that a page was AI-written, so they are
+	 * never allowed through, regardless of whether the text was typed, pasted
+	 * from an AI assistant, or came back from a future in-house AI tool.
+	 * Handles both the real character and its common HTML-entity forms,
+	 * since pasted content can carry either. A dash used as separating
+	 * punctuation becomes a comma; one already touching punctuation is just
+	 * dropped rather than doubled up.
+	 */
+	public static function strip_dashes( $text ) {
+		if ( ! is_string( $text ) || '' === $text ) {
+			return $text;
+		}
+		$em = '(?:\x{2014}|&mdash;|&#0*8212;|&#[xX]0*2014;)';
+		$en = '(?:\x{2013}|&ndash;|&#0*8211;|&#[xX]0*2013;)';
+		$dash = '(?:' . $em . '|' . $en . ')';
+
+		// A dash immediately before closing punctuation: just drop it.
+		$text = preg_replace( '/\s*' . $dash . '\s*(?=[.,;:!?])/u', '', $text );
+		// Otherwise: a comma, single-spaced.
+		$text = preg_replace( '/\s*' . $dash . '\s*/u', ', ', $text );
+		// Tidy up any double commas the above can produce.
+		$text = preg_replace( '/,\s*,/u', ',', $text );
+
+		return $text;
+	}
+
 	public static function clean( $html ) {
 		if ( ! is_string( $html ) || '' === trim( $html ) ) {
 			return '';
 		}
+
+		$html = self::strip_dashes( $html );
 
 		// Demote H1s so the page's own dynamic post title stays the only H1.
 		$html = preg_replace( '/<h1(\s[^>]*)?>/i', '<h2$1>', $html );
