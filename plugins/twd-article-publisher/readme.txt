@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.8.1
+Stable tag: 1.8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,10 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+Fixed: titles/excerpts with an apostrophe or the automatic "..." on a
+trimmed excerpt could show as literal "&#8217;" or "&hellip;" text in the
+[twd_articles] grid, instead of rendering as punctuation.
 
 A "Check for updates" button on Settings > Article Publisher forces an
 immediate check instead of waiting for the automatic 12-hour cycle.

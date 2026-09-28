@@ -408,15 +408,21 @@ class TWD_AP_REST {
 			$word_count = str_word_count( wp_strip_all_tags( $post->post_content ) );
 			$excerpt    = $post->post_excerpt ? $post->post_excerpt : wp_strip_all_tags( $post->post_content );
 
+			// get_the_title() runs wptexturize, which turns a plain apostrophe
+			// into the literal text "&#8217;" (an HTML entity meant for direct
+			// output), not a real character. The grid renders this via JS,
+			// which re-escapes it for safety, double-encoding it into visible
+			// "&#8217;" text on the page. Decoding back to real characters here
+			// means the client only ever encodes once, correctly.
 			$items[] = array(
 				'id'           => $post->ID,
-				'title'        => get_the_title( $post ),
-				'excerpt'      => wp_trim_words( $excerpt, 22 ),
+				'title'        => wp_specialchars_decode( get_the_title( $post ), ENT_QUOTES ),
+				'excerpt'      => wp_specialchars_decode( wp_trim_words( $excerpt, 22 ), ENT_QUOTES ),
 				'link'         => get_permalink( $post ),
 				'date'         => get_the_date( '', $post ),
 				'reading_time' => max( 1, (int) ceil( $word_count / 200 ) ),
 				'thumbnail'    => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '',
-				'category'     => ! empty( $cats ) ? $cats[0]->name : '',
+				'category'     => ! empty( $cats ) ? wp_specialchars_decode( $cats[0]->name, ENT_QUOTES ) : '',
 				'featured'     => (bool) get_post_meta( $post->ID, '_twd_ap_featured', true ),
 			);
 		}
