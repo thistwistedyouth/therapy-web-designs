@@ -32,7 +32,7 @@ jobs:
           password: ${{ secrets.TWD_FTP_PASSWORD }}
           protocol: ftps
           local-dir: plugins/twd-article-publisher/
-          server-dir: public_html/wp-content/plugins/twd-article-publisher/
+          server-dir: wp-content/plugins/twd-article-publisher/
           exclude: |
             **/CLAUDE.md
             **/.git*
