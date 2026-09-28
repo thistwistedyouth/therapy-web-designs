@@ -44,6 +44,10 @@
 		els.youtubeBtn = document.getElementById('twd-ap-youtube-btn');
 		els.tabVisual = document.getElementById('twd-ap-tab-visual');
 		els.tabHtml = document.getElementById('twd-ap-tab-html');
+		els.tabJson = document.getElementById('twd-ap-tab-json');
+		els.jsonPanel = document.getElementById('twd-ap-json-panel');
+		els.jsonInput = document.getElementById('twd-ap-json-input');
+		els.jsonFillBtn = document.getElementById('twd-ap-json-fill-btn');
 		els.toolbar = document.getElementById('twd-ap-toolbar');
 		els.visualEditor = document.getElementById('twd-ap-visual-editor');
 		els.htmlEditor = document.getElementById('twd-ap-html-editor');
@@ -121,6 +125,10 @@
 		els.tabHtml.addEventListener('click', function () {
 			switchTab('html');
 		});
+		els.tabJson.addEventListener('click', function () {
+			switchTab('json');
+		});
+		els.jsonFillBtn.addEventListener('click', fillFromJson);
 
 		els.toolbar.addEventListener('click', function (e) {
 			var btn = e.target.closest('button');
@@ -239,16 +247,18 @@
 			return;
 		}
 		deselectImage();
-		if (tab === 'html') {
+		if (state.activeTab === 'visual' && tab === 'html') {
 			els.htmlEditor.value = els.visualEditor.innerHTML.trim();
-		} else {
+		} else if (state.activeTab === 'html' && tab === 'visual') {
 			els.visualEditor.innerHTML = els.htmlEditor.value;
 		}
 		state.activeTab = tab;
 		els.tabVisual.classList.toggle('twd-ap-tab-active', tab === 'visual');
 		els.tabHtml.classList.toggle('twd-ap-tab-active', tab === 'html');
+		els.tabJson.classList.toggle('twd-ap-tab-active', tab === 'json');
 		els.visualEditor.hidden = tab !== 'visual';
 		els.htmlEditor.hidden = tab !== 'html';
+		els.jsonPanel.hidden = tab !== 'json';
 		els.toolbar.style.display = tab === 'visual' ? 'flex' : 'none';
 	}
 
@@ -452,6 +462,86 @@
 		}
 	}
 
+	function fillFromJson() {
+		var raw = els.jsonInput.value.trim();
+		if (!raw) {
+			showStatus('Paste some JSON first.', false);
+			return;
+		}
+		var data;
+		try {
+			data = JSON.parse(raw);
+		} catch (e) {
+			showStatus('That is not valid JSON.', false);
+			return;
+		}
+
+		if (data.title) {
+			els.title.value = data.title;
+		}
+
+		var meta = data.meta_description || '';
+		if (meta) {
+			els.excerpt.value = meta;
+			if (TWD_AP.yoastEnabled && els.yoastDesc) {
+				els.yoastDesc.value = meta;
+			}
+		}
+		if (TWD_AP.yoastEnabled && els.yoastTitle && data.seo_title) {
+			els.yoastTitle.value = data.seo_title;
+		}
+
+		var tags = Array.isArray(data.tags) ? data.tags.join(', ') : (data.tags || '');
+		if (tags) {
+			els.tags.value = tags;
+		}
+
+		var html = data.html || '';
+		if (html) {
+			els.visualEditor.innerHTML = html;
+			els.htmlEditor.value = html;
+		}
+
+		markDirty();
+		showStatus('Fields filled from JSON. Review them below before saving.', true);
+		switchTabImmediate('visual');
+
+		if (data.category) {
+			addOrCheckCategoryByName(data.category);
+		}
+	}
+
+	function addOrCheckCategoryByName(name) {
+		var checkedIds = getCheckedCategoryIds();
+		fetch(TWD_AP.restUrl + '/categories', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': TWD_AP.nonce,
+			},
+			body: JSON.stringify({ name: name }),
+		})
+			.then(function (r) {
+				return r.json().then(function (d) {
+					return { ok: r.ok, data: d };
+				});
+			})
+			.then(function (result) {
+				if (!result.ok) {
+					return;
+				}
+				var exists = state.categories.some(function (c) {
+					return c.id === result.data.id;
+				});
+				if (!exists) {
+					state.categories.push({ id: result.data.id, name: result.data.name });
+				}
+				checkedIds.push(result.data.id);
+				renderCategories(checkedIds);
+			})
+			.catch(function () {});
+	}
+
 	function addCategory() {
 		var name = els.catAddInput.value.trim();
 		if (!name) {
@@ -537,6 +627,7 @@
 		els.title.value = '';
 		els.visualEditor.innerHTML = '';
 		els.htmlEditor.value = '';
+		els.jsonInput.value = '';
 		els.excerpt.value = '';
 		els.tags.value = '';
 		els.catAddInput.value = '';
@@ -559,8 +650,10 @@
 		state.activeTab = tab;
 		els.tabVisual.classList.toggle('twd-ap-tab-active', tab === 'visual');
 		els.tabHtml.classList.toggle('twd-ap-tab-active', tab === 'html');
+		els.tabJson.classList.toggle('twd-ap-tab-active', tab === 'json');
 		els.visualEditor.hidden = tab !== 'visual';
 		els.htmlEditor.hidden = tab !== 'html';
+		els.jsonPanel.hidden = tab !== 'json';
 		els.toolbar.style.display = tab === 'visual' ? 'flex' : 'none';
 	}
 

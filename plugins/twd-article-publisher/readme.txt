@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.9.1
+Stable tag: 1.10.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,7 @@ The popup lets you:
 * Tick "Feature this article" to pin it to the top of the `[twd_articles]` grid, ahead of newest-first
 * Reopen and edit any article you have permission to edit, in the same popup
 * While editing, an "Edit in WordPress" link opens the normal wp-admin post editor for that article in a new tab. Deliberately no "Edit with Elementor" link: switching a post into Elementor's builder mode can make it render from Elementor's own saved layout instead of post_content, which would silently stop reflecting future edits made through this popup.
+* A third "Import JSON" tab alongside Visual and HTML: paste a JSON block (e.g. from TRD's Article Assist tool) with title, seo_title, meta_description, category, tags and html fields, and it fills in the title, excerpt, Yoast fields, category (matched or created), tags and body in one go, then switches you to the Visual tab so you can review and edit everything before saving. Nothing is locked: imported fields are exactly as editable as if you'd typed them.
 
 All pasted or written HTML is cleaned on the server before saving: scripts, inline styles and anything unsafe are stripped, and any H1 is converted to H2 so the page's own post title stays the only H1.
 
@@ -52,6 +53,12 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.10.0): an "Import JSON" tab lets you paste a JSON block (title,
+seo_title, meta_description, category, tags, html) and fill the whole
+popup in one go, then review and edit before saving. Designed to pair
+with TRD's Article Assist tool, but works with any JSON of that shape.
+Visual stays the default tab; nothing is required to use JSON.
 
 IMPORTANT FIX (1.9.1): the [twd_articles] grid was silently excluding
 almost every article that had never been marked "Feature this article",

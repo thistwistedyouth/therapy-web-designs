@@ -436,6 +436,13 @@
   cursor: nwse-resize;
 }
 
+.twd-ap-json-panel .twd-ap-muted {
+  margin: 0 0 12px;
+}
+.twd-ap-json-panel .twd-ap-html-editor {
+  border-radius: 8px;
+}
+
 .twd-ap-html-editor {
   width: 100%;
   min-height: 260px;

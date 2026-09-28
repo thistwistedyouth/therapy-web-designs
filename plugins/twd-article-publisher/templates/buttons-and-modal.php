@@ -34,6 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="twd-ap-editor-tabs">
 				<button type="button" id="twd-ap-tab-visual" class="twd-ap-tab twd-ap-tab-active" data-tab="visual"><?php esc_html_e( 'Visual', 'twd-article-publisher' ); ?></button>
 				<button type="button" id="twd-ap-tab-html" class="twd-ap-tab" data-tab="html"><?php esc_html_e( 'HTML', 'twd-article-publisher' ); ?></button>
+				<button type="button" id="twd-ap-tab-json" class="twd-ap-tab" data-tab="json"><?php esc_html_e( 'Import JSON', 'twd-article-publisher' ); ?></button>
 			</div>
 
 			<div id="twd-ap-toolbar" class="twd-ap-toolbar">
@@ -52,6 +53,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<div id="twd-ap-visual-editor" class="twd-ap-visual-editor" contenteditable="true" data-placeholder="<?php esc_attr_e( 'Write, or paste AI-formatted HTML using the HTML tab above', 'twd-article-publisher' ); ?>"></div>
 			<textarea id="twd-ap-html-editor" class="twd-ap-html-editor" hidden placeholder="<?php esc_attr_e( 'Paste formatted HTML here', 'twd-article-publisher' ); ?>"></textarea>
+			<div id="twd-ap-json-panel" class="twd-ap-json-panel" hidden>
+				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (or anywhere producing the same shape) to fill in the title, excerpt, SEO fields, category, tags and content below in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
+				<textarea id="twd-ap-json-input" class="twd-ap-html-editor" rows="8" placeholder='{"title": "...", "seo_title": "...", "meta_description": "...", "category": "...", "tags": "...", "html": "..."}'></textarea>
+				<div class="twd-ap-btn-row twd-ap-spaced">
+					<button type="button" id="twd-ap-json-fill-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Fill fields from JSON', 'twd-article-publisher' ); ?></button>
+				</div>
+			</div>
 
 			<label class="twd-ap-label twd-ap-spaced" for="twd-ap-excerpt"><?php esc_html_e( 'Excerpt (shown on article cards)', 'twd-article-publisher' ); ?></label>
 			<textarea id="twd-ap-excerpt" class="twd-ap-textarea-small" placeholder="<?php esc_attr_e( 'A short summary of the article', 'twd-article-publisher' ); ?>"></textarea>
