@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,20 @@ Every article page automatically gets its own built-in typography (headings, par
 2. Activate the plugin.
 3. Go to Settings > Article Publisher to choose which roles can use it, and pick a default category.
 4. Visit the site while logged in as an allowed user. The "New Article" button appears bottom-right.
+
+== Updates ==
+
+Not distributed via WordPress.org. Every site running this plugin checks
+https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
+for a newer version and shows the normal "update available" row in
+Plugins, with a one-click update -- no manual re-zip-and-upload needed
+per site. See includes/class-twd-ap-updater.php.
+
+To ship a new version to every client site: bump the Version header and
+TWD_AP_VERSION here, then update dist/twd-article-publisher-update.json
+(version, changelog) and overwrite dist/twd-article-publisher-latest.zip
+with a fresh build (packaging command below), and push. Sites pick it up
+within 12 hours automatically, or immediately via Plugins > "Check again".
 
 == Frequently Asked Questions ==
 

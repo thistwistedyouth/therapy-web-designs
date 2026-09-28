@@ -8,7 +8,11 @@ Not tied to any one client's design. Header, footer, page CSS, per-site palettes
 
 - Adds a floating **New Article** button on every front-end page, visible only to logged-in users in an allowed role.
 - Adds a floating **Edit This Article** button on any single post the current user has permission to edit.
-- Both open the same popup: title, a Visual/HTML dual-mode editor, category checkboxes, a featured image picker (native Media Library), an excerpt field, Yoast SEO title/description (shown only if Yoast is active), and Save Draft / Publish / Schedule.
+- Both open the same popup: title, a Visual/HTML dual-mode editor (inline images from the Media Library, YouTube embeds, click-to-align/drag-to-resize on inline images), category checkboxes plus an inline "add category", a tags field with autocomplete, a featured image picker (native Media Library), an excerpt field, Yoast SEO title/description (shown only if Yoast is active), and Save Draft / Publish / Schedule.
+- An "Instructions for use" link opens a built-in help screen (toolbar/shortcode/AI-prompt reference) so a therapist never needs this file.
+- An "Edit in WordPress" link opens the normal wp-admin editor for the article being edited. Deliberately no "Edit with Elementor" link — see Conventions below.
+- Every published article gets its own baseline typography (`class-twd-ap-article-style.php` + `assets/article-content.css`) for every visitor, not just logged-in editors, so articles read well even on a bare Hello Elementor site with no custom Single Post template.
+- `[twd_articles category="" tag="" count="6" columns="3"]` shortcode renders a responsive card grid of published articles on any page.
 - Everything is a normal WordPress post underneath. Nothing here replaces or forks core post storage; this is a front-end convenience layer over `wp_insert_post` / `wp_update_post`.
 
 ## Why it's built this way
@@ -17,18 +21,26 @@ Not tied to any one client's design. Header, footer, page CSS, per-site palettes
 - **Sanitise on the server, never trust the browser.** The popup can receive AI-generated HTML of unknown quality. `wp_kses` with an explicit allow-list strips scripts, inline styles and event handlers regardless of what the client sends. Any `<h1>` is demoted to `<h2>` so a pasted article never fights the theme's own post-title H1.
 - **Vanilla JS, no build step.** `execCommand` was chosen over pulling in TinyMCE or a bundler because this plugin has to drop into any client's WordPress with zero dependency risk. It is deliberately simple rather than feature-complete.
 - **Capability check duplicated in two places on purpose.** `TWD_AP_Frontend::current_user_allowed()` (role-based, for creating) and `current_user_can( 'edit_post', $id )` (WordPress's own per-post capability, for editing) are both enforced. Don't collapse these into one check; they answer different questions.
+- **No "Edit with Elementor" button, on purpose.** Once a post is opened and saved in Elementor's builder, Elementor can switch it to render from its own `_elementor_data` postmeta instead of `post_content` on the front end — which would make future edits made through this popup silently stop showing up. That tradeoff isn't this plugin's to make for a client site, so only a plain "Edit in WordPress" (classic wp-admin editor) link is offered.
+- **YouTube embeds are click-to-play placeholders, not raw iframes.** The sanitiser's allow-list stays narrow (no `iframe` tag at all) by storing `<figure data-youtube-id="...">` with a thumbnail `<img>`, and swapping it for a real `youtube-nocookie.com` iframe client-side (`assets/article-content.js`) only when a visitor clicks it. Don't "simplify" this by allowing raw iframes through `wp_kses` — that reopens the exact hole the sanitiser exists to close.
+- **Image alignment/resize uses `width`/`height` attributes, never inline `style`.** `wp_kses` doesn't allow a `style` attribute on `img`, so the resize handle in `assets/publisher.js` sets `width`/`height` attributes directly instead — that survives sanitisation. Alignment is CSS classes (`twd-ap-img-left/-center/-right/-full`), mirrored in both `publisher.css` (editor) and `article-content.css` (public), so what you build in the popup matches what visitors see.
 
 ## File map
 
 ```
-twd-article-publisher.php                Plugin bootstrap, loads the four classes below
+twd-article-publisher.php                Plugin bootstrap, loads all classes below
 includes/class-twd-ap-settings.php       Settings > Article Publisher screen; allowed roles, default category
 includes/class-twd-ap-sanitizer.php      TWD_AP_Sanitizer::clean() — the one place HTML gets cleaned
-includes/class-twd-ap-rest.php           REST routes: /categories, /posts, /posts/{id}, /media
-includes/class-twd-ap-frontend.php       Enqueues assets, decides which buttons show, capability gate
-templates/buttons-and-modal.php          The popup's HTML skeleton (PHP-rendered once per page load)
-assets/publisher.css                     Popup and button styling (neutral, not client-branded)
-assets/publisher.js                      All popup behaviour: tabs, toolbar, media picker, REST calls
+includes/class-twd-ap-rest.php           REST routes: /categories, /tags, /posts, /posts/{id}, /media
+includes/class-twd-ap-frontend.php       Enqueues editor assets, decides which buttons show, capability gate
+includes/class-twd-ap-shortcode.php      [twd_articles] card-grid shortcode
+includes/class-twd-ap-article-style.php  Public article typography — the_content wrap + unconditional CSS enqueue
+includes/class-twd-ap-updater.php        Self-hosted update checker (admin-only); see Releases section below
+templates/buttons-and-modal.php          The popup's HTML skeleton + the help modal (PHP-rendered once per page load)
+assets/publisher.css                     Popup, button and image-toolbar styling (neutral, not client-branded)
+assets/publisher.js                      All popup behaviour: tabs, toolbar, media picker, image align/resize, REST calls
+assets/article-content.css               Public-facing article typography + YouTube/alignment styles
+assets/article-content.js                Click-to-play swap for YouTube placeholders, public-facing
 readme.txt                               Standard WP plugin readme (also shown in Plugins list)
 ```
 
@@ -46,8 +58,10 @@ readme.txt                               Standard WP plugin readme (also shown i
 - No automated test suite. Testing so far has been PHP lint (`php -l`) on every file, a Node syntax check on the JS, and a standalone PHP harness that stubs `wp_kses`/`apply_filters` to prove the sanitiser's own logic (H1 demotion, script/style stripping, `rel` injection on `target="_blank"` links) without a live WordPress install. See "Testing" below to redo this from scratch.
 - `execCommand` (used for the Visual tab's Bold/Italic/heading toolbar) is a soft-deprecated browser API. It still works everywhere as of this writing, but if it's ever removed from browsers, the toolbar in `assets/publisher.js` needs replacing, most likely with a small dependency-free `contenteditable` command layer rather than a full editor library.
 - No image compression or size limit on featured-image or inline-image uploads beyond what WordPress's own media handling already applies.
-- Not yet tested inside a real WordPress instance end-to-end (create → categorise → feature image → publish → edit → reschedule). The sandbox this was built in has no WordPress install. Treat first real-site install as the actual integration test.
+- Live-tested end-to-end on therapyresourcedirectory.com (create → categorise → tag → feature image → inline image/YouTube → publish → edit → reschedule → shortcode grid).
 - No multisite-specific handling; assume single-site until proven otherwise.
+- The self-hosted updater depends on this GitHub repo staying **public** (client sites fetch `dist/twd-article-publisher-update.json` with no auth). If it's ever made private again, every site's update check silently fails closed (no error shown, they just stop seeing new versions) until it's public again or the updater is repointed at a different public host.
+- Native `<datalist>` tag autocomplete only really works for the last tag typed (or a single tag) — the browser suggests whole-field matches, not per-token. Fine as a lightweight nudge against typo'd duplicate tags; not a real tokenised tag picker.
 
 ## Testing
 
@@ -62,10 +76,51 @@ node --check assets/publisher.js
 
 For sanitiser logic without a live WordPress install, stub `wp_kses` and `apply_filters`, then assert against known-bad input (script tags, `onclick`, inline `style`, an `<h1>`, a `target="_blank"` link). This was the method used during the original build; there's no committed test file for it yet, it was written and discarded as a one-off `/tmp` script — worth turning into a real `tests/` directory with a proper WP test stub if this plugin gets ongoing development.
 
-## Packaging for distribution
+## Releases & self-hosted updates
+
+The plugin isn't on WordPress.org, so it has its own lightweight self-hosted
+updater (`includes/class-twd-ap-updater.php`, admin-only). Every client site
+checks `dist/twd-article-publisher-update.json` in **this repo** (must stay
+**public** — client sites fetch it with no credentials) and, if its
+`version` is newer than the installed one, shows the normal "update
+available" row in wp-admin Plugins with a one-click update. Checked every
+12 hours, cached in a transient, cache cleared on "Check again" or right
+after an update runs.
+
+To ship a new version to every client site running the plugin:
 
 ```bash
-cd .. && zip -r -X twd-article-publisher.zip twd-article-publisher -x "*.git*"
+# 1. Bump the version in twd-article-publisher.php (both the header comment
+#    and the TWD_AP_VERSION constant), and in readme.txt's Stable tag.
+
+# 2. Build the distributable zip (must contain a single top-level
+#    twd-article-publisher/ folder -- WordPress's plugin upgrader requires
+#    that shape, a zip of the folder's *contents* will silently misinstall):
+rm -f dist/twd-article-publisher-latest.zip
+rm -rf /tmp/twd-build && mkdir -p /tmp/twd-build
+cp -r plugins/twd-article-publisher /tmp/twd-build/twd-article-publisher
+rm -f /tmp/twd-build/twd-article-publisher/CLAUDE.md
+( cd /tmp/twd-build && zip -r -X "$OLDPWD/dist/twd-article-publisher-latest.zip" twd-article-publisher -x "*.git*" )
+
+# 3. Update dist/twd-article-publisher-update.json:
+#    bump "version" to match step 1, update "changelog", leave
+#    "download_url" alone (it's a stable path, never needs to change).
+
+# 4. Commit and push both the zip and the JSON.
 ```
 
-Upload via **Plugins > Add New > Upload Plugin** on any client site. No build step, no `npm install`, nothing to compile.
+`download_url` in the JSON always points at
+`dist/twd-article-publisher-latest.zip` via `raw.githubusercontent.com` —
+that path never changes, so step 3 only ever touches `version` and
+`changelog`. Sites pick up the new version automatically within 12 hours,
+or immediately if someone clicks "Check again" on their Plugins page.
+
+For a one-off manual install (skipping the updater, e.g. trying a change on
+a single site before it's "released" to everyone):
+
+```bash
+cd .. && zip -r -X twd-article-publisher.zip twd-article-publisher -x "CLAUDE.md" "*.git*"
+```
+
+Upload via **Plugins > Add New > Upload Plugin** on any client site. No
+build step, no `npm install`, nothing to compile either way.
