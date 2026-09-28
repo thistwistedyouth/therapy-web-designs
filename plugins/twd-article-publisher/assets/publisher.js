@@ -55,6 +55,7 @@
 		els.draftBtn = document.getElementById('twd-ap-draft-btn');
 		els.publishBtn = document.getElementById('twd-ap-publish-btn');
 		els.closeBtn = document.getElementById('twd-ap-close-btn');
+		els.adminEditLink = document.getElementById('twd-ap-admin-edit-link');
 		els.newBtn = document.getElementById('twd-ap-new-btn');
 		els.editBtn = document.getElementById('twd-ap-edit-btn');
 		els.linkBtn = document.getElementById('twd-ap-link-btn');
@@ -525,11 +526,16 @@
 			els.publishBtn.textContent = 'Update';
 			els.draftBtn.textContent = 'Save as Draft';
 			loadPostForEdit(postId);
+			if (TWD_AP.adminEditUrl) {
+				els.adminEditLink.href = TWD_AP.adminEditUrl;
+				els.adminEditLink.hidden = false;
+			}
 		} else {
 			state.editingId = null;
 			els.modalTitle.textContent = 'New Article';
 			els.publishBtn.textContent = 'Publish';
 			els.draftBtn.textContent = 'Save Draft';
+			els.adminEditLink.hidden = true;
 		}
 		els.overlay.hidden = false;
 		document.body.style.overflow = 'hidden';

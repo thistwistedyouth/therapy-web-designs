@@ -20,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div id="twd-ap-modal" class="twd-ap-modal" role="dialog" aria-modal="true" aria-labelledby="twd-ap-modal-title">
 		<div class="twd-ap-modal-header">
 			<p id="twd-ap-modal-title" class="twd-ap-modal-title"><?php esc_html_e( 'New Article', 'twd-article-publisher' ); ?></p>
+			<a href="#" id="twd-ap-admin-edit-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Edit in WordPress ↗', 'twd-article-publisher' ); ?></a>
 			<button type="button" id="twd-ap-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
 		</div>
 

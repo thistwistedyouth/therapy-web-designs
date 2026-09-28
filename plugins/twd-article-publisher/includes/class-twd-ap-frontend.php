@@ -82,6 +82,7 @@ class TWD_AP_Frontend {
 				'yoastEnabled'  => defined( 'WPSEO_VERSION' ) ? 1 : 0,
 				'currentPostId' => is_singular( 'post' ) ? get_the_ID() : 0,
 				'canEditThis'   => $this->should_show_edit_button() ? 1 : 0,
+				'adminEditUrl'  => $this->should_show_edit_button() ? get_edit_post_link( get_the_ID(), '' ) : '',
 				'i18n'          => array(
 					'saving'       => __( 'Saving…', 'twd-article-publisher' ),
 					'error'        => __( 'Something went wrong. Please try again.', 'twd-article-publisher' ),
