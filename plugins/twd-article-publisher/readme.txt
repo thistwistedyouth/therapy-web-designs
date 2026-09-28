@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,7 +17,7 @@ Adds a "New Article" button and, on any article the current user can edit, an "E
 The popup lets you:
 
 * Write in a simple visual editor, or switch to an HTML tab and paste AI-formatted HTML
-* Tag one or more categories
+* Tag one or more categories, and add tags (comma separated)
 * Set a featured image from the Media Library
 * Write an excerpt
 * Set the Yoast SEO title and meta description, if Yoast SEO is active
@@ -25,6 +25,8 @@ The popup lets you:
 * Reopen and edit any article you have permission to edit, in the same popup
 
 All pasted or written HTML is cleaned on the server before saving: scripts, inline styles and anything unsafe are stripped, and any H1 is converted to H2 so the page's own post title stays the only H1.
+
+Use the `[twd_articles]` shortcode on any page to display a card grid of published articles. Attributes: `category` (slug), `tag` (slug), `count` (default 6), `columns` (default 3, max 4). Example: `[twd_articles category="anxiety" count="9" columns="3"]`.
 
 == Installation ==
 

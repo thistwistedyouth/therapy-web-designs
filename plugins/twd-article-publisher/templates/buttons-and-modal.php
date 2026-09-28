@@ -47,6 +47,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</div>
 			</div>
 
+			<label class="twd-ap-label twd-ap-spaced" for="twd-ap-tags"><?php esc_html_e( 'Tags (comma separated)', 'twd-article-publisher' ); ?></label>
+			<input type="text" id="twd-ap-tags" class="twd-ap-input" placeholder="<?php esc_attr_e( 'anxiety, self-care, mindfulness', 'twd-article-publisher' ); ?>" />
+
 			<label class="twd-ap-label"><?php esc_html_e( 'Article content', 'twd-article-publisher' ); ?></label>
 			<div class="twd-ap-editor-tabs">
 				<button type="button" id="twd-ap-tab-visual" class="twd-ap-tab twd-ap-tab-active" data-tab="visual"><?php esc_html_e( 'Visual', 'twd-article-publisher' ); ?></button>

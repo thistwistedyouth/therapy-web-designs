@@ -21,22 +21,25 @@
 }
 
 .twd-ap-float-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 18px;
-  border: none;
-  border-radius: 30px;
-  background: var(--twd-ap-primary);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 12px 18px !important;
+  border: none !important;
+  border-radius: 30px !important;
+  background: var(--twd-ap-primary) !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: normal !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  cursor: pointer !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18) !important;
+  transition: background-color 0.2s ease, transform 0.2s ease !important;
 }
 .twd-ap-float-btn:hover {
-  background: var(--twd-ap-primary-dark);
+  background: var(--twd-ap-primary-dark) !important;
   transform: translateY(-2px);
 }
 .twd-ap-plus {
@@ -44,10 +47,10 @@
   line-height: 1;
 }
 .twd-ap-edit-btn {
-  background: #374151;
+  background: #374151 !important;
 }
 .twd-ap-edit-btn:hover {
-  background: #1f2937;
+  background: #1f2937 !important;
 }
 
 .twd-ap-overlay {
@@ -90,15 +93,16 @@
   color: var(--twd-ap-text);
 }
 .twd-ap-close-btn {
-  border: none;
-  background: none;
-  font-size: 26px;
-  line-height: 1;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  font-size: 26px !important;
+  line-height: 1 !important;
   cursor: pointer;
-  color: var(--twd-ap-muted);
+  color: var(--twd-ap-muted) !important;
 }
 .twd-ap-close-btn:hover {
-  color: var(--twd-ap-text);
+  color: var(--twd-ap-text) !important;
 }
 
 .twd-ap-modal-body {
@@ -136,14 +140,16 @@
 
 .twd-ap-input,
 .twd-ap-textarea-small {
-  width: 100%;
-  border: 1px solid var(--twd-ap-border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 15px;
-  color: var(--twd-ap-text);
-  font-family: inherit;
-  box-sizing: border-box;
+  width: 100% !important;
+  border: 1px solid var(--twd-ap-border) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  font-size: 15px !important;
+  color: var(--twd-ap-text) !important;
+  font-family: inherit !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
+  background: #fff !important;
 }
 .twd-ap-textarea-small {
   min-height: 70px;
@@ -153,8 +159,9 @@
 .twd-ap-textarea-small:focus,
 .twd-ap-visual-editor:focus,
 .twd-ap-html-editor:focus {
-  outline: none;
-  border-color: var(--twd-ap-primary);
+  outline: none !important;
+  border-color: var(--twd-ap-primary) !important;
+  box-shadow: none !important;
 }
 
 .twd-ap-field-row {
@@ -185,31 +192,37 @@
 }
 
 .twd-ap-btn-secondary {
-  border: 1px solid var(--twd-ap-border);
-  background: #fff;
-  color: var(--twd-ap-text);
-  padding: 9px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  border: 1px solid var(--twd-ap-border) !important;
+  background: #fff !important;
+  color: var(--twd-ap-text) !important;
+  padding: 9px 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  box-shadow: none !important;
   cursor: pointer;
 }
 .twd-ap-btn-secondary:hover {
-  background: var(--twd-ap-bg-soft);
+  background: var(--twd-ap-bg-soft) !important;
 }
 
 .twd-ap-btn-primary {
-  border: none;
-  background: var(--twd-ap-primary);
-  color: #fff;
-  padding: 10px 22px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
+  border: none !important;
+  background: var(--twd-ap-primary) !important;
+  color: #fff !important;
+  padding: 10px 22px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  box-shadow: none !important;
   cursor: pointer;
 }
 .twd-ap-btn-primary:hover {
-  background: var(--twd-ap-primary-dark);
+  background: var(--twd-ap-primary-dark) !important;
 }
 .twd-ap-btn-primary:disabled,
 .twd-ap-btn-secondary:disabled {
@@ -218,10 +231,11 @@
 }
 
 .twd-ap-btn-text {
-  border: none;
-  background: none;
-  color: var(--twd-ap-danger);
-  font-size: 13px;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: var(--twd-ap-danger) !important;
+  font-size: 13px !important;
   cursor: pointer;
   padding: 4px;
 }
@@ -253,19 +267,21 @@
   gap: 4px;
 }
 .twd-ap-tab {
-  border: 1px solid var(--twd-ap-border);
-  border-bottom: none;
-  background: var(--twd-ap-bg-soft);
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 8px 8px 0 0;
+  border: 1px solid var(--twd-ap-border) !important;
+  border-bottom: none !important;
+  background: var(--twd-ap-bg-soft) !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  border-radius: 8px 8px 0 0 !important;
   cursor: pointer;
-  color: var(--twd-ap-muted);
+  color: var(--twd-ap-muted) !important;
 }
 .twd-ap-tab-active {
-  background: #fff;
-  color: var(--twd-ap-text);
+  background: #fff !important;
+  color: var(--twd-ap-text) !important;
 }
 
 .twd-ap-toolbar {
@@ -278,17 +294,19 @@
   background: var(--twd-ap-bg-soft);
 }
 .twd-ap-toolbar button {
-  border: 1px solid transparent;
-  background: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 13px;
+  border: 1px solid transparent !important;
+  background: none !important;
+  box-shadow: none !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  text-transform: none !important;
   cursor: pointer;
-  color: var(--twd-ap-text);
+  color: var(--twd-ap-text) !important;
 }
 .twd-ap-toolbar button:hover {
-  background: #fff;
-  border-color: var(--twd-ap-border);
+  background: #fff !important;
+  border-color: var(--twd-ap-border) !important;
 }
 
 .twd-ap-visual-editor {

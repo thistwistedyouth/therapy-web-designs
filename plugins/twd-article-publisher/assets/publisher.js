@@ -33,6 +33,7 @@
 		els.featuredSelect = document.getElementById('twd-ap-featured-select');
 		els.featuredRemove = document.getElementById('twd-ap-featured-remove');
 		els.categories = document.getElementById('twd-ap-categories');
+		els.tags = document.getElementById('twd-ap-tags');
 		els.tabVisual = document.getElementById('twd-ap-tab-visual');
 		els.tabHtml = document.getElementById('twd-ap-tab-html');
 		els.toolbar = document.getElementById('twd-ap-toolbar');
@@ -130,7 +131,7 @@
 			submitPost(els.scheduleToggle.checked ? 'future' : 'publish');
 		});
 
-		[els.title, els.visualEditor, els.htmlEditor, els.excerpt, els.yoastTitle, els.yoastDesc].forEach(function (el) {
+		[els.title, els.visualEditor, els.htmlEditor, els.excerpt, els.tags, els.yoastTitle, els.yoastDesc].forEach(function (el) {
 			el.addEventListener('input', markDirty);
 		});
 
@@ -265,6 +266,7 @@
 		els.visualEditor.innerHTML = '';
 		els.htmlEditor.value = '';
 		els.excerpt.value = '';
+		els.tags.value = '';
 		els.yoastTitle.value = '';
 		els.yoastDesc.value = '';
 		els.scheduleToggle.checked = false;
@@ -324,6 +326,7 @@
 				els.title.value = data.title || '';
 				els.visualEditor.innerHTML = data.content_html || '';
 				els.excerpt.value = data.excerpt || '';
+				els.tags.value = data.tags || '';
 				state.featuredMediaId = data.featured_media || 0;
 				renderFeaturedPreview(data.featured_media_url || '');
 				renderCategories(data.category_ids || []);
@@ -384,6 +387,7 @@
 			title: title,
 			content_html: contentHtml,
 			excerpt: els.excerpt.value,
+			tags: els.tags.value,
 			category_ids: getCheckedCategoryIds(),
 			featured_media: state.featuredMediaId,
 			status: status,

@@ -207,6 +207,13 @@ class TWD_AP_REST {
 			}
 		}
 
+		// Tags.
+		if ( isset( $request['tags'] ) ) {
+			$raw_tags = sanitize_text_field( wp_unslash( $request['tags'] ) );
+			$tag_names = array_filter( array_map( 'trim', explode( ',', $raw_tags ) ) );
+			wp_set_post_tags( $post_id, $tag_names, false );
+		}
+
 		// Featured image.
 		if ( isset( $request['featured_media'] ) ) {
 			$media_id = absint( $request['featured_media'] );
@@ -268,6 +275,8 @@ class TWD_AP_REST {
 			$data['content_html'] = $post->post_content;
 			$data['yoast_title']  = get_post_meta( $post_id, '_yoast_wpseo_title', true );
 			$data['yoast_desc']   = get_post_meta( $post_id, '_yoast_wpseo_metadesc', true );
+			$post_tags            = wp_get_post_tags( $post_id, array( 'fields' => 'names' ) );
+			$data['tags']         = implode( ', ', $post_tags );
 		}
 
 		return $data;
