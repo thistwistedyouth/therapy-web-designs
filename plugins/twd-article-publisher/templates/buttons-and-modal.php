@@ -34,6 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 			<div class="twd-ap-modal-header-actions">
 				<a href="#" id="twd-ap-admin-edit-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Edit in WordPress ↗', 'twd-article-publisher' ); ?></a>
+				<a href="#" id="twd-ap-swipebook-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Swipe book link ↗', 'twd-article-publisher' ); ?></a>
 				<a href="<?php echo esc_url( TWD_AP_ARTICLE_ASSIST_URL ); ?>" class="twd-ap-assist-btn" target="_blank" rel="noopener"><?php esc_html_e( 'Article Assist', 'twd-article-publisher' ); ?></a>
 				<button type="button" id="twd-ap-help-btn" class="twd-ap-help-icon-btn" aria-label="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>">?</button>
 				<button type="button" id="twd-ap-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>

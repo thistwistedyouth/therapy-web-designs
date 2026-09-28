@@ -173,6 +173,24 @@
   border: 0 !important;
 }
 
+.twd-ap-swipebook-row {
+  margin: 1.6em 0 0 !important;
+}
+.twd-ap-swipebook-btn {
+  display: inline-block !important;
+  border: 1px solid #5b8a72 !important;
+  color: #5b8a72 !important;
+  background: #fff !important;
+  padding: 9px 18px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+.twd-ap-swipebook-btn:hover {
+  background: #f0f5f2 !important;
+}
+
 @media (max-width: 600px) {
   .twd-ap-article-content {
     font-size: 16px !important;

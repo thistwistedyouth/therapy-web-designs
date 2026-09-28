@@ -62,6 +62,7 @@
 		els.publishBtn = document.getElementById('twd-ap-publish-btn');
 		els.closeBtn = document.getElementById('twd-ap-close-btn');
 		els.adminEditLink = document.getElementById('twd-ap-admin-edit-link');
+		els.swipebookLink = document.getElementById('twd-ap-swipebook-link');
 		els.helpBtn = document.getElementById('twd-ap-help-btn');
 		els.helpOverlay = document.getElementById('twd-ap-help-overlay');
 		els.helpCloseBtn = document.getElementById('twd-ap-help-close-btn');
@@ -645,6 +646,7 @@
 		hideStatus();
 		els.yoastWrap.hidden = !TWD_AP.yoastEnabled;
 		renderCategories([]);
+		updateSwipebookLink('', '');
 	}
 
 	function switchTabImmediate(tab) {
@@ -656,6 +658,19 @@
 		els.htmlEditor.hidden = tab !== 'html';
 		els.jsonPanel.hidden = tab !== 'json';
 		els.toolbar.style.display = tab === 'visual' ? 'flex' : 'none';
+	}
+
+	function updateSwipebookLink(status, link) {
+		if (!els.swipebookLink) {
+			return;
+		}
+		if ('publish' !== status || !link) {
+			els.swipebookLink.hidden = true;
+			return;
+		}
+		var sep = link.indexOf('?') === -1 ? '?' : '&';
+		els.swipebookLink.href = link + sep + 'twd_ap_swipebook=1';
+		els.swipebookLink.hidden = false;
 	}
 
 	function openModal(mode, postId) {
@@ -676,6 +691,7 @@
 			els.publishBtn.textContent = 'Publish';
 			els.draftBtn.textContent = 'Save Draft';
 			els.adminEditLink.hidden = true;
+			updateSwipebookLink('', '');
 		}
 		els.overlay.hidden = false;
 		document.documentElement.style.overflow = 'hidden';
@@ -709,6 +725,7 @@
 					els.yoastTitle.value = data.yoast_title || '';
 					els.yoastDesc.value = data.yoast_desc || '';
 				}
+				updateSwipebookLink(data.status, data.link);
 				state.dirty = false;
 				hideStatus();
 			})
@@ -820,6 +837,7 @@
 				els.modalSubtitle.textContent = 'Editing article';
 				els.draftBtn.textContent = 'Save as Draft';
 				els.publishBtn.textContent = els.scheduleToggle.checked ? 'Schedule' : 'Update';
+				updateSwipebookLink(result.data.status, result.data.link);
 			})
 			.catch(function () {
 				setBusy(false);

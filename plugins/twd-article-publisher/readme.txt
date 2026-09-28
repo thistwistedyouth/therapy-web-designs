@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.11.1
+Stable tag: 1.12.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -31,6 +31,8 @@ The popup lets you:
 
 All pasted or written HTML is cleaned on the server before saving: scripts, inline styles and anything unsafe are stripped, and any H1 is converted to H2 so the page's own post title stays the only H1.
 
+Every published article can be viewed and shared as a swipe book: a full-screen, swipeable slide version of the same article, split automatically by heading and length. It is a live view generated on request, not a separate saved copy, so it always matches the article. Visit `[the article's URL]?twd_ap_swipebook=1`, or use the "View as a swipe book" link shown under every article, or the "Swipe book link" shown in the popup while editing a published article.
+
 Use the `[twd_articles]` shortcode on any page for a fully interactive resources grid: a search box, category pills, "Load more" pagination -- all client-side, no page reload. Featured articles show first, then newest-first. Attributes: `category` (slug), `tag` (slug), `count` (default 9, per page), `columns` (default 3, max 4). Example: `[twd_articles count="9" columns="3"]`.
 
 Give it an explicit `category` or `tag` attribute (e.g. `[twd_articles category="anxiety"]`) for a curated list without search/filters -- useful for a themed page. Or leave both off and drop the plain `[twd_articles]` shortcode straight onto a WordPress category or tag archive template (e.g. via Elementor Theme Builder): it automatically detects the current archive and shows only that category/tag's articles, so one shortcode works for every category page without hardcoding a slug per page.
@@ -53,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.12.0): every published article can now be viewed and shared as a
+swipe book. A "View as a swipe book" link appears under every article on
+the public site, splitting it into swipeable slides (by heading and
+length, no AI call needed) with a progress bar, swipe/arrow-key/button
+navigation, and a Share button. It is always a live view of the current
+article, generated fresh each time, so it never goes out of date and
+needs nothing saved separately. While editing an existing published
+article in the popup, a "Swipe book link" now also appears next to
+"Edit in WordPress" for a quick way to grab the link right after
+publishing.
 
 FIX (1.11.1): scrolling inside the popup could bleed through and scroll
 the page behind it once you reached the top or bottom of the popup's
