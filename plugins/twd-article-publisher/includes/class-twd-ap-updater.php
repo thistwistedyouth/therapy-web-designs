@@ -28,9 +28,25 @@ class TWD_AP_Updater {
 		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_for_update' ) );
 		add_filter( 'plugins_api', array( $this, 'plugin_info' ), 20, 3 );
 		add_filter( 'plugin_row_meta', array( $this, 'row_meta' ), 10, 2 );
+		add_filter( 'plugin_action_links_' . $this->plugin_basename(), array( $this, 'action_links' ) );
 		add_action( 'delete_site_transient_update_plugins', array( $this, 'clear_cache' ) );
 		add_action( 'upgrader_process_complete', array( $this, 'clear_cache' ) );
 		add_action( 'admin_post_twd_ap_check_updates', array( $this, 'handle_manual_check' ) );
+		add_action( 'admin_notices', array( $this, 'maybe_render_plugins_screen_notice' ) );
+	}
+
+	/**
+	 * Same "Check for updates" result notice Settings > Article Publisher
+	 * shows, but on the Plugins list screen instead -- only when the check
+	 * was actually triggered from there (?twd_ap_return=plugins), so it
+	 * never shows on an unrelated plugins.php load.
+	 */
+	public function maybe_render_plugins_screen_notice() {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || 'plugins' !== $screen->id ) {
+			return;
+		}
+		$this->render_checked_notice();
 	}
 
 	/**
@@ -52,6 +68,19 @@ class TWD_AP_Updater {
 
 		$remote = $this->get_remote_info();
 		$latest = $remote && ! empty( $remote->version ) ? $remote->version : '';
+
+		if ( isset( $_GET['twd_ap_return'] ) && 'plugins' === sanitize_key( wp_unslash( $_GET['twd_ap_return'] ) ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'twd_ap_checked' => 1,
+						'twd_ap_latest'  => rawurlencode( $latest ),
+					),
+					admin_url( 'plugins.php' )
+				)
+			);
+			exit;
+		}
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -161,6 +190,56 @@ class TWD_AP_Updater {
 		);
 
 		return $info;
+	}
+
+	/**
+	 * "Check for updates" action link on the plugin's own row on the Plugins
+	 * list screen, alongside Deactivate -- same nonce'd admin-post handler
+	 * the Settings > Article Publisher button already uses, so both trigger
+	 * the same immediate synchronous recheck rather than waiting on the
+	 * 12-hour cache. Redirects back to the Plugins list instead of Settings
+	 * when triggered from here, with the result appended so a notice can
+	 * show without needing to leave this screen.
+	 */
+	public function action_links( $links ) {
+		$url = wp_nonce_url(
+			add_query_arg( 'twd_ap_return', 'plugins', admin_url( 'admin-post.php?action=twd_ap_check_updates' ) ),
+			'twd_ap_check_updates'
+		);
+		$links[] = '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Check for updates', 'twd-article-publisher' ) . '</a>';
+		return $links;
+	}
+
+	/**
+	 * Shared result notice for a "Check for updates" click, used on both
+	 * Settings > Article Publisher and the Plugins list screen so the
+	 * message and logic only live in one place.
+	 */
+	public function render_checked_notice() {
+		if ( empty( $_GET['twd_ap_checked'] ) ) {
+			return;
+		}
+		$latest = isset( $_GET['twd_ap_latest'] ) ? sanitize_text_field( wp_unslash( $_GET['twd_ap_latest'] ) ) : '';
+
+		if ( '' === $latest ) {
+			echo '<div class="notice notice-warning is-dismissible"><p>' . esc_html__( 'Could not reach the update server just now. Try again shortly.', 'twd-article-publisher' ) . '</p></div>';
+			return;
+		}
+
+		if ( version_compare( $latest, TWD_AP_VERSION, '>' ) ) {
+			$screen  = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+			$message = ( $screen && 'plugins' === $screen->id )
+				/* translators: 1: currently installed version, 2: newer version available */
+				? esc_html__( 'A newer version is available: %2$s (you have %1$s). See the update below.', 'twd-article-publisher' )
+				/* translators: 1: currently installed version, 2: newer version available */
+				: esc_html__( 'A newer version is available: %2$s (you have %1$s). Go to Plugins to update.', 'twd-article-publisher' );
+			printf(
+				'<div class="notice notice-info is-dismissible"><p>%s</p></div>',
+				sprintf( $message, esc_html( TWD_AP_VERSION ), esc_html( $latest ) )
+			);
+		} else {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( "You're on the latest version.", 'twd-article-publisher' ) . '</p></div>';
+		}
 	}
 
 	public function row_meta( $links, $file ) {

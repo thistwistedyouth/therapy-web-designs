@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.10.0
+Stable tag: 1.10.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,12 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.10.1): a "Check for updates" link now sits right on the plugin's
+own row on the main Plugins list (next to Deactivate), so you no longer
+need to visit Settings > Article Publisher just to trigger an immediate
+check. Clicking it forces the same instant recheck and shows the result
+right there.
 
 NEW (1.10.0): an "Import JSON" tab lets you paste a JSON block (title,
 seo_title, meta_description, category, tags, html) and fill the whole

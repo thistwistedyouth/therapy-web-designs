@@ -87,7 +87,9 @@ class TWD_AP_Settings {
 			<h1><?php esc_html_e( 'Article Publisher Settings', 'twd-article-publisher' ); ?></h1>
 			<p><?php esc_html_e( 'Controls who can use the on-site article popup to publish and edit blog posts, and what happens by default.', 'twd-article-publisher' ); ?></p>
 
-			<?php $this->render_update_notice(); ?>
+			<?php if ( class_exists( 'TWD_AP_Updater' ) ) : ?>
+				<?php TWD_AP_Updater::instance()->render_checked_notice(); ?>
+			<?php endif; ?>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( 'twd_ap_settings_group' ); ?>
@@ -146,33 +148,5 @@ class TWD_AP_Settings {
 			<p class="description"><?php esc_html_e( 'Updates are self-hosted (not on WordPress.org) and normally checked automatically every 12 hours. Use this to check right now instead of waiting.', 'twd-article-publisher' ); ?></p>
 		</div>
 		<?php
-	}
-
-	private function render_update_notice() {
-		if ( empty( $_GET['twd_ap_checked'] ) ) {
-			return;
-		}
-		// phpcs friendly: this page is only reachable by manage_options users,
-		// and the value is only ever echoed back after esc_html below.
-		$latest = isset( $_GET['twd_ap_latest'] ) ? sanitize_text_field( wp_unslash( $_GET['twd_ap_latest'] ) ) : '';
-
-		if ( '' === $latest ) {
-			echo '<div class="notice notice-warning is-dismissible"><p>' . esc_html__( 'Could not reach the update server just now. Try again shortly.', 'twd-article-publisher' ) . '</p></div>';
-			return;
-		}
-
-		if ( version_compare( $latest, TWD_AP_VERSION, '>' ) ) {
-			printf(
-				'<div class="notice notice-info is-dismissible"><p>%s</p></div>',
-				sprintf(
-					/* translators: 1: currently installed version, 2: newer version available */
-					esc_html__( 'A newer version is available: %2$s (you have %1$s). Go to Plugins to update.', 'twd-article-publisher' ),
-					esc_html( TWD_AP_VERSION ),
-					esc_html( $latest )
-				)
-			);
-		} else {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( "You're on the latest version.", 'twd-article-publisher' ) . '</p></div>';
-		}
 	}
 }
