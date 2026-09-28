@@ -59,6 +59,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="twd-ap-section">
 				<p class="twd-ap-section-heading"><?php esc_html_e( 'Details', 'twd-article-publisher' ); ?></p>
 
+				<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
+					<input type="checkbox" id="twd-ap-featured-toggle" />
+					<?php esc_html_e( 'Feature this article (shows first on the resources grid)', 'twd-article-publisher' ); ?>
+				</label>
+
 				<div class="twd-ap-field-row">
 					<div class="twd-ap-field-col">
 						<label class="twd-ap-label"><?php esc_html_e( 'Featured image', 'twd-article-publisher' ); ?></label>

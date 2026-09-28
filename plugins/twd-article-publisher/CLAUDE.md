@@ -12,7 +12,7 @@ Not tied to any one client's design. Header, footer, page CSS, per-site palettes
 - An "Instructions for use" link opens a built-in help screen (toolbar/shortcode/AI-prompt reference) so a therapist never needs this file.
 - An "Edit in WordPress" link opens the normal wp-admin editor for the article being edited. Deliberately no "Edit with Elementor" link — see Conventions below.
 - Every published article gets its own baseline typography (`class-twd-ap-article-style.php` + `assets/article-content.css`) for every visitor, not just logged-in editors, so articles read well even on a bare Hello Elementor site with no custom Single Post template.
-- `[twd_articles category="" tag="" count="6" columns="3"]` shortcode renders a responsive card grid of published articles on any page.
+- `[twd_articles category="" tag="" count="9" columns="3"]` shortcode renders a fully interactive resources grid: search box, category pills, "Load more" pagination, all client-side against a public REST endpoint, no page reload. Featured articles (the "Feature this article" checkbox in the popup, stored as `_twd_ap_featured` post meta) sort first, then newest-first. Given an explicit `category`/`tag` attribute it becomes a curated list with no search/filter UI; given neither, it auto-detects `is_category()`/`is_tag()` so the same bare shortcode works unmodified as a per-category archive page.
 - Everything is a normal WordPress post underneath. Nothing here replaces or forks core post storage; this is a front-end convenience layer over `wp_insert_post` / `wp_update_post`.
 
 ## Why it's built this way
@@ -24,6 +24,9 @@ Not tied to any one client's design. Header, footer, page CSS, per-site palettes
 - **No "Edit with Elementor" button, on purpose.** Once a post is opened and saved in Elementor's builder, Elementor can switch it to render from its own `_elementor_data` postmeta instead of `post_content` on the front end — which would make future edits made through this popup silently stop showing up. That tradeoff isn't this plugin's to make for a client site, so only a plain "Edit in WordPress" (classic wp-admin editor) link is offered.
 - **YouTube embeds are click-to-play placeholders, not raw iframes.** The sanitiser's allow-list stays narrow (no `iframe` tag at all) by storing `<figure data-youtube-id="...">` with a thumbnail `<img>`, and swapping it for a real `youtube-nocookie.com` iframe client-side (`assets/article-content.js`) only when a visitor clicks it. Don't "simplify" this by allowing raw iframes through `wp_kses` — that reopens the exact hole the sanitiser exists to close.
 - **Image alignment/resize uses `width`/`height` attributes, never inline `style`.** `wp_kses` doesn't allow a `style` attribute on `img`, so the resize handle in `assets/publisher.js` sets `width`/`height` attributes directly instead — that survives sanitisation. Alignment is CSS classes (`twd-ap-img-left/-center/-right/-full`), mirrored in both `publisher.css` (editor) and `article-content.css` (public), so what you build in the popup matches what visitors see.
+- **`/articles` and `/articles/facets` REST routes are genuinely public** (`permission_callback => '__return_true'`) — the only routes in this plugin that are, since everything else gates on `check_permission()`. That's deliberate: the `[twd_articles]` grid has to work for anonymous site visitors, not just logged-in editors. Both only ever read published posts/terms; neither accepts anything that touches `wp_insert_post`/`wp_update_post`, so this doesn't reopen the write-path security model the rest of the REST class exists to enforce.
+- **Featured-first ordering uses a bare `meta_key`, not a `meta_query`.** `list_articles()` sets `'meta_key' => '_twd_ap_featured'` directly (no `meta_query` wrapper) so WP_Query does a LEFT JOIN and orders by it, rather than filtering posts down to only those that have the meta at all. A `meta_query` clause here would silently exclude every non-featured post from the grid — a genuinely easy mistake to reintroduce if this gets "cleaned up" later.
+- **`assets/articles-grid.css`/`.js` are enqueued unconditionally on every front-end page** (`wp_enqueue_scripts`, no `has_shortcode()` gate), same reasoning as `class-twd-ap-article-style.php`: a shortcode inside an Elementor widget lives in `_elementor_data` JSON, not plain `post_content`, so `has_shortcode()` can't reliably see it there, and enqueuing from inside the shortcode's own render callback is too late — that runs after `wp_head` has already fired on most themes, so the stylesheet would often not make it into `<head>` at all. Both files are small enough that loading them site-wide is the cheaper trade.
 
 ## File map
 
@@ -31,16 +34,18 @@ Not tied to any one client's design. Header, footer, page CSS, per-site palettes
 twd-article-publisher.php                Plugin bootstrap, loads all classes below
 includes/class-twd-ap-settings.php       Settings > Article Publisher screen; allowed roles, default category
 includes/class-twd-ap-sanitizer.php      TWD_AP_Sanitizer::clean() — the one place HTML gets cleaned
-includes/class-twd-ap-rest.php           REST routes: /categories, /tags, /posts, /posts/{id}, /media
+includes/class-twd-ap-rest.php           REST routes: /categories, /tags, /posts, /posts/{id}, /media, /articles, /articles/facets
 includes/class-twd-ap-frontend.php       Enqueues editor assets, decides which buttons show, capability gate
-includes/class-twd-ap-shortcode.php      [twd_articles] card-grid shortcode
+includes/class-twd-ap-shortcode.php      [twd_articles] shortcode -- renders the grid container/config, enqueues its assets site-wide
 includes/class-twd-ap-article-style.php  Public article typography — the_content wrap + unconditional CSS enqueue
 includes/class-twd-ap-updater.php        Self-hosted update checker (admin-only); see Releases section below
 templates/buttons-and-modal.php          The popup's HTML skeleton + the help modal (PHP-rendered once per page load)
 assets/publisher.css                     Popup, button and image-toolbar styling (neutral, not client-branded)
 assets/publisher.js                      All popup behaviour: tabs, toolbar, media picker, image align/resize, REST calls
-assets/article-content.css               Public-facing article typography + YouTube/alignment styles
+assets/article-content.css               Public-facing single-article typography + YouTube/alignment styles
 assets/article-content.js                Click-to-play swap for YouTube placeholders, public-facing
+assets/articles-grid.css                 Public-facing [twd_articles] grid, toolbar, pills and card styling
+assets/articles-grid.js                  Public-facing [twd_articles] behaviour: search (debounced), category pills, Load more, fetches /articles
 readme.txt                               Standard WP plugin readme (also shown in Plugins list)
 ```
 

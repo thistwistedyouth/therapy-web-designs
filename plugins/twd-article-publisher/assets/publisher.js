@@ -35,6 +35,7 @@
 		els.featuredPreview = document.getElementById('twd-ap-featured-preview');
 		els.featuredSelect = document.getElementById('twd-ap-featured-select');
 		els.featuredRemove = document.getElementById('twd-ap-featured-remove');
+		els.featuredToggle = document.getElementById('twd-ap-featured-toggle');
 		els.categories = document.getElementById('twd-ap-categories');
 		els.catAddInput = document.getElementById('twd-ap-cat-add-input');
 		els.catAddBtn = document.getElementById('twd-ap-cat-add-btn');
@@ -178,6 +179,8 @@
 		});
 		window.addEventListener('scroll', repositionImgUi, true);
 		window.addEventListener('resize', repositionImgUi);
+
+		els.featuredToggle.addEventListener('change', markDirty);
 
 		els.catAddBtn.addEventListener('click', addCategory);
 		els.catAddInput.addEventListener('keydown', function (e) {
@@ -537,6 +540,7 @@
 		els.excerpt.value = '';
 		els.tags.value = '';
 		els.catAddInput.value = '';
+		els.featuredToggle.checked = false;
 		els.yoastTitle.value = '';
 		els.yoastDesc.value = '';
 		els.scheduleToggle.checked = false;
@@ -602,6 +606,7 @@
 				els.visualEditor.innerHTML = data.content_html || '';
 				els.excerpt.value = data.excerpt || '';
 				els.tags.value = data.tags || '';
+				els.featuredToggle.checked = !!data.featured;
 				state.featuredMediaId = data.featured_media || 0;
 				renderFeaturedPreview(data.featured_media_url || '');
 				renderCategories(data.category_ids || []);
@@ -666,6 +671,7 @@
 			content_html: contentHtml,
 			excerpt: els.excerpt.value,
 			tags: els.tags.value,
+			featured: els.featuredToggle.checked,
 			category_ids: getCheckedCategoryIds(),
 			featured_media: state.featuredMediaId,
 			status: status,

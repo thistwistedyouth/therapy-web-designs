@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,12 +24,15 @@ The popup lets you:
 * Write an excerpt
 * Set the Yoast SEO title and meta description, if Yoast SEO is active
 * Save as a draft, publish immediately, or schedule for a future date and time
+* Tick "Feature this article" to pin it to the top of the `[twd_articles]` grid, ahead of newest-first
 * Reopen and edit any article you have permission to edit, in the same popup
 * While editing, an "Edit in WordPress" link opens the normal wp-admin post editor for that article in a new tab. Deliberately no "Edit with Elementor" link: switching a post into Elementor's builder mode can make it render from Elementor's own saved layout instead of post_content, which would silently stop reflecting future edits made through this popup.
 
 All pasted or written HTML is cleaned on the server before saving: scripts, inline styles and anything unsafe are stripped, and any H1 is converted to H2 so the page's own post title stays the only H1.
 
-Use the `[twd_articles]` shortcode on any page to display a card grid of published articles. Attributes: `category` (slug), `tag` (slug), `count` (default 6), `columns` (default 3, max 4). Example: `[twd_articles category="anxiety" count="9" columns="3"]`.
+Use the `[twd_articles]` shortcode on any page for a fully interactive resources grid: a search box, category pills, "Load more" pagination -- all client-side, no page reload. Featured articles show first, then newest-first. Attributes: `category` (slug), `tag` (slug), `count` (default 9, per page), `columns` (default 3, max 4). Example: `[twd_articles count="9" columns="3"]`.
+
+Give it an explicit `category` or `tag` attribute (e.g. `[twd_articles category="anxiety"]`) for a curated list without search/filters -- useful for a themed page. Or leave both off and drop the plain `[twd_articles]` shortcode straight onto a WordPress category or tag archive template (e.g. via Elementor Theme Builder): it automatically detects the current archive and shows only that category/tag's articles, so one shortcode works for every category page without hardcoding a slug per page.
 
 An "Instructions for use" link at the bottom of the popup opens a built-in help screen covering the toolbar, categories/tags, the `[twd_articles]` shortcode (with a copy button), and a ready-to-copy AI prompt for drafting compatible HTML articles.
 

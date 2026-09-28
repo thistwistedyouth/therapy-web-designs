@@ -3,10 +3,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * [twd_articles] renders a self-contained, JS-driven grid that fetches from
+ * the public /articles REST route (search, category, tag, pagination all
+ * happen client-side with no page reload). When no category/tag attribute
+ * is given and the shortcode sits on a real category or tag archive page,
+ * it auto-detects that term so the same shortcode works unmodified as a
+ * per-category "resources" page.
+ */
 class TWD_AP_Shortcode {
 
 	private static $instance = null;
-	private static $styles_printed = false;
+	private static $instance_count = 0;
 
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -17,6 +25,36 @@ class TWD_AP_Shortcode {
 
 	private function __construct() {
 		add_shortcode( 'twd_articles', array( $this, 'render' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+	}
+
+	/**
+	 * Registered unconditionally on every front-end page (not gated on
+	 * has_shortcode()) deliberately: a shortcode inside an Elementor
+	 * widget lives in _elementor_data JSON, not plain post_content, so
+	 * has_shortcode() can't reliably detect it there. The files are tiny,
+	 * so loading them site-wide is a fine trade for not missing the
+	 * enqueue window (styles queued after wp_head has already fired --
+	 * which is when the shortcode itself renders -- don't reliably make
+	 * it into <head> on most themes).
+	 */
+	public function enqueue_assets() {
+		if ( is_admin() ) {
+			return;
+		}
+		wp_enqueue_style(
+			'twd-ap-articles-grid',
+			TWD_AP_URL . 'assets/articles-grid.css',
+			array(),
+			TWD_AP_VERSION
+		);
+		wp_enqueue_script(
+			'twd-ap-articles-grid',
+			TWD_AP_URL . 'assets/articles-grid.js',
+			array(),
+			TWD_AP_VERSION,
+			true
+		);
 	}
 
 	public function render( $atts ) {
@@ -24,158 +62,52 @@ class TWD_AP_Shortcode {
 			array(
 				'category' => '',
 				'tag'      => '',
-				'count'    => 6,
+				'count'    => 9,
 				'columns'  => 3,
 			),
 			$atts,
 			'twd_articles'
 		);
 
-		$columns = max( 1, min( 4, (int) $atts['columns'] ) );
+		if ( '' === $atts['category'] && '' === $atts['tag'] ) {
+			if ( is_category() ) {
+				$atts['category'] = get_queried_object()->slug;
+			} elseif ( is_tag() ) {
+				$atts['tag'] = get_queried_object()->slug;
+			}
+		}
 
-		$query_args = array(
-			'post_type'      => 'post',
-			'post_status'    => 'publish',
-			'posts_per_page' => max( 1, (int) $atts['count'] ),
-			'no_found_rows'  => true,
+		self::$instance_count++;
+		$instance_id = 'twd-ap-grid-' . self::$instance_count;
+		$columns     = max( 1, min( 4, (int) $atts['columns'] ) );
+		$show_filters = ( '' === $atts['category'] && '' === $atts['tag'] );
+
+		$config = array(
+			'restUrl'     => esc_url_raw( rest_url( 'twd-publisher/v1' ) ),
+			'category'    => sanitize_title( $atts['category'] ),
+			'tag'         => sanitize_title( $atts['tag'] ),
+			'count'       => max( 1, (int) $atts['count'] ),
+			'showFilters' => $show_filters,
 		);
 
-		if ( '' !== $atts['category'] ) {
-			$query_args['category_name'] = sanitize_title( $atts['category'] );
-		}
-		if ( '' !== $atts['tag'] ) {
-			$query_args['tag'] = sanitize_title( $atts['tag'] );
-		}
-
-		$query = new WP_Query( $query_args );
-
-		if ( ! $query->have_posts() ) {
-			return '<p class="twd-ap-articles-empty">' . esc_html__( 'No articles to show yet.', 'twd-article-publisher' ) . '</p>';
-		}
-
 		ob_start();
-
-		$this->print_styles_once();
 		?>
-		<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: <?php echo esc_attr( $columns ); ?>;">
-			<?php
-			while ( $query->have_posts() ) :
-				$query->the_post();
-				?>
-				<a class="twd-ap-article-card" href="<?php echo esc_url( get_permalink() ); ?>">
-					<?php if ( has_post_thumbnail() ) : ?>
-						<span class="twd-ap-article-thumb" style="background-image: url('<?php echo esc_url( get_the_post_thumbnail_url( get_the_ID(), 'large' ) ); ?>');"></span>
-					<?php else : ?>
-						<span class="twd-ap-article-thumb twd-ap-article-thumb-placeholder" aria-hidden="true">
-							<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
-								<rect x="3" y="4" width="18" height="16" rx="2" />
-								<circle cx="8.5" cy="9.5" r="1.5" />
-								<path d="M21 16l-5.5-5.5-4 4L8 11l-5 5" />
-							</svg>
-						</span>
-					<?php endif; ?>
-					<span class="twd-ap-article-body">
-						<span class="twd-ap-article-date"><?php echo esc_html( get_the_date() ); ?></span>
-						<span class="twd-ap-article-title"><?php echo esc_html( get_the_title() ); ?></span>
-						<span class="twd-ap-article-excerpt"><?php echo esc_html( wp_trim_words( get_the_excerpt(), 20 ) ); ?></span>
-						<span class="twd-ap-article-readmore"><?php esc_html_e( 'Read more', 'twd-article-publisher' ); ?></span>
-					</span>
-				</a>
-				<?php
-			endwhile;
-			wp_reset_postdata();
-			?>
+		<div id="<?php echo esc_attr( $instance_id ); ?>" class="twd-ap-articles" data-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
+			<?php if ( $show_filters ) : ?>
+				<div class="twd-ap-articles-toolbar">
+					<input type="search" class="twd-ap-articles-search" placeholder="<?php esc_attr_e( 'Search articles…', 'twd-article-publisher' ); ?>" aria-label="<?php esc_attr_e( 'Search articles', 'twd-article-publisher' ); ?>" />
+					<div class="twd-ap-articles-pills" aria-label="<?php esc_attr_e( 'Filter by category', 'twd-article-publisher' ); ?>"></div>
+				</div>
+			<?php endif; ?>
+			<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: <?php echo esc_attr( $columns ); ?>;">
+				<p class="twd-ap-muted"><?php esc_html_e( 'Loading articles…', 'twd-article-publisher' ); ?></p>
+			</div>
+			<p class="twd-ap-articles-empty" hidden><?php esc_html_e( 'No articles match your filters.', 'twd-article-publisher' ); ?></p>
+			<div class="twd-ap-articles-loadmore-row">
+				<button type="button" class="twd-ap-articles-loadmore" hidden><?php esc_html_e( 'Load more', 'twd-article-publisher' ); ?></button>
+			</div>
 		</div>
 		<?php
 		return ob_get_clean();
-	}
-
-	private function print_styles_once() {
-		if ( self::$styles_printed ) {
-			return;
-		}
-		self::$styles_printed = true;
-		?>
-		<style>
-			.twd-ap-articles-grid {
-				display: grid !important;
-				grid-template-columns: repeat(var(--twd-ap-articles-columns, 3), 1fr) !important;
-				gap: 24px !important;
-				margin: 0 !important;
-				padding: 0 !important;
-			}
-			.twd-ap-article-card {
-				display: flex !important;
-				flex-direction: column !important;
-				background: #fff !important;
-				border: 1px solid #e5e7eb !important;
-				border-radius: 12px !important;
-				overflow: hidden !important;
-				text-decoration: none !important;
-				box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06) !important;
-				transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-			}
-			.twd-ap-article-card:hover {
-				transform: translateY(-3px) !important;
-				box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12) !important;
-			}
-			.twd-ap-article-thumb {
-				display: block !important;
-				width: 100% !important;
-				height: 170px !important;
-				flex-shrink: 0 !important;
-				background-color: #f3f4f6 !important;
-				background-size: cover !important;
-				background-position: center !important;
-			}
-			.twd-ap-article-thumb-placeholder {
-				display: flex !important;
-				align-items: center !important;
-				justify-content: center !important;
-				background: linear-gradient(135deg, #eef2ff, #f3f4f6) !important;
-				color: #9ca3af !important;
-			}
-			.twd-ap-article-body {
-				display: flex !important;
-				flex-direction: column !important;
-				gap: 6px !important;
-				padding: 18px !important;
-			}
-			.twd-ap-article-date {
-				font-size: 12px !important;
-				color: #6b7280 !important;
-				text-transform: uppercase !important;
-				letter-spacing: 0.05em !important;
-			}
-			.twd-ap-article-title {
-				font-size: 17px !important;
-				font-weight: 700 !important;
-				color: #1f2937 !important;
-				line-height: 1.35 !important;
-			}
-			.twd-ap-article-excerpt {
-				font-size: 14px !important;
-				color: #4b5563 !important;
-				line-height: 1.5 !important;
-			}
-			.twd-ap-article-readmore {
-				margin-top: 6px !important;
-				font-size: 13px !important;
-				font-weight: 700 !important;
-				color: #2563eb !important;
-			}
-			@media (max-width: 900px) {
-				.twd-ap-articles-grid {
-					grid-template-columns: repeat(2, 1fr) !important;
-				}
-			}
-			@media (max-width: 600px) {
-				.twd-ap-articles-grid {
-					grid-template-columns: 1fr !important;
-				}
-			}
-		</style>
-		<?php
 	}
 }

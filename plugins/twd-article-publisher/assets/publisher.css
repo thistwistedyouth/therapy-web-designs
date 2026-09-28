@@ -219,6 +219,10 @@
   padding-top: 18px;
   border-top: 1px solid var(--twd-ap-border);
 }
+.twd-ap-feature-toggle {
+  margin-bottom: 16px;
+  font-weight: 600;
+}
 
 .twd-ap-btn-secondary {
   border: 1px solid var(--twd-ap-border) !important;

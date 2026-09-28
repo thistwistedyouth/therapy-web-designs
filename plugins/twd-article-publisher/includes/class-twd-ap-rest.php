@@ -83,6 +83,26 @@ class TWD_AP_REST {
 				'permission_callback' => array( $this, 'check_permission' ),
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/articles',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'list_articles' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/articles/facets',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'list_facets' ),
+				'permission_callback' => '__return_true',
+			)
+		);
 	}
 
 	public function check_permission() {
@@ -269,6 +289,15 @@ class TWD_AP_REST {
 			wp_set_post_tags( $post_id, $tag_names, false );
 		}
 
+		// Featured (pins to the top of the [twd_articles] grid).
+		if ( isset( $request['featured'] ) ) {
+			if ( $request['featured'] ) {
+				update_post_meta( $post_id, '_twd_ap_featured', 1 );
+			} else {
+				delete_post_meta( $post_id, '_twd_ap_featured' );
+			}
+		}
+
 		// Featured image.
 		if ( isset( $request['featured_media'] ) ) {
 			$media_id = absint( $request['featured_media'] );
@@ -332,9 +361,103 @@ class TWD_AP_REST {
 			$data['yoast_desc']   = get_post_meta( $post_id, '_yoast_wpseo_metadesc', true );
 			$post_tags            = wp_get_post_tags( $post_id, array( 'fields' => 'names' ) );
 			$data['tags']         = implode( ', ', $post_tags );
+			$data['featured']     = (bool) get_post_meta( $post_id, '_twd_ap_featured', true );
 		}
 
 		return $data;
+	}
+
+	public function list_articles( $request ) {
+		$search   = isset( $request['search'] ) ? sanitize_text_field( wp_unslash( $request['search'] ) ) : '';
+		$category = isset( $request['category'] ) ? sanitize_title( wp_unslash( $request['category'] ) ) : '';
+		$tag      = isset( $request['tag'] ) ? sanitize_title( wp_unslash( $request['tag'] ) ) : '';
+		$page     = isset( $request['page'] ) ? max( 1, (int) $request['page'] ) : 1;
+		$per_page = isset( $request['per_page'] ) ? max( 1, min( 24, (int) $request['per_page'] ) ) : 9;
+
+		$query_args = array(
+			'post_type'      => 'post',
+			'post_status'    => 'publish',
+			'posts_per_page' => $per_page,
+			'paged'          => $page,
+			// A plain meta_key (no meta_query) LEFT JOINs postmeta rather than
+			// filtering by it, so posts with no featured flag still show up,
+			// sorted after the featured ones instead of being excluded.
+			'meta_key'       => '_twd_ap_featured',
+			'orderby'        => array(
+				'meta_value_num' => 'DESC',
+				'date'           => 'DESC',
+			),
+		);
+
+		if ( '' !== $search ) {
+			$query_args['s'] = $search;
+		}
+		if ( '' !== $category ) {
+			$query_args['category_name'] = $category;
+		}
+		if ( '' !== $tag ) {
+			$query_args['tag'] = $tag;
+		}
+
+		$query = new WP_Query( $query_args );
+
+		$items = array();
+		foreach ( $query->posts as $post ) {
+			$thumb_id   = get_post_thumbnail_id( $post );
+			$cats       = get_the_category( $post->ID );
+			$word_count = str_word_count( wp_strip_all_tags( $post->post_content ) );
+			$excerpt    = $post->post_excerpt ? $post->post_excerpt : wp_strip_all_tags( $post->post_content );
+
+			$items[] = array(
+				'id'           => $post->ID,
+				'title'        => get_the_title( $post ),
+				'excerpt'      => wp_trim_words( $excerpt, 22 ),
+				'link'         => get_permalink( $post ),
+				'date'         => get_the_date( '', $post ),
+				'reading_time' => max( 1, (int) ceil( $word_count / 200 ) ),
+				'thumbnail'    => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '',
+				'category'     => ! empty( $cats ) ? $cats[0]->name : '',
+				'featured'     => (bool) get_post_meta( $post->ID, '_twd_ap_featured', true ),
+			);
+		}
+
+		return rest_ensure_response(
+			array(
+				'items'       => $items,
+				'page'        => $page,
+				'total_pages' => (int) $query->max_num_pages,
+				'total'       => (int) $query->found_posts,
+			)
+		);
+	}
+
+	public function list_facets() {
+		$cats = get_categories( array( 'hide_empty' => true ) );
+		$tags = get_tags( array( 'hide_empty' => true ) );
+
+		return rest_ensure_response(
+			array(
+				'categories' => array_map(
+					function ( $c ) {
+						return array(
+							'name'  => $c->name,
+							'slug'  => $c->slug,
+							'count' => (int) $c->count,
+						);
+					},
+					$cats
+				),
+				'tags'       => array_map(
+					function ( $t ) {
+						return array(
+							'name' => $t->name,
+							'slug' => $t->slug,
+						);
+					},
+					$tags
+				),
+			)
+		);
 	}
 
 	public function upload_media( $request ) {
