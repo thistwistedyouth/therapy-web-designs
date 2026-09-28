@@ -1,0 +1,104 @@
+.twd-ap-article-content {
+  --twd-ap-content-text: #1f2937;
+  --twd-ap-content-muted: #6b7280;
+  --twd-ap-content-link: #2563eb;
+  --twd-ap-content-border: #e5e7eb;
+  max-width: 720px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 17px !important;
+  line-height: 1.75 !important;
+  color: var(--twd-ap-content-text) !important;
+}
+
+.twd-ap-article-content p {
+  margin: 0 0 1.2em !important;
+  color: var(--twd-ap-content-text) !important;
+}
+
+.twd-ap-article-content h2 {
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  margin: 1.6em 0 0.6em !important;
+  color: var(--twd-ap-content-text) !important;
+}
+.twd-ap-article-content h3 {
+  font-size: 21px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  margin: 1.4em 0 0.5em !important;
+  color: var(--twd-ap-content-text) !important;
+}
+.twd-ap-article-content h4 {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  margin: 1.2em 0 0.5em !important;
+  color: var(--twd-ap-content-text) !important;
+}
+.twd-ap-article-content h2:first-child,
+.twd-ap-article-content h3:first-child,
+.twd-ap-article-content h4:first-child {
+  margin-top: 0 !important;
+}
+
+.twd-ap-article-content ul,
+.twd-ap-article-content ol {
+  margin: 0 0 1.2em !important;
+  padding-left: 1.4em !important;
+}
+.twd-ap-article-content li {
+  margin-bottom: 0.4em !important;
+  color: var(--twd-ap-content-text) !important;
+}
+
+.twd-ap-article-content blockquote {
+  margin: 1.4em 0 !important;
+  padding: 0.4em 0 0.4em 1.2em !important;
+  border-left: 3px solid var(--twd-ap-content-link) !important;
+  color: var(--twd-ap-content-muted) !important;
+  font-style: italic !important;
+}
+
+.twd-ap-article-content hr {
+  border: none !important;
+  border-top: 1px solid var(--twd-ap-content-border) !important;
+  margin: 2em 0 !important;
+}
+
+.twd-ap-article-content a {
+  color: var(--twd-ap-content-link) !important;
+  text-decoration: underline !important;
+}
+
+.twd-ap-article-content strong,
+.twd-ap-article-content b {
+  font-weight: 700 !important;
+}
+
+.twd-ap-article-content figure {
+  margin: 1.6em 0 !important;
+}
+.twd-ap-article-content img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 8px !important;
+  display: block !important;
+}
+.twd-ap-article-content figcaption {
+  margin-top: 0.5em !important;
+  font-size: 13px !important;
+  color: var(--twd-ap-content-muted) !important;
+  text-align: center !important;
+}
+
+@media (max-width: 600px) {
+  .twd-ap-article-content {
+    font-size: 16px !important;
+  }
+  .twd-ap-article-content h2 {
+    font-size: 22px !important;
+  }
+  .twd-ap-article-content h3 {
+    font-size: 19px !important;
+  }
+}

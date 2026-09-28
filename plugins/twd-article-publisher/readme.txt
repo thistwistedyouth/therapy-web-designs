@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,8 @@ The popup lets you:
 All pasted or written HTML is cleaned on the server before saving: scripts, inline styles and anything unsafe are stripped, and any H1 is converted to H2 so the page's own post title stays the only H1.
 
 Use the `[twd_articles]` shortcode on any page to display a card grid of published articles. Attributes: `category` (slug), `tag` (slug), `count` (default 6), `columns` (default 3, max 4). Example: `[twd_articles category="anxiety" count="9" columns="3"]`.
+
+Every article page automatically gets its own built-in typography (headings, paragraphs, lists, blockquotes, images) so it reads well on any theme, even a bare Hello Elementor site with no custom Single Post template designed yet.
 
 == Installation ==
 
