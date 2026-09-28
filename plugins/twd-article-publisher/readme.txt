@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,6 +18,7 @@ The popup lets you:
 
 * Write in a simple visual editor, or switch to an HTML tab and paste AI-formatted HTML
 * Insert images inline from the Media Library or upload, and embed YouTube videos by pasting a link
+* Click any inline image to align it left, center, right or full-width, and drag its corner handle to resize it
 * Tag one or more categories (or add a new one on the fly), and add tags (comma separated, with autocomplete from existing tags)
 * Set a featured image from the Media Library
 * Write an excerpt

@@ -62,6 +62,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<div class="twd-ap-field-col">
 						<label class="twd-ap-label"><?php esc_html_e( 'Featured image', 'twd-article-publisher' ); ?></label>
 						<div id="twd-ap-featured-preview" class="twd-ap-featured-preview"></div>
+						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Recommended 3:2 (e.g. 1200×800px)', 'twd-article-publisher' ); ?></p>
 						<div class="twd-ap-btn-row">
 							<button type="button" id="twd-ap-featured-select" class="twd-ap-btn-secondary"><?php esc_html_e( 'Choose Image', 'twd-article-publisher' ); ?></button>
 							<button type="button" id="twd-ap-featured-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
