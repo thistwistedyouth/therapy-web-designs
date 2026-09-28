@@ -105,8 +105,69 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<div class="twd-ap-modal-footer">
+			<button type="button" id="twd-ap-help-btn" class="twd-ap-btn-text twd-ap-help-btn"><?php esc_html_e( 'Instructions for use', 'twd-article-publisher' ); ?></button>
+			<div class="twd-ap-footer-spacer"></div>
 			<button type="button" id="twd-ap-draft-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Save Draft', 'twd-article-publisher' ); ?></button>
 			<button type="button" id="twd-ap-publish-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Publish', 'twd-article-publisher' ); ?></button>
+		</div>
+	</div>
+</div>
+
+<div id="twd-ap-help-overlay" class="twd-ap-overlay twd-ap-help-overlay" hidden>
+	<div id="twd-ap-help-modal" class="twd-ap-modal" role="dialog" aria-modal="true" aria-labelledby="twd-ap-help-title">
+		<div class="twd-ap-modal-header">
+			<p id="twd-ap-help-title" class="twd-ap-modal-title"><?php esc_html_e( 'Instructions for use', 'twd-article-publisher' ); ?></p>
+			<button type="button" id="twd-ap-help-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
+		</div>
+		<div class="twd-ap-modal-body twd-ap-help-body">
+
+			<p class="twd-ap-section-heading"><?php esc_html_e( 'Writing an article', 'twd-article-publisher' ); ?></p>
+			<ul class="twd-ap-help-list">
+				<li><?php esc_html_e( 'Write directly in the Visual tab, or write with an AI assistant and paste the HTML into the HTML tab (see the AI prompt below).', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Use the toolbar for headings, bold/italic, lists and quotes. Only H2/H3/H4 are available; any H1 you paste in is automatically changed to H2 so it never clashes with the page\'s own title.', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Click the Image button to insert a photo inline from your Media Library or by uploading a new one.', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Click the YouTube button and paste a video link to embed it. It only loads when a visitor clicks play.', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Click any inline image to align it left/center/right/full-width, and drag its bottom-right corner to resize it.', 'twd-article-publisher' ); ?></li>
+			</ul>
+
+			<p class="twd-ap-section-heading twd-ap-spaced"><?php esc_html_e( 'Details, categories & tags', 'twd-article-publisher' ); ?></p>
+			<ul class="twd-ap-help-list">
+				<li><?php esc_html_e( 'Featured image should be roughly 3:2 (e.g. 1200×800px) so it isn\'t cropped oddly on article cards.', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Tick as many categories as apply, or type a new one under the list and click Add.', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Tags are comma separated (e.g. anxiety, self-care, mindfulness). Start typing to see existing tags.', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Save Draft any time to save your progress without publishing. Tick "Schedule for later" to publish automatically at a future date and time.', 'twd-article-publisher' ); ?></li>
+			</ul>
+
+			<p class="twd-ap-section-heading twd-ap-spaced"><?php esc_html_e( 'Showing articles on a page', 'twd-article-publisher' ); ?></p>
+			<p><?php esc_html_e( 'Add this shortcode to any page (e.g. in an Elementor Shortcode or HTML widget) to display a grid of published articles:', 'twd-article-publisher' ); ?></p>
+			<div class="twd-ap-code-row">
+				<code id="twd-ap-shortcode-example">[twd_articles count="6" columns="3"]</code>
+				<button type="button" id="twd-ap-copy-shortcode-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Copy', 'twd-article-publisher' ); ?></button>
+			</div>
+			<p class="twd-ap-muted"><?php esc_html_e( 'Optional: category="slug", tag="slug", count="6", columns="3" (max 4).', 'twd-article-publisher' ); ?></p>
+
+			<p class="twd-ap-section-heading twd-ap-spaced"><?php esc_html_e( 'Writing HTML articles with an AI prompt', 'twd-article-publisher' ); ?></p>
+			<p><?php esc_html_e( 'Copy this prompt into ChatGPT, Claude or similar, fill in the brackets, then paste the HTML it gives you into the HTML tab above:', 'twd-article-publisher' ); ?></p>
+			<div class="twd-ap-code-row twd-ap-code-row-block">
+				<pre id="twd-ap-ai-prompt-example">Write a blog article as valid HTML only, following these rules:
+- Do not include an &lt;h1&gt; tag. Start with &lt;h2&gt; for the first heading, and use &lt;h3&gt; for subheadings.
+- Only use these tags: &lt;p&gt;, &lt;h2&gt;, &lt;h3&gt;, &lt;h4&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;, &lt;blockquote&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;a href=""&gt;, &lt;hr&gt;.
+- No inline styles, no &lt;div&gt;, &lt;span&gt;, &lt;table&gt; or &lt;script&gt; tags -- they will be stripped out.
+- Keep paragraphs short (2-4 sentences) with a subheading every 2-3 paragraphs.
+- Topic: [describe your topic]
+- Audience: [e.g. anxious first-time therapy clients]
+- Tone: [e.g. warm, reassuring, plain-English]
+- Length: [e.g. 600-800 words]</pre>
+				<button type="button" id="twd-ap-copy-prompt-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Copy prompt', 'twd-article-publisher' ); ?></button>
+			</div>
+			<p class="twd-ap-muted"><?php esc_html_e( 'The AI can\'t add real images or a real featured image for you -- add those yourself afterwards using the Image button and the Featured image picker.', 'twd-article-publisher' ); ?></p>
+
+			<p class="twd-ap-section-heading twd-ap-spaced"><?php esc_html_e( 'Editing an existing article', 'twd-article-publisher' ); ?></p>
+			<ul class="twd-ap-help-list">
+				<li><?php esc_html_e( 'Open any article you can edit and click "Edit This Article" to change it in this same popup.', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'The "Edit in WordPress" link opens the normal WordPress editor for advanced changes. Avoid using Elementor to edit articles published here -- once a post is edited in Elementor, further edits made in this popup may stop appearing on the page.', 'twd-article-publisher' ); ?></li>
+			</ul>
+
 		</div>
 	</div>
 </div>

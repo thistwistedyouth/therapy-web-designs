@@ -474,11 +474,72 @@
 
 .twd-ap-modal-footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 10px;
   padding: 16px 22px;
   border-top: 1px solid var(--twd-ap-border);
   background: var(--twd-ap-bg-soft);
+}
+.twd-ap-footer-spacer {
+  flex: 1 1 auto;
+}
+.twd-ap-help-btn {
+  color: var(--twd-ap-muted) !important;
+  font-size: 13px !important;
+  text-decoration: underline !important;
+}
+.twd-ap-help-btn:hover {
+  color: var(--twd-ap-text) !important;
+}
+
+.twd-ap-help-overlay {
+  z-index: 100010 !important;
+}
+.twd-ap-help-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--twd-ap-text);
+}
+.twd-ap-help-list {
+  margin: 0 0 4px;
+  padding-left: 20px;
+}
+.twd-ap-help-list li {
+  margin-bottom: 8px;
+}
+.twd-ap-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--twd-ap-bg-soft);
+  border: 1px solid var(--twd-ap-input-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 8px 0 4px;
+}
+.twd-ap-code-row code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: var(--twd-ap-text);
+  flex: 1;
+  word-break: break-all;
+}
+.twd-ap-code-row-block {
+  align-items: flex-start;
+  flex-direction: column;
+}
+.twd-ap-code-row-block pre {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--twd-ap-text);
+}
+.twd-ap-code-row-block button {
+  align-self: flex-start;
 }
 
 @media (max-width: 600px) {

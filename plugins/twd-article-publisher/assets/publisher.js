@@ -56,6 +56,13 @@
 		els.publishBtn = document.getElementById('twd-ap-publish-btn');
 		els.closeBtn = document.getElementById('twd-ap-close-btn');
 		els.adminEditLink = document.getElementById('twd-ap-admin-edit-link');
+		els.helpBtn = document.getElementById('twd-ap-help-btn');
+		els.helpOverlay = document.getElementById('twd-ap-help-overlay');
+		els.helpCloseBtn = document.getElementById('twd-ap-help-close-btn');
+		els.copyShortcodeBtn = document.getElementById('twd-ap-copy-shortcode-btn');
+		els.shortcodeExample = document.getElementById('twd-ap-shortcode-example');
+		els.copyPromptBtn = document.getElementById('twd-ap-copy-prompt-btn');
+		els.aiPromptExample = document.getElementById('twd-ap-ai-prompt-example');
 		els.newBtn = document.getElementById('twd-ap-new-btn');
 		els.editBtn = document.getElementById('twd-ap-edit-btn');
 		els.linkBtn = document.getElementById('twd-ap-link-btn');
@@ -79,9 +86,32 @@
 			}
 		});
 		document.addEventListener('keydown', function (e) {
-			if (e.key === 'Escape' && !els.overlay.hasAttribute('hidden')) {
+			if (e.key !== 'Escape') {
+				return;
+			}
+			if (!els.helpOverlay.hidden) {
+				els.helpOverlay.hidden = true;
+			} else if (!els.overlay.hasAttribute('hidden')) {
 				requestClose();
 			}
+		});
+
+		els.helpBtn.addEventListener('click', function () {
+			els.helpOverlay.hidden = false;
+		});
+		els.helpCloseBtn.addEventListener('click', function () {
+			els.helpOverlay.hidden = true;
+		});
+		els.helpOverlay.addEventListener('click', function (e) {
+			if (e.target === els.helpOverlay) {
+				els.helpOverlay.hidden = true;
+			}
+		});
+		els.copyShortcodeBtn.addEventListener('click', function () {
+			copyToClipboard(els.shortcodeExample.textContent, els.copyShortcodeBtn, 'Copy');
+		});
+		els.copyPromptBtn.addEventListener('click', function () {
+			copyToClipboard(els.aiPromptExample.textContent, els.copyPromptBtn, 'Copy prompt');
 		});
 
 		els.tabVisual.addEventListener('click', function () {
@@ -183,6 +213,18 @@
 
 		fetchCategories();
 		fetchTags();
+	}
+
+	function copyToClipboard(text, btn, originalLabel) {
+		if (!navigator.clipboard) {
+			return;
+		}
+		navigator.clipboard.writeText(text).then(function () {
+			btn.textContent = 'Copied!';
+			setTimeout(function () {
+				btn.textContent = originalLabel;
+			}, 1500);
+		});
 	}
 
 	function markDirty() {
@@ -587,6 +629,7 @@
 	function closeModal() {
 		deselectImage();
 		els.overlay.hidden = true;
+		els.helpOverlay.hidden = true;
 		document.body.style.overflow = '';
 	}
 
