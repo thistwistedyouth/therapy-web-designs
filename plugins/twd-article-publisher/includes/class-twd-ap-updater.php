@@ -30,6 +30,47 @@ class TWD_AP_Updater {
 		add_filter( 'plugin_row_meta', array( $this, 'row_meta' ), 10, 2 );
 		add_action( 'delete_site_transient_update_plugins', array( $this, 'clear_cache' ) );
 		add_action( 'upgrader_process_complete', array( $this, 'clear_cache' ) );
+		add_action( 'admin_post_twd_ap_check_updates', array( $this, 'handle_manual_check' ) );
+	}
+
+	/**
+	 * The "Check for updates" button on Settings > Article Publisher. Clears
+	 * both our own cache and core's update_plugins transient, forces an
+	 * immediate synchronous recheck (wp_update_plugins(), the same core
+	 * function cron uses) so the redirect reflects the current state right
+	 * away rather than waiting for the next page load or 12-hour cache, then
+	 * sends the admin back to Settings with the result in the URL.
+	 */
+	public function handle_manual_check() {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'twd_ap_check_updates' ) ) {
+			wp_die( esc_html__( 'You are not allowed to do that.', 'twd-article-publisher' ) );
+		}
+
+		$this->clear_cache();
+		delete_site_transient( 'update_plugins' );
+		wp_update_plugins();
+
+		$remote = $this->get_remote_info();
+		$latest = $remote && ! empty( $remote->version ) ? $remote->version : '';
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'           => 'twd-article-publisher',
+					'twd_ap_checked' => 1,
+					'twd_ap_latest'  => rawurlencode( $latest ),
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
+		exit;
+	}
+
+	public function check_url() {
+		return wp_nonce_url(
+			admin_url( 'admin-post.php?action=twd_ap_check_updates' ),
+			'twd_ap_check_updates'
+		);
 	}
 
 	private function plugin_basename() {
