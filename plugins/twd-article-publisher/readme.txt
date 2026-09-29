@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.22.0
+Stable tag: 1.23.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.23.0): the "Customise this grid" popup now has a "Card border /
+featured pill colour" colour picker, alongside the existing "Read more"
+link colour picker. Controls the featured article's card border and the
+FEATURED badge, plus the search box and category dropdown's focus border
+and each category section's "n more" link colour -- everywhere the
+grid's blue accent showed before is now driven by this one setting,
+defaulting to the same blue as before so nothing changes until it's
+picked.
 
 NEW (1.22.0): the swipe book is now titled "Summary Book" at the top,
 with a larger site logo underneath it. The page-progress bar moved from

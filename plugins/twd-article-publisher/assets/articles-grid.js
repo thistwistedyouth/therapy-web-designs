@@ -166,6 +166,9 @@
 					if (data && data.read_more_color) {
 						root.style.setProperty('--twd-ap-readmore-color', data.read_more_color);
 					}
+					if (data && data.accent_color) {
+						root.style.setProperty('--twd-ap-accent-color', data.accent_color);
+					}
 					var total = data && data.total_articles;
 					state.manyArticles = 'number' === typeof total && total > GROUP_THRESHOLD;
 					// Fewer than the threshold: fetch enough in one go to
@@ -354,6 +357,7 @@
 		var postsCount = overlay.querySelector('#twd-ap-gs-posts-count');
 		var thumbsBox  = overlay.querySelector('#twd-ap-gs-thumbnails');
 		var colorInput = overlay.querySelector('#twd-ap-gs-readmore-color');
+		var accentColorInput = overlay.querySelector('#twd-ap-gs-accent-color');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var saveBtn    = overlay.querySelector('#twd-ap-gs-save');
 		var statusEl   = overlay.querySelector('#twd-ap-grid-settings-status');
@@ -464,6 +468,7 @@
 				postsCount.value = data.posts_per_category || 6;
 				thumbsBox.checked = false !== data.show_thumbnails;
 				colorInput.value = data.read_more_color || '#1d4ed8';
+				accentColorInput.value = data.accent_color || '#2563eb';
 				renderOrderList(data.categories || []);
 				profilePhotoId = data.profile_photo_id || 0;
 				renderPhotoPreview(data.profile_photo_url || '');
@@ -486,6 +491,7 @@
 				posts_per_category: parseInt(postsCount.value, 10) || 6,
 				show_thumbnails: !!thumbsBox.checked,
 				read_more_color: colorInput.value,
+				accent_color: accentColorInput.value,
 				category_order: order,
 				profile_photo_id: profilePhotoId,
 				profile_name: nameInput.value,
