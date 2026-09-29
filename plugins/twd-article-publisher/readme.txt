@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.18.0
+Stable tag: 1.18.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,16 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.18.1): article titles and excerpts with an apostrophe, or a
+trimmed excerpt's "...", could still show as literal "&#8217;" or
+"&hellip;" text on the resources grid, swipe book and elsewhere,
+despite an earlier fix for this same bug. The earlier fix used
+wp_specialchars_decode(), which only reverses &amp;/&lt;/&gt;/&quot;/
+&#039; and never actually touched &#8217; or &hellip; themselves, so
+it never worked for this specific case. Switched to
+html_entity_decode(), which decodes every named and numeric HTML
+entity back into a real character.
 
 NEW (1.18.0): a "Delete this article" button now sits at the top of the
 popup while editing an existing article, moving it to the Trash (not a

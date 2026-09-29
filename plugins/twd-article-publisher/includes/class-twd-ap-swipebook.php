@@ -190,7 +190,7 @@ class TWD_AP_Swipebook {
 		}
 		$slides[] = array(
 			'type'    => 'text',
-			'heading' => get_the_title( $post ),
+			'heading' => html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ),
 			'html'    => $intro ? '<p>' . esc_html( $intro ) . '</p>' : '',
 		);
 
@@ -270,7 +270,14 @@ class TWD_AP_Swipebook {
 	 * read, so the two rendering paths are driven from one data structure.
 	 */
 	public function get_payload( $post ) {
-		$title       = get_the_title( $post );
+		// get_the_title() runs wptexturize, which turns a plain apostrophe or
+		// a run of dots into literal entity text ("&#8217;", "&hellip;"),
+		// meant for direct, unescaped HTML output. Both the page's own
+		// esc_html()/esc_attr() calls below and the JS overlay's escapeHtml()
+		// re-escape that, leaving the entity text itself showing instead of
+		// the punctuation it stands for. html_entity_decode() turns it back
+		// into a real character first, so it only ever gets encoded once.
+		$title       = html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' );
 		$site_name   = get_bloginfo( 'name' );
 		$article_url = get_permalink( $post );
 		$logo_id     = get_theme_mod( 'custom_logo' );
@@ -293,6 +300,7 @@ class TWD_AP_Swipebook {
 		$share_url   = $payload['shareUrl'];
 		$logo_url    = $payload['logoUrl'];
 		$description = has_excerpt( $post ) ? get_the_excerpt( $post ) : wp_trim_words( wp_strip_all_tags( $post->post_content ), 30 );
+		$description = html_entity_decode( $description, ENT_QUOTES, 'UTF-8' );
 		$image_id    = get_post_thumbnail_id( $post );
 		$image_url   = $image_id ? wp_get_attachment_image_url( $image_id, 'large' ) : '';
 

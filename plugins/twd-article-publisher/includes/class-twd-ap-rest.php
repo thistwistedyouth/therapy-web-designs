@@ -556,20 +556,25 @@ class TWD_AP_REST {
 		$excerpt    = $post->post_excerpt ? $post->post_excerpt : wp_strip_all_tags( $post->post_content );
 
 		// get_the_title() runs wptexturize, which turns a plain apostrophe
-		// into the literal text "&#8217;" (an HTML entity meant for direct
-		// output), not a real character. The grid renders this via JS,
-		// which re-escapes it for safety, double-encoding it into visible
-		// "&#8217;" text on the page. Decoding back to real characters here
-		// means the client only ever encodes once, correctly.
+		// or a run of dots into literal entity text ("&#8217;", "&hellip;"),
+		// meant for direct, unescaped HTML output. The grid renders this via
+		// JS, which re-escapes it for safety, double-encoding the leading
+		// "&" and leaving the entity text itself showing on the page.
+		// wp_specialchars_decode() looked like the fix but only reverses
+		// &amp;/&lt;/&gt;/&quot;/&#039; -- it never touches &#8217; or
+		// &hellip; at all, which is why this kept happening. html_entity_decode()
+		// is the general decoder: it turns every named and numeric HTML
+		// entity back into a real character, so the client only ever
+		// encodes once, correctly.
 		return array(
 			'id'           => $post->ID,
-			'title'        => wp_specialchars_decode( get_the_title( $post ), ENT_QUOTES ),
-			'excerpt'      => wp_specialchars_decode( wp_trim_words( $excerpt, 22 ), ENT_QUOTES ),
+			'title'        => html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ),
+			'excerpt'      => html_entity_decode( wp_trim_words( $excerpt, 22 ), ENT_QUOTES, 'UTF-8' ),
 			'link'         => get_permalink( $post ),
 			'date'         => get_the_date( '', $post ),
 			'reading_time' => max( 1, (int) ceil( $word_count / 200 ) ),
 			'thumbnail'    => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '',
-			'category'     => ! empty( $cats ) ? wp_specialchars_decode( $cats[0]->name, ENT_QUOTES ) : '',
+			'category'     => ! empty( $cats ) ? html_entity_decode( $cats[0]->name, ENT_QUOTES, 'UTF-8' ) : '',
 			'featured'     => (bool) get_post_meta( $post->ID, '_twd_ap_featured', true ),
 		);
 	}
@@ -669,7 +674,7 @@ class TWD_AP_REST {
 			$groups[] = array(
 				'category' => array(
 					'id'   => $cat_id,
-					'name' => wp_specialchars_decode( $term->name, ENT_QUOTES ),
+					'name' => html_entity_decode( $term->name, ENT_QUOTES, 'UTF-8' ),
 					'slug' => $term->slug,
 				),
 				'posts'    => $items,
@@ -714,7 +719,7 @@ class TWD_AP_REST {
 		foreach ( $settings['category_order'] as $cat_id ) {
 			foreach ( $categories as $c ) {
 				if ( (int) $c->term_id === (int) $cat_id ) {
-					$order[] = array( 'id' => $cat_id, 'name' => wp_specialchars_decode( $c->name, ENT_QUOTES ) );
+					$order[] = array( 'id' => $cat_id, 'name' => html_entity_decode( $c->name, ENT_QUOTES, 'UTF-8' ) );
 					break;
 				}
 			}
@@ -722,7 +727,7 @@ class TWD_AP_REST {
 		$ordered_ids = wp_list_pluck( $order, 'id' );
 		foreach ( $categories as $c ) {
 			if ( ! in_array( (int) $c->term_id, $ordered_ids, true ) ) {
-				$order[] = array( 'id' => (int) $c->term_id, 'name' => wp_specialchars_decode( $c->name, ENT_QUOTES ) );
+				$order[] = array( 'id' => (int) $c->term_id, 'name' => html_entity_decode( $c->name, ENT_QUOTES, 'UTF-8' ) );
 			}
 		}
 
