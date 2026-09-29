@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.16.2
+Stable tag: 1.16.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.16.3): comments and pingbacks are now always off on an article
+saved through this popup, regardless of the site's own default comment
+setting. WordPress opens comments on a new post by default, which a
+client's article isn't meant to have. Re-saving an existing article
+through the popup (Edit This Article, then Update) closes comments on
+it too; to close comments on many existing articles at once without
+opening each one, use the Posts list's own Bulk Actions, Edit,
+Comments: Do not allow.
 
 NEW (1.16.2): the "Getting Started" article created on first activation
 now leads with Article Assist (with a direct link straight into it),

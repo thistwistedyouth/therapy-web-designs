@@ -22,11 +22,13 @@ class TWD_AP_Starter_Content {
 
 		$post_id = wp_insert_post(
 			array(
-				'post_title'   => __( 'Getting Started With Your New Articles Plugin', 'twd-article-publisher' ),
-				'post_excerpt' => __( 'A quick tour of the popup you will use to publish and manage articles on this site, and the resources page it feeds.', 'twd-article-publisher' ),
-				'post_content' => self::content(),
-				'post_status'  => 'publish',
-				'post_type'    => 'post',
+				'post_title'     => __( 'Getting Started With Your New Articles Plugin', 'twd-article-publisher' ),
+				'post_excerpt'   => __( 'A quick tour of the popup you will use to publish and manage articles on this site, and the resources page it feeds.', 'twd-article-publisher' ),
+				'post_content'   => self::content(),
+				'post_status'    => 'publish',
+				'post_type'      => 'post',
+				'comment_status' => 'closed',
+				'ping_status'    => 'closed',
 			),
 			true
 		);

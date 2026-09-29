@@ -219,11 +219,19 @@ class TWD_AP_REST {
 		}
 
 		$args = array(
-			'post_title'   => $title,
-			'post_content' => $content,
-			'post_excerpt' => $excerpt,
-			'post_status'  => $status,
-			'post_type'    => 'post',
+			'post_title'      => $title,
+			'post_content'    => $content,
+			'post_excerpt'    => $excerpt,
+			'post_status'     => $status,
+			'post_type'       => 'post',
+			// Comments and pingbacks are always off on an article saved
+			// through this popup, regardless of the site's own default
+			// comment setting, since a client site's article isn't meant to
+			// carry a public comment thread. Applies on every save, not
+			// just creation, so re-saving an older article through the
+			// popup closes them too.
+			'comment_status'  => 'closed',
+			'ping_status'     => 'closed',
 		);
 
 		if ( 'future' === $status ) {
