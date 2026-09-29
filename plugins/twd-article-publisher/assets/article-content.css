@@ -9,7 +9,16 @@
   --twd-ap-content-muted: #6b7280;
   --twd-ap-content-link: #2563eb;
   --twd-ap-content-border: #e5e7eb;
-  max-width: 720px;
+  /* Centers itself regardless of what the theme's own Single Post
+     template does with its content column. Without this, a theme whose
+     template gives the_content a wide, uncentered container (no max-width
+     of its own) left this max-width block sitting flush against the left
+     edge instead of centered in the page, only really surfacing on a
+     theme without a built Single Post design of its own. */
+  max-width: 720px !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   font-size: 17px !important;
   line-height: 1.75 !important;

@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.19.1
+Stable tag: 1.19.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.19.2): a published article's text sat flush against the left
+edge of the page on a theme whose Single Post template gives the
+content area no width limit of its own. The plugin's own article
+typography set a max-width but never centered it, which most themes
+never surfaced since their own template already centers the content
+column, but a theme without a built Single Post design does not. The
+article now centers itself regardless of what the theme's template
+does around it.
 
 FIX (1.19.1): "Load more" could still show with nothing left to load
 on a filtered/searched list whose total happened to land exactly on a
