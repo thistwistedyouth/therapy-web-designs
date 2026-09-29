@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.16.1
+Stable tag: 1.16.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,14 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.16.2): the "Getting Started" article created on first activation
+now leads with Article Assist (with a direct link straight into it),
+rather than listing it as a third option after Visual and HTML. Take
+an idea or something already written to Article Assist, paste the JSON
+it hands back into the Import JSON tab, and get a categorised, fully
+editable article, SEO done, ready to publish and automatically share
+as a swipe book. Only affects sites activating the plugin from here on.
 
 FIX (1.16.1): the grouped resources view could leave a stray "Loading
 articles..." line showing under the grid after it had actually

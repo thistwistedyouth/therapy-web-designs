@@ -39,23 +39,27 @@ class TWD_AP_Starter_Content {
 	}
 
 	private static function content() {
-		return '<p>This article was created automatically when the plugin was activated, so the resources page has something real to show straight away. Edit it into your own welcome message, or delete it once your team is comfortable with the tools below.</p>'
+		$assist_url = defined( 'TWD_AP_ARTICLE_ASSIST_URL' ) ? TWD_AP_ARTICLE_ASSIST_URL : 'https://therapyresourcedirectory.com/article-assist';
+
+		return '<p>This article was created to help you get comfortable with the tools below. Edit it into your own welcome message, or delete it once your team is comfortable.</p>'
 
 			. '<h2>Writing an article</h2>'
-			. '<p>Look for the <strong>New Article</strong> button, usually floating bottom right on any page while you are logged in. It opens a popup right here on the live site, no need to go into wp-admin. On an article you can edit, an <strong>Edit This Article</strong> button appears too.</p>'
+			. '<p>Look for the <strong>New Article</strong> button, floating bottom right on the resources page while you are logged in. An <strong>Edit This Article</strong> button appears too if you are on an article.</p>'
 
-			. '<h2>Three ways to bring in content</h2>'
+			. '<h2>The fastest way: Article Assist</h2>'
+			. '<p>Take a rough idea, or something you have already written, to <a href="' . esc_url( $assist_url ) . '" target="_blank" rel="noopener">Article Assist</a> on Therapy Resource Directory. It drafts a title, full SEO details, a suggested category and tags, and the article body, then hands you a block of JSON. Paste that into the <strong>Import JSON</strong> tab here and it fills in a categorised, fully editable article in one go, ready to review and publish. Once published, it becomes a shareable swipe book automatically too, no extra step. Needs a Therapy Resource Directory account (Resource Creator plan or above), and a confidentiality reminder in the tool itself repeats what should never be pasted in.</p>'
+
+			. '<h2>Or write directly</h2>'
 			. '<ul>'
-			. '<li><strong>Visual</strong>: write directly, with a simple toolbar for headings, lists, links, images and YouTube videos.</li>'
-			. '<li><strong>HTML</strong>: paste already-formatted HTML, useful if you draft articles elsewhere first.</li>'
-			. '<li><strong>Import JSON</strong>: paste a JSON block (for example from Therapy Resource Directory&#8217;s Article Assist tool, linked at the top of the popup) to fill in the title, SEO details, category, tags and body in one go, then review and edit before saving.</li>'
+			. '<li><strong>Visual</strong>: write or edit directly, with a simple toolbar for headings, lists, links, images and YouTube videos.</li>'
+			. '<li><strong>HTML</strong>: paste already-formatted HTML, useful if you draft articles elsewhere first. You will still need to fill in the title, SEO details and category yourself, which is exactly what Article Assist does for you.</li>'
 			. '</ul>'
 
 			. '<h2>Choosing where an article belongs</h2>'
 			. '<p>Tick one or more categories in the popup&#8217;s Categories field. If an article has more than one, click the star next to the one it should be grouped under on the resources page. If you never click it, the first ticked category is used.</p>'
 
-			. '<h2>The resources page</h2>'
-			. '<p>The <strong>[twd_articles]</strong> shortcode, used bare with no attributes, shows the top categories as their own titled sections, so visitors see the range of what you cover at a glance. A search box and a category dropdown are built in. For anyone who can publish articles, a small gear icon opens a settings popup right on the page: how many categories show, how many articles each, their order, and whether thumbnails show at all.</p>'
+			. '<h2>Your resources page</h2>'
+			. '<p>This shows the top categories as their own titled sections, so visitors see the range of what you cover at a glance. A search box and a category dropdown are built in. For anyone who can publish articles, a small gear icon opens a settings popup right on the page: how many categories show, how many articles each, their order, and whether thumbnails show at all.</p>'
 
 			. '<h2>Sharing an article as a swipe book</h2>'
 			. '<p>Every published article can also be viewed as a swipeable, shareable slide version, split automatically by heading. Look for the <strong>View as a swipe book</strong> link under any article, or the <strong>Swipe book link</strong> in the popup while editing a published one.</p>'
