@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.17.1
+Stable tag: 1.18.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,18 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.18.0): a "Delete this article" button now sits at the top of the
+popup while editing an existing article, moving it to the Trash (not a
+permanent delete, recoverable from wp-admin same as any other trashed
+post). The swipe book's page transitions are rebuilt to match Therapy
+Resource Directory's own book reader: a page now slides fully off and
+the next one slides fully on (no more cross-fade), on the same timing
+and easing, whether tapping the arrows or swiping on touch or with a
+mouse. The old swipe drag also had an inline transform fighting the
+slide's own CSS transition, which was the actual cause of the jerky
+feel; a swipe now just reads its direction on release, same as TRD's
+reader, and lets one clean transition handle the rest.
 
 NEW (1.17.1): renamed "Import JSON" to "Paste JSON", and made it a
 clearer two-step flow. Fill fields from JSON is now the highlighted

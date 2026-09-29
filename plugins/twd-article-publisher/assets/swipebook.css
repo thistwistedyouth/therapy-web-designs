@@ -164,6 +164,7 @@ body {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
   cursor: grab;
   touch-action: pan-y;
 }
@@ -172,29 +173,33 @@ body {
   user-select: none;
 }
 
-/* Slides cross-fade + slide on a single eased transition (no separate
-   opacity/transform timings drifting apart) and get will-change while
-   mounted, which is what actually smooths this out -- the old plain
-   `ease` timing with no will-change hint was the jerkiness. */
+/* Each slide parks fully off to whichever side it isn't showing on yet
+   (is-future) or has already passed (is-past), and becomes is-active at
+   translateX(0). Moving between them is a plain transform transition, no
+   opacity or scale riding along, so a swipe actually reads as the current
+   page sliding off and the next one sliding on, not a cross-fade --
+   the same feel as Therapy Resource Directory's own book reader
+   (trd-resource-reader), matched to its transition duration and easing. */
 .twd-sb-slide {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transform: translateX(28px) scale(0.985);
+  transform: translateX(0);
   pointer-events: none;
-  will-change: transform, opacity;
-  transition: opacity 0.38s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+  transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .twd-sb-slide.is-active {
-  opacity: 1;
-  transform: translateX(0) scale(1);
   pointer-events: auto;
+  z-index: 2;
 }
-.twd-sb-slide.is-leaving-left {
-  transform: translateX(-28px) scale(0.985);
+.twd-sb-slide.is-past {
+  transform: translateX(-100%);
+}
+.twd-sb-slide.is-future {
+  transform: translateX(100%);
 }
 
 .twd-sb-card {
@@ -221,7 +226,6 @@ body {
     -13px 0 0 -6px rgba(255, 209, 102, 0.05),
     0 22px 60px rgba(0, 0, 0, 0.55),
     inset 0 0 30px rgba(255, 209, 102, 0.03);
-  transition: transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .twd-sb-heading {

@@ -75,10 +75,17 @@
 		var index = 0;
 		var closed = false;
 
+		// Each slide parks off to whichever side it isn't showing on (is-past
+		// to the left, is-future to the right) and the active one sits at
+		// translateX(0) -- a plain state change, so moving to any index
+		// (next/prev, a swipe, or jumping via the progress bar) always reads
+		// as the current page sliding fully off and the next one sliding
+		// fully on, matching Therapy Resource Directory's own book reader.
 		function render() {
 			slides.forEach(function (slide, i) {
 				slide.classList.toggle('is-active', i === index);
-				slide.classList.toggle('is-leaving-left', i < index);
+				slide.classList.toggle('is-past', i < index);
+				slide.classList.toggle('is-future', i > index);
 			});
 			segs.forEach(function (seg, i) {
 				seg.classList.toggle('is-done', i < index);
@@ -107,21 +114,17 @@
 
 		// -- Swipe/drag: a touch swipe, a mouse drag, or a pen all go through
 		// the same Pointer Events handlers, so it can be dragged with a mouse
-		// on desktop too, not just swiped on a touchscreen. The active card
-		// follows the pointer horizontally while dragging and springs back
-		// if released short of the threshold. A mostly vertical drag is left
-		// alone so scrolling inside a long slide, and text selection, still
-		// work normally.
+		// on desktop too, not just swiped on a touchscreen. Only the gesture's
+		// direction is read, on release, same as TRD's own reader -- no
+		// element follows the pointer mid-drag, which is what let the old
+		// per-drag inline transform fight the slide's own CSS transition and
+		// read as jerky. A mostly vertical drag is left alone so scrolling
+		// inside a long slide, and text selection, still work normally.
 		var dragStartX = 0;
 		var dragStartY = 0;
 		var dragActive = false;
 		var dragIsHorizontal = null;
-		var DRAG_THRESHOLD = 60;
-
-		function activeCard() {
-			var slide = slides[index];
-			return slide ? slide.querySelector('.twd-sb-card') : null;
-		}
+		var DRAG_THRESHOLD = 50;
 
 		slidesWrap.addEventListener('pointerdown', function (e) {
 			if (e.pointerType === 'mouse' && e.button !== 0) { return; }
@@ -134,18 +137,11 @@
 		});
 
 		slidesWrap.addEventListener('pointermove', function (e) {
-			if (!dragActive) { return; }
+			if (!dragActive || null !== dragIsHorizontal) { return; }
 			var dx = e.clientX - dragStartX;
 			var dy = e.clientY - dragStartY;
-
-			if (null === dragIsHorizontal && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+			if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
 				dragIsHorizontal = Math.abs(dx) > Math.abs(dy);
-			}
-			if (false === dragIsHorizontal) { return; }
-
-			var card = activeCard();
-			if (card) {
-				card.style.transform = 'translateX(' + (dx * 0.6) + 'px)';
 			}
 		});
 
@@ -154,21 +150,8 @@
 			dragActive = false;
 			backdrop.classList.remove('is-dragging');
 
-			var card = activeCard();
 			var dx = e.clientX - dragStartX;
-			var crossedThreshold = dragIsHorizontal && Math.abs(dx) >= DRAG_THRESHOLD;
-
-			if (card) {
-				if (!crossedThreshold) {
-					card.style.transition = 'transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1)';
-					card.style.transform = '';
-					setTimeout(function () { card.style.transition = ''; }, 260);
-				} else {
-					card.style.transform = '';
-				}
-			}
-
-			if (!crossedThreshold) { return; }
+			if (!dragIsHorizontal || Math.abs(dx) < DRAG_THRESHOLD) { return; }
 			if (dx < 0) { goTo(index + 1); } else { goTo(index - 1); }
 		}
 

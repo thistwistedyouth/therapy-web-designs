@@ -66,6 +66,7 @@
 		els.draftBtn = document.getElementById('twd-ap-draft-btn');
 		els.publishBtn = document.getElementById('twd-ap-publish-btn');
 		els.closeBtn = document.getElementById('twd-ap-close-btn');
+		els.deleteBtn = document.getElementById('twd-ap-delete-btn');
 		els.adminEditLink = document.getElementById('twd-ap-admin-edit-link');
 		els.swipebookLink = document.getElementById('twd-ap-swipebook-link');
 		els.helpBtn = document.getElementById('twd-ap-help-btn');
@@ -92,6 +93,7 @@
 		}
 
 		els.closeBtn.addEventListener('click', requestClose);
+		els.deleteBtn.addEventListener('click', requestDelete);
 		els.overlay.addEventListener('click', function (e) {
 			if (e.target === els.overlay) {
 				requestClose();
@@ -740,12 +742,14 @@
 				els.adminEditLink.href = TWD_AP.adminEditUrl;
 				els.adminEditLink.hidden = false;
 			}
+			els.deleteBtn.hidden = false;
 		} else {
 			state.editingId = null;
 			els.modalSubtitle.textContent = 'New article';
 			els.publishBtn.textContent = 'Publish';
 			els.draftBtn.textContent = 'Save Draft';
 			els.adminEditLink.hidden = true;
+			els.deleteBtn.hidden = true;
 			updateSwipebookLink('', '');
 		}
 		els.overlay.hidden = false;
@@ -797,6 +801,38 @@
 			}
 		}
 		closeModal();
+	}
+
+	function requestDelete() {
+		if (!state.editingId) {
+			return;
+		}
+		if (!window.confirm(TWD_AP.i18n.confirmDelete)) {
+			return;
+		}
+		els.deleteBtn.disabled = true;
+		showStatus('Deleting…', false);
+		fetch(TWD_AP.restUrl + '/posts/' + state.editingId, {
+			method: 'DELETE',
+			headers: { 'X-WP-Nonce': TWD_AP.nonce },
+		})
+			.then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+			.then(function (result) {
+				els.deleteBtn.disabled = false;
+				if (!result.ok) {
+					showStatus((result.data && result.data.message) ? result.data.message : 'Could not delete this article. Please try again.', false);
+					return;
+				}
+				state.dirty = false;
+				closeModal();
+				if (TWD_AP.currentPostId && parseInt(TWD_AP.currentPostId, 10) === state.editingId) {
+					window.location.reload();
+				}
+			})
+			.catch(function () {
+				els.deleteBtn.disabled = false;
+				showStatus('Could not delete this article. Please try again.', false);
+			});
 	}
 
 	function closeModal() {

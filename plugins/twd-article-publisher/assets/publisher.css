@@ -125,8 +125,30 @@
 .twd-ap-modal-header-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
 }
+.twd-ap-delete-btn {
+  font-size: 12px;
+  color: var(--twd-ap-danger);
+  background: none;
+  border: 1px solid var(--twd-ap-danger);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.twd-ap-delete-btn:hover {
+  background: var(--twd-ap-danger);
+  color: #fff;
+}
+.twd-ap-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .twd-ap-admin-edit-link {
   font-size: 12px !important;
   color: var(--twd-ap-muted) !important;

@@ -71,6 +71,11 @@ class TWD_AP_REST {
 					'callback'            => array( $this, 'update_post' ),
 					'permission_callback' => array( $this, 'check_edit_permission' ),
 				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => array( $this, 'delete_post' ),
+					'permission_callback' => array( $this, 'check_edit_permission' ),
+				),
 			)
 		);
 
@@ -417,6 +422,27 @@ class TWD_AP_REST {
 			return new WP_Error( 'twd_ap_not_found', __( 'That article could not be found.', 'twd-article-publisher' ), array( 'status' => 404 ) );
 		}
 		return rest_ensure_response( $this->format_post( $post_id, true ) );
+	}
+
+	/**
+	 * Moves the article to Trash, same as the normal Posts list "Trash"
+	 * action, not a permanent delete -- recoverable from wp-admin if
+	 * clicked by mistake. check_edit_permission already confirmed the
+	 * current user can edit this specific post before this ever runs.
+	 */
+	public function delete_post( $request ) {
+		$post_id = (int) $request['id'];
+		$post    = get_post( $post_id );
+		if ( ! $post || 'post' !== $post->post_type ) {
+			return new WP_Error( 'twd_ap_not_found', __( 'That article could not be found.', 'twd-article-publisher' ), array( 'status' => 404 ) );
+		}
+
+		$result = wp_trash_post( $post_id );
+		if ( ! $result ) {
+			return new WP_Error( 'twd_ap_delete_failed', __( 'Could not delete that article. Please try again.', 'twd-article-publisher' ), array( 'status' => 500 ) );
+		}
+
+		return rest_ensure_response( array( 'deleted' => true ) );
 	}
 
 	private function format_post( $post_id, $for_edit = false ) {

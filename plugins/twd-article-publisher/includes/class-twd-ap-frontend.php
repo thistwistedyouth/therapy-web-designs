@@ -104,6 +104,7 @@ class TWD_AP_Frontend {
 					'saving'       => __( 'Saving…', 'twd-article-publisher' ),
 					'error'        => __( 'Something went wrong. Please try again.', 'twd-article-publisher' ),
 					'confirmClose' => __( 'Discard unsaved changes?', 'twd-article-publisher' ),
+					'confirmDelete' => __( 'Delete this article? It will be moved to the Trash.', 'twd-article-publisher' ),
 				),
 			)
 		);

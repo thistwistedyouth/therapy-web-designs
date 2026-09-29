@@ -33,6 +33,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</span>
 			</div>
 			<div class="twd-ap-modal-header-actions">
+				<button type="button" id="twd-ap-delete-btn" class="twd-ap-delete-btn" hidden><?php esc_html_e( 'Delete this article', 'twd-article-publisher' ); ?></button>
 				<a href="#" id="twd-ap-admin-edit-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Edit in WordPress ↗', 'twd-article-publisher' ); ?></a>
 				<a href="#" id="twd-ap-swipebook-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Swipe book link ↗', 'twd-article-publisher' ); ?></a>
 				<a href="<?php echo esc_url( TWD_AP_ARTICLE_ASSIST_URL ); ?>" class="twd-ap-assist-btn" target="_blank" rel="noopener"><?php esc_html_e( 'Article Assist', 'twd-article-publisher' ); ?></a>
