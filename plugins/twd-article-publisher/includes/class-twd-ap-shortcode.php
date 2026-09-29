@@ -15,12 +15,26 @@ class TWD_AP_Shortcode {
 
 	private static $instance = null;
 	private static $instance_count = 0;
+	private static $rendered_on_this_page = false;
 
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
+	}
+
+	/**
+	 * True once [twd_articles] has actually rendered somewhere on the
+	 * current page. Set inside render() rather than detected up front with
+	 * has_shortcode(), since that can't see a shortcode stored in an
+	 * Elementor widget's own _elementor_data JSON rather than post_content
+	 * (see the enqueue_assets() note below). Read by TWD_AP_Frontend, hooked
+	 * to wp_footer, which always runs after the page's own content (and so
+	 * this shortcode, if present) has already rendered.
+	 */
+	public static function rendered_on_this_page() {
+		return self::$rendered_on_this_page;
 	}
 
 	private function __construct() {
@@ -58,6 +72,8 @@ class TWD_AP_Shortcode {
 	}
 
 	public function render( $atts ) {
+		self::$rendered_on_this_page = true;
+
 		$atts = shortcode_atts(
 			array(
 				'category' => '',

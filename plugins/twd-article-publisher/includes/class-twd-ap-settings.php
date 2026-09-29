@@ -24,12 +24,21 @@ class TWD_AP_Settings {
 		$defaults = array(
 			'allowed_roles'    => array( 'administrator', 'editor', 'author' ),
 			'default_category' => (int) get_option( 'default_category' ),
-			'show_everywhere'  => 1,
+			'show_everywhere'  => 'everywhere',
 		);
 		$saved = get_option( self::OPTION_KEY, array() );
 		if ( ! is_array( $saved ) ) {
 			$saved = array();
 		}
+
+		// Pre-1.15 sites stored show_everywhere as 1/0. Map that to the new
+		// three-way scope so an already-configured site keeps behaving the
+		// same way after updating, instead of silently reverting to the
+		// default until someone happens to resave the settings screen.
+		if ( isset( $saved['show_everywhere'] ) && ! is_string( $saved['show_everywhere'] ) ) {
+			$saved['show_everywhere'] = $saved['show_everywhere'] ? 'everywhere' : 'nowhere';
+		}
+
 		return wp_parse_args( $saved, $defaults );
 	}
 
@@ -64,7 +73,10 @@ class TWD_AP_Settings {
 		}
 
 		$output['default_category'] = isset( $input['default_category'] ) ? absint( $input['default_category'] ) : (int) get_option( 'default_category' );
-		$output['show_everywhere']  = ! empty( $input['show_everywhere'] ) ? 1 : 0;
+
+		$valid_scopes = array( 'everywhere', 'shortcode_page', 'nowhere' );
+		$scope        = isset( $input['show_everywhere'] ) ? sanitize_key( $input['show_everywhere'] ) : 'everywhere';
+		$output['show_everywhere'] = in_array( $scope, $valid_scopes, true ) ? $scope : 'everywhere';
 
 		return $output;
 	}
@@ -120,9 +132,17 @@ class TWD_AP_Settings {
 					<tr>
 						<th scope="row"><?php esc_html_e( '"New Article" button', 'twd-article-publisher' ); ?></th>
 						<td>
-							<label>
-								<input type="checkbox" name="twd_ap_settings[show_everywhere]" value="1" <?php checked( ! empty( $settings['show_everywhere'] ) ); ?> />
+							<label style="display:block;margin-bottom:6px;">
+								<input type="radio" name="twd_ap_settings[show_everywhere]" value="everywhere" <?php checked( $settings['show_everywhere'], 'everywhere' ); ?> />
 								<?php esc_html_e( 'Show it on every page of the site for allowed users (recommended)', 'twd-article-publisher' ); ?>
+							</label>
+							<label style="display:block;margin-bottom:6px;">
+								<input type="radio" name="twd_ap_settings[show_everywhere]" value="shortcode_page" <?php checked( $settings['show_everywhere'], 'shortcode_page' ); ?> />
+								<?php esc_html_e( 'Only on pages with the [twd_articles] shortcode', 'twd-article-publisher' ); ?>
+							</label>
+							<label style="display:block;">
+								<input type="radio" name="twd_ap_settings[show_everywhere]" value="nowhere" <?php checked( $settings['show_everywhere'], 'nowhere' ); ?> />
+								<?php esc_html_e( 'Do not show it (rely on "Edit This Article" only)', 'twd-article-publisher' ); ?>
 							</label>
 							<p class="description"><?php esc_html_e( 'The "Edit This Article" button always shows only on the article being viewed, to people allowed to edit it, regardless of this setting.', 'twd-article-publisher' ); ?></p>
 						</td>

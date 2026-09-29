@@ -36,9 +36,26 @@ class TWD_AP_Frontend {
 		return false;
 	}
 
+	/**
+	 * "shortcode_page" relies on TWD_AP_Shortcode::rendered_on_this_page(),
+	 * only reliable by the time wp_footer fires (this method is only ever
+	 * called from there and from render_buttons_and_modal(), never from the
+	 * earlier maybe_enqueue(), which enqueues unconditionally for any
+	 * allowed user regardless of button visibility) -- wp_footer always runs
+	 * after the page's own content, and so this shortcode if present, has
+	 * already rendered.
+	 */
 	private function should_show_new_button() {
 		$settings = TWD_AP_Settings::get_settings();
-		return ! empty( $settings['show_everywhere'] );
+		$scope    = $settings['show_everywhere'];
+
+		if ( 'nowhere' === $scope ) {
+			return false;
+		}
+		if ( 'shortcode_page' === $scope ) {
+			return TWD_AP_Shortcode::rendered_on_this_page();
+		}
+		return true;
 	}
 
 	private function should_show_edit_button() {
