@@ -101,10 +101,15 @@ class TWD_AP_Swipebook {
 	}
 
 	/**
-	 * A "View as a swipe book" link under every published article. Carries
-	 * the post ID and the full-page URL so swipebook-inline.js can open it
-	 * as an in-page overlay when JS runs, and fall back to a normal link
-	 * (the full standalone page) if it doesn't.
+	 * A "View as a swipe book" pill above every published article's content.
+	 * Carries the post ID and the full-page URL so swipebook-inline.js can
+	 * open it as an in-page overlay when JS runs, and fall back to a normal
+	 * link (the full standalone page) if it doesn't. Sits at the top, not
+	 * the bottom: after the content it was easy to miss on a long article
+	 * (it also just read as visually adrift, sitting alone at the very
+	 * bottom-left of the page with nothing else around it), and a reader
+	 * deciding how to read the article is better served seeing this before
+	 * committing to the long-form version, not after finishing it.
 	 */
 	public function append_button( $content ) {
 		if ( is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
@@ -123,7 +128,7 @@ class TWD_AP_Swipebook {
 		$button = '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
 			. esc_html__( 'View as a swipe book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
 
-		return $content . $button;
+		return $button . $content;
 	}
 
 	/**

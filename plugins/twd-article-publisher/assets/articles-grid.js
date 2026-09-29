@@ -54,25 +54,37 @@
 			offset: 0,
 			loading: false,
 			showThumbnails: true,
+			// Known once loadThumbnailSetting()'s first fetch returns
+			// total_articles; assumed true until then so nothing flashes the
+			// wrong view while that's in flight.
+			manyArticles: true,
 		};
+
+		var GROUP_THRESHOLD = 12;
 
 		// The grouped-by-category landing view only applies to the default,
 		// unfiltered usage of the shortcode (no explicit category/tag
 		// attribute) -- a page like [twd_articles category="anxiety"] always
-		// shows its own flat, paginated list, same as before this feature.
-		var canGroup = config.showFilters && '' === state.category && '' === state.tag;
-
-		loadThumbnailSetting();
+		// shows its own flat, paginated list, same as before this feature --
+		// and, on top of that, only once there's enough content for split
+		// sections to make sense. A handful of articles reads better as one
+		// plain list than split into thin, mostly-empty category sections,
+		// each with its own "Load more" that would come back empty anyway.
+		function canGroup() {
+			return config.showFilters && '' === state.category && '' === state.tag && state.manyArticles;
+		}
 
 		if (config.showFilters && selectEl) {
 			loadFacets();
 		}
 
-		if (canGroup) {
-			fetchGrouped();
-		} else {
-			fetchArticles(true);
-		}
+		loadThumbnailSetting(function () {
+			if (canGroup()) {
+				fetchGrouped();
+			} else {
+				fetchArticles(true);
+			}
+		});
 
 		if (searchEl) {
 			var searchTimer = null;
@@ -110,18 +122,19 @@
 			settingsBtn.addEventListener('click', function () {
 				openGridSettings(root, config, function () {
 					// Settings changed: re-render whichever view is current.
-					if (!state.search && !state.category && canGroup) {
-						fetchGrouped();
-					} else {
-						fetchArticles(true);
-					}
-					loadThumbnailSetting();
+					loadThumbnailSetting(function () {
+						if (!state.search && !state.category && canGroup()) {
+							fetchGrouped();
+						} else {
+							fetchArticles(true);
+						}
+					});
 				});
 			});
 		}
 
 		function switchToFlatIfNeeded() {
-			if (!canGroup) {
+			if (!canGroup()) {
 				fetchArticles(true);
 				return;
 			}
@@ -133,7 +146,7 @@
 			}
 		}
 
-		function loadThumbnailSetting() {
+		function loadThumbnailSetting(done) {
 			fetch(config.restUrl + '/grid-settings')
 				.then(function (r) { return r.json(); })
 				.then(function (data) {
@@ -142,8 +155,19 @@
 					if (data && data.read_more_color) {
 						root.style.setProperty('--twd-ap-readmore-color', data.read_more_color);
 					}
+					var total = data && data.total_articles;
+					state.manyArticles = 'number' === typeof total && total > GROUP_THRESHOLD;
+					// Fewer than the threshold: fetch enough in one go to
+					// show every article on this site, so "Load more" never
+					// has a next page to offer.
+					if (!state.manyArticles && 'number' === typeof total) {
+						config.count = Math.max(config.count, total);
+					}
+					if (done) { done(); }
 				})
-				.catch(function () {});
+				.catch(function () {
+					if (done) { done(); }
+				});
 		}
 
 		function loadFacets() {

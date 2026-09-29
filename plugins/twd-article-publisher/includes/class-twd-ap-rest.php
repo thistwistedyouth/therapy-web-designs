@@ -778,6 +778,11 @@ class TWD_AP_REST {
 				'profile_bio'         => $settings['profile_bio'],
 				'profile_link_url'    => $settings['profile_link_url'],
 				'profile_link_label'  => $settings['profile_link_label'],
+				// The grid's own decision (categories vs. one flat list, ever
+				// showing Load more) uses this: a handful of articles reads
+				// better as one plain list than split into thin, mostly-empty
+				// category sections.
+				'total_articles'      => (int) wp_count_posts( 'post' )->publish,
 			)
 		);
 	}

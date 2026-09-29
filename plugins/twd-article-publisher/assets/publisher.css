@@ -131,27 +131,32 @@
   gap: 10px;
 }
 .twd-ap-delete-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: var(--twd-ap-danger);
-  opacity: 0.75;
-  background: none;
-  border: none;
-  padding: 5px 2px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: opacity 0.2s ease, color 0.2s ease;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: var(--twd-ap-danger) !important;
+  opacity: 0.75 !important;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 5px 2px !important;
+  white-space: nowrap !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s ease, color 0.2s ease !important;
 }
 .twd-ap-delete-btn:hover {
-  opacity: 1;
-  color: #8a2f1e;
-  text-decoration: underline;
+  opacity: 1 !important;
+  color: #8a2f1e !important;
+  text-decoration: underline !important;
 }
 .twd-ap-delete-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
 }
 
 .twd-ap-admin-edit-link {

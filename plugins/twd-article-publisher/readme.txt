@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.19.3
+Stable tag: 1.20.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,24 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.20.0): the resources grid only splits into category sections
+once a site has more than 12 published articles; 12 or fewer now show
+as one plain list, since a handful of articles read better that way
+than split into thin, mostly-empty sections each with their own "Load
+more". "Load more" itself only ever appears once there is genuinely
+another page to fetch.
+
+FIX (1.20.0): "Delete this article" in the popup lost its own styling
+on some sites (a bare bordered box instead of the intended quiet
+icon+label link) for the same reason the swipe book's buttons did in
+1.19.3, it was missing the `!important` guards this plugin's other
+buttons already carry against a theme's own global button styling.
+
+FIX (1.20.0): "View as a swipe book" now sits above the article, not
+below it, restyled as a proper pill button. Appended after the content
+it was easy to miss on a longer article, and read as visually adrift,
+sitting alone at the bottom of the page with nothing else around it.
 
 FIX (1.19.3): the swipe book's Close/prev/next/Share buttons could
 show up looking like bare default Elementor buttons (thin outline,
