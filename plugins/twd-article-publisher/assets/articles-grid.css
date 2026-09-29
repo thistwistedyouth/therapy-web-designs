@@ -14,11 +14,7 @@
   min-width: 180px !important;
   max-width: 320px !important;
   padding: 10px 18px !important;
-  /* TEMPORARY deploy-check marker (magenta border) -- once this shows up
-     as magenta on the live site, confirming the update actually reached
-     it, revert this one line back to #9ca3af and ship that as the real
-     colour. Not a design choice, just proof the file changed. */
-  border: 2px solid #ff00ff !important;
+  border: 1px solid #9ca3af !important;
   border-radius: 999px !important;
   font-size: 14px !important;
   box-sizing: border-box !important;
@@ -31,7 +27,7 @@
 }
 .twd-ap-articles-category-select {
   padding: 10px 32px 10px 18px !important;
-  border: 2px solid #ff00ff !important;
+  border: 1px solid #9ca3af !important;
   border-radius: 999px !important;
   font-size: 14px !important;
   background: #fff !important;
@@ -262,7 +258,7 @@
 }
 .twd-ap-articles-loadmore {
   min-width: 160px !important;
-  border: 2px solid #ff00ff !important;
+  border: 1px solid #9ca3af !important;
   background: #fff !important;
   color: #1f2937 !important;
   padding: 10px 26px !important;

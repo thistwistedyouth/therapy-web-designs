@@ -291,7 +291,13 @@
 					emptyEl.hidden = hasResults;
 					gridEl.hidden = !hasResults;
 
-					loadMoreBtn.hidden = !data.has_more;
+					// manyArticles is a hard gate on top of has_more, not just a
+					// per_page bump meant to make has_more come back false on
+					// its own: relying on that bump alone means a wrong (e.g.
+					// stale-cached) total_articles count could still leave
+					// Load more showing on a small site. This way it never
+					// can, whatever total_articles actually reported.
+					loadMoreBtn.hidden = !state.manyArticles || !data.has_more;
 				})
 				.catch(function () {
 					state.loading = false;

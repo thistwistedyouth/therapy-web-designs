@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.20.3
+Stable tag: 1.20.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,14 +56,22 @@ for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
 
-TEMPORARY DEPLOY-CHECK MARKER (1.20.3): the search box, category
-dropdown and "Load more" button borders are bright magenta on
-purpose, not a design choice. If a site keeps showing 1.20.2's plain
-grey borders after updating to this version and clearing every cache,
-that's proof the update isn't actually reaching that site (a host/CDN
-layer, not the plugin) rather than anything still to fix in the code.
-Once confirmed magenta, revert those three border colours back to
-#9ca3af.
+FIX (1.20.4): "Load more" could still show on a site with 12 or fewer
+articles (confirmed via the 1.20.3 deploy-check marker that updates
+were genuinely reaching the site, ruling out caching). The fix in
+1.20.0 tried to fetch enough articles in one request to cover
+everything, so Load more's own logic would naturally come back with
+nothing left, but that only works if total_articles is accurate --
+depending entirely on that count being right was the actual gap.
+"12 or fewer" is now also a hard, independent condition on showing
+Load more at all, never overridden by anything the per-request fetch
+decides on its own, whatever total_articles reports.
+
+"View as a swipe book" moved back to the bottom of the article, on
+request, since a brief stay at the top sat oddly next to a theme's own
+"Back to Resources" link -- which is the theme's own template markup,
+rendered before the_content() ever runs, so this plugin has no reach
+into it at all, and can't remove or move it.
 
 FIX (1.20.2): the resources grid's REST responses (article list,
 grouped view, category facets, grid settings) never sent explicit
