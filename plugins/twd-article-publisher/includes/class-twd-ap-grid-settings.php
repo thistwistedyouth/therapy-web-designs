@@ -16,10 +16,11 @@ class TWD_AP_Grid_Settings {
 
 	public static function get() {
 		$defaults = array(
-			'category_order'    => array(),
-			'categories_count'  => 4,
+			'category_order'     => array(),
+			'categories_count'   => 4,
 			'posts_per_category' => 6,
-			'show_thumbnails'   => true,
+			'show_thumbnails'    => true,
+			'read_more_color'    => '#1d4ed8',
 		);
 		$saved = get_option( self::OPTION_KEY, array() );
 		if ( ! is_array( $saved ) ) {
@@ -36,6 +37,7 @@ class TWD_AP_Grid_Settings {
 			'categories_count'   => $current['categories_count'],
 			'posts_per_category' => $current['posts_per_category'],
 			'show_thumbnails'    => $current['show_thumbnails'],
+			'read_more_color'    => $current['read_more_color'],
 		);
 
 		if ( isset( $input['category_order'] ) && is_array( $input['category_order'] ) ) {
@@ -49,6 +51,12 @@ class TWD_AP_Grid_Settings {
 		}
 		if ( isset( $input['show_thumbnails'] ) ) {
 			$output['show_thumbnails'] = (bool) $input['show_thumbnails'];
+		}
+		if ( isset( $input['read_more_color'] ) ) {
+			$color = sanitize_hex_color( $input['read_more_color'] );
+			if ( $color ) {
+				$output['read_more_color'] = $color;
+			}
 		}
 
 		return $output;

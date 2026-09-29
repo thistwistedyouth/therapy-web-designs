@@ -23,7 +23,6 @@
 		var loadMoreBtn = root.querySelector('.twd-ap-articles-loadmore');
 		var searchEl    = root.querySelector('.twd-ap-articles-search');
 		var selectEl    = root.querySelector('.twd-ap-articles-category-select');
-		var showAllBtn  = root.querySelector('.twd-ap-articles-showall');
 		var settingsBtn = root.querySelector('.twd-ap-articles-settings-btn');
 
 		var state = {
@@ -69,19 +68,14 @@
 			selectEl.addEventListener('change', function () {
 				state.category = selectEl.value;
 				state.page = 1;
+				// The empty-value "Show all" option means a full return to
+				// the default landing view, not just clearing the category
+				// filter while a search is still active.
+				if (!state.category && searchEl) {
+					state.search = '';
+					searchEl.value = '';
+				}
 				switchToFlatIfNeeded();
-			});
-		}
-
-		if (showAllBtn) {
-			showAllBtn.addEventListener('click', function () {
-				state.search = '';
-				state.category = '';
-				state.page = 1;
-				if (searchEl) { searchEl.value = ''; }
-				if (selectEl) { selectEl.value = ''; }
-				showAllBtn.hidden = true;
-				fetchGrouped();
 			});
 		}
 
@@ -111,10 +105,8 @@
 			}
 			var isDefault = !state.search && !state.category;
 			if (isDefault) {
-				if (showAllBtn) { showAllBtn.hidden = true; }
 				fetchGrouped();
 			} else {
-				if (showAllBtn) { showAllBtn.hidden = false; }
 				fetchArticles(true);
 			}
 		}
@@ -125,6 +117,9 @@
 				.then(function (data) {
 					state.showThumbnails = data && false !== data.show_thumbnails;
 					root.classList.toggle('twd-ap-no-thumbnails', !state.showThumbnails);
+					if (data && data.read_more_color) {
+						root.style.setProperty('--twd-ap-readmore-color', data.read_more_color);
+					}
 				})
 				.catch(function () {});
 		}
@@ -139,10 +134,11 @@
 		}
 
 		function renderCategorySelect(categories) {
-			var html = '<option value="">All categories</option>';
+			var html = '';
 			categories.forEach(function (cat) {
 				html += '<option value="' + escapeHtml(cat.slug) + '">' + escapeHtml(cat.name) + '</option>';
 			});
+			html += '<option value="">Show all</option>';
 			selectEl.innerHTML = html;
 			selectEl.value = state.category;
 		}
@@ -186,7 +182,6 @@
 							state.category = btn.dataset.slug;
 							state.page = 1;
 							if (selectEl) { selectEl.value = state.category; }
-							if (showAllBtn) { showAllBtn.hidden = false; }
 							fetchArticles(true);
 							root.scrollIntoView({ behavior: 'smooth', block: 'start' });
 						});
@@ -280,6 +275,7 @@
 		var catsCount  = overlay.querySelector('#twd-ap-gs-cats-count');
 		var postsCount = overlay.querySelector('#twd-ap-gs-posts-count');
 		var thumbsBox  = overlay.querySelector('#twd-ap-gs-thumbnails');
+		var colorInput = overlay.querySelector('#twd-ap-gs-readmore-color');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var saveBtn    = overlay.querySelector('#twd-ap-gs-save');
 		var statusEl   = overlay.querySelector('#twd-ap-grid-settings-status');
@@ -351,6 +347,7 @@
 				catsCount.value = data.categories_count || 4;
 				postsCount.value = data.posts_per_category || 6;
 				thumbsBox.checked = false !== data.show_thumbnails;
+				colorInput.value = data.read_more_color || '#1d4ed8';
 				renderOrderList(data.categories || []);
 				overlay.hidden = false;
 			})
@@ -366,6 +363,7 @@
 				categories_count: parseInt(catsCount.value, 10) || 4,
 				posts_per_category: parseInt(postsCount.value, 10) || 6,
 				show_thumbnails: !!thumbsBox.checked,
+				read_more_color: colorInput.value,
 				category_order: order,
 			};
 

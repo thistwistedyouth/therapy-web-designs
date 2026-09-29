@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.15.0
+Stable tag: 1.16.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,16 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.16.0): the category dropdown now sits before the search box, and
+the separate "Show all categories" button is gone -- a "Show all"
+option at the bottom of the dropdown returns to the default landing
+view instead. "Uncategorized" (or whatever a site's own default
+category is named) no longer counts as a real category anywhere: not
+in the dropdown, not in the admin's category order list, and it never
+takes a section on the grouped landing view. The "Customise this grid"
+popup also has a "Read more" link colour picker now, defaulting to a
+darker blue, with the link itself darkening slightly on hover.
 
 NEW (1.15.0): Settings > Article Publisher's "New Article" button
 setting is now three choices instead of one checkbox: everywhere

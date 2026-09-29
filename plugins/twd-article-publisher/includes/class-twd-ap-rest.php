@@ -547,6 +547,14 @@ class TWD_AP_REST {
 			$by_category[ $primary ][] = $post_id;
 		}
 
+		// WordPress's own fallback bucket for a post nobody categorised is
+		// not a real content category, and letting it win a section on the
+		// landing view (as it often does, being the biggest by default)
+		// pushes out the categories that actually say something about the
+		// site. A post whose only category is this one just does not show
+		// on the grouped view; a search still finds it by text.
+		unset( $by_category[ $this->uncategorized_id() ] );
+
 		$ordered_cat_ids = array();
 		foreach ( $settings['category_order'] as $cat_id ) {
 			if ( isset( $by_category[ $cat_id ] ) ) {
@@ -605,14 +613,33 @@ class TWD_AP_REST {
 				'groups'   => $groups,
 				'settings' => array(
 					'show_thumbnails' => (bool) $settings['show_thumbnails'],
+					'read_more_color' => $settings['read_more_color'],
 				),
 			)
 		);
 	}
 
+	/**
+	 * The term ID WordPress puts a post into when none is chosen, via the
+	 * default_category option -- the correct, rename-proof way to find it,
+	 * rather than matching on the literal name "Uncategorized".
+	 */
+	private function uncategorized_id() {
+		return (int) get_option( 'default_category' );
+	}
+
 	public function get_grid_settings() {
-		$settings   = TWD_AP_Grid_Settings::get();
-		$categories = get_categories( array( 'hide_empty' => true ) );
+		$settings     = TWD_AP_Grid_Settings::get();
+		$uncat_id     = $this->uncategorized_id();
+		$all_cats     = get_categories( array( 'hide_empty' => true ) );
+		$categories   = array_values(
+			array_filter(
+				$all_cats,
+				function ( $c ) use ( $uncat_id ) {
+					return (int) $c->term_id !== $uncat_id;
+				}
+			)
+		);
 
 		$order = array();
 		foreach ( $settings['category_order'] as $cat_id ) {
@@ -635,6 +662,7 @@ class TWD_AP_REST {
 				'categories_count'   => $settings['categories_count'],
 				'posts_per_category' => $settings['posts_per_category'],
 				'show_thumbnails'    => (bool) $settings['show_thumbnails'],
+				'read_more_color'    => $settings['read_more_color'],
 				'categories'         => $order,
 			)
 		);
@@ -650,7 +678,15 @@ class TWD_AP_REST {
 	}
 
 	public function list_facets() {
-		$cats = get_categories( array( 'hide_empty' => true ) );
+		$uncat_id = $this->uncategorized_id();
+		$cats     = array_values(
+			array_filter(
+				get_categories( array( 'hide_empty' => true ) ),
+				function ( $c ) use ( $uncat_id ) {
+					return (int) $c->term_id !== $uncat_id;
+				}
+			)
+		);
 		$tags = get_tags( array( 'hide_empty' => true ) );
 
 		return rest_ensure_response(

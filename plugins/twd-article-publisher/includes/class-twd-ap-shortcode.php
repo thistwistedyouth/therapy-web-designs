@@ -114,11 +114,10 @@ class TWD_AP_Shortcode {
 		<div id="<?php echo esc_attr( $instance_id ); ?>" class="twd-ap-articles" data-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
 			<?php if ( $show_filters ) : ?>
 				<div class="twd-ap-articles-toolbar">
-					<input type="search" class="twd-ap-articles-search" placeholder="<?php esc_attr_e( 'Search articles…', 'twd-article-publisher' ); ?>" aria-label="<?php esc_attr_e( 'Search articles', 'twd-article-publisher' ); ?>" />
 					<select class="twd-ap-articles-category-select" aria-label="<?php esc_attr_e( 'Jump to a category', 'twd-article-publisher' ); ?>">
-						<option value=""><?php esc_html_e( 'All categories', 'twd-article-publisher' ); ?></option>
+						<option value=""><?php esc_html_e( 'Loading…', 'twd-article-publisher' ); ?></option>
 					</select>
-					<button type="button" class="twd-ap-articles-showall" hidden><?php esc_html_e( 'Show all categories', 'twd-article-publisher' ); ?></button>
+					<input type="search" class="twd-ap-articles-search" placeholder="<?php esc_attr_e( 'Search articles…', 'twd-article-publisher' ); ?>" aria-label="<?php esc_attr_e( 'Search articles', 'twd-article-publisher' ); ?>" />
 					<?php if ( $is_admin_user ) : ?>
 						<button type="button" class="twd-ap-articles-settings-btn" aria-label="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>">&#9881;</button>
 					<?php endif; ?>
@@ -152,6 +151,9 @@ class TWD_AP_Shortcode {
 							<input type="checkbox" id="twd-ap-gs-thumbnails" />
 							<?php esc_html_e( 'Show thumbnails', 'twd-article-publisher' ); ?>
 						</label>
+
+						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-readmore-color"><?php esc_html_e( '"Read more" link colour', 'twd-article-publisher' ); ?></label>
+						<input type="color" id="twd-ap-gs-readmore-color" class="twd-ap-gs-color-input" />
 
 						<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Category order (drag to reorder; only the top categories above show on the grid)', 'twd-article-publisher' ); ?></label>
 						<ul id="twd-ap-gs-cat-order" class="twd-ap-gs-cat-order"></ul>
