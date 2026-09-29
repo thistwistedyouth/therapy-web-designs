@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.19.2
+Stable tag: 1.19.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,19 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.19.3): the swipe book's Close/prev/next/Share buttons could
+show up looking like bare default Elementor buttons (thin outline,
+no fill) instead of this book's own design, on a site whose theme or
+page builder sets its own global button styling. The swipe book's
+overlay mode injects its markup straight into the live theme page, so
+it inherits that page's CSS the same way the rest of this plugin's
+front-end already accounts for; its own stylesheet just hadn't been
+updated for that yet, since the swipe book was originally a fully
+standalone page with no theme CSS ever loaded at all. Every visual
+rule in the swipe book's stylesheet now carries the same defensive
+weight already used elsewhere in this plugin, so its own styling
+always wins regardless of the theme.
 
 FIX (1.19.2): a published article's text sat flush against the left
 edge of the page on a theme whose Single Post template gives the
