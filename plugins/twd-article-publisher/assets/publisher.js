@@ -10,6 +10,7 @@
 		activeTab: 'visual',
 		dirty: false,
 		categories: [],
+		primaryCategoryId: 0,
 	};
 
 	var els = {};
@@ -192,6 +193,9 @@
 
 		els.featuredToggle.addEventListener('change', markDirty);
 
+		els.categories.addEventListener('click', onCategoriesClick);
+		els.categories.addEventListener('change', onCategoriesChange);
+
 		els.catAddBtn.addEventListener('click', addCategory);
 		els.catAddInput.addEventListener('keydown', function (e) {
 			if (e.key === 'Enter') {
@@ -340,17 +344,49 @@
 			});
 	}
 
-	function renderCategories(checkedIds) {
+	function renderCategories(checkedIds, primaryId) {
 		if (!state.categories.length) {
 			els.categories.innerHTML = '<span class="twd-ap-muted">No categories yet.</span>';
 			return;
 		}
+		if (primaryId === undefined) {
+			primaryId = state.primaryCategoryId;
+		}
+		if (!primaryId && checkedIds.length) {
+			primaryId = checkedIds[0];
+		}
+		state.primaryCategoryId = primaryId || 0;
+
 		els.categories.innerHTML = state.categories
 			.map(function (cat) {
 				var checked = checkedIds.indexOf(cat.id) !== -1 ? 'checked' : '';
-				return '<label class="twd-ap-cat-item"><input type="checkbox" value="' + cat.id + '" ' + checked + ' /> ' + escapeHtml(cat.name) + '</label>';
+				var isPrimary = cat.id === state.primaryCategoryId;
+				return '<span class="twd-ap-cat-item">' +
+					'<label><input type="checkbox" value="' + cat.id + '" ' + checked + ' /> ' + escapeHtml(cat.name) + '</label>' +
+					'<button type="button" class="twd-ap-cat-star' + (isPrimary ? ' is-primary' : '') + '" data-id="' + cat.id + '" title="' + (isPrimary ? 'Primary category' : 'Set as primary category') + '">&#9733;</button>' +
+				'</span>';
 			})
 			.join('');
+	}
+
+	function onCategoriesClick(e) {
+		var star = e.target.closest('.twd-ap-cat-star');
+		if (!star) { return; }
+		var id = parseInt(star.dataset.id, 10);
+		var box = els.categories.querySelector('input[type="checkbox"][value="' + id + '"]');
+		if (box) { box.checked = true; }
+		renderCategories(getCheckedCategoryIds(), id);
+		markDirty();
+	}
+
+	function onCategoriesChange(e) {
+		if (!e.target.matches('input[type="checkbox"]')) { return; }
+		// If the category that was just unticked was the primary one, fall
+		// back to whichever is still checked (or none).
+		var checkedIds = getCheckedCategoryIds();
+		if (checkedIds.indexOf(state.primaryCategoryId) === -1) {
+			renderCategories(checkedIds, checkedIds[0] || 0);
+		}
 	}
 
 	function ensureImgToolbar() {
@@ -539,7 +575,7 @@
 					state.categories.push({ id: result.data.id, name: result.data.name });
 				}
 				checkedIds.push(result.data.id);
-				renderCategories(checkedIds);
+				renderCategories(checkedIds, result.data.id);
 			})
 			.catch(function () {});
 	}
@@ -645,6 +681,7 @@
 		state.dirty = false;
 		hideStatus();
 		els.yoastWrap.hidden = !TWD_AP.yoastEnabled;
+		state.primaryCategoryId = 0;
 		renderCategories([]);
 		updateSwipebookLink('', '');
 	}
@@ -720,7 +757,7 @@
 				els.featuredToggle.checked = !!data.featured;
 				state.featuredMediaId = data.featured_media || 0;
 				renderFeaturedPreview(data.featured_media_url || '');
-				renderCategories(data.category_ids || []);
+				renderCategories(data.category_ids || [], data.primary_category || 0);
 				if (TWD_AP.yoastEnabled) {
 					els.yoastTitle.value = data.yoast_title || '';
 					els.yoastDesc.value = data.yoast_desc || '';
@@ -786,6 +823,7 @@
 			tags: els.tags.value,
 			featured: els.featuredToggle.checked,
 			category_ids: getCheckedCategoryIds(),
+			primary_category: state.primaryCategoryId,
 			featured_media: state.featuredMediaId,
 			status: status,
 		};

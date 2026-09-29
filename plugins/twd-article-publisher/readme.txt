@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.12.0
+Stable tag: 1.13.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,7 +33,7 @@ All pasted or written HTML is cleaned on the server before saving: scripts, inli
 
 Every published article can be viewed and shared as a swipe book: a full-screen, swipeable slide version of the same article, split automatically by heading and length. It is a live view generated on request, not a separate saved copy, so it always matches the article. Visit `[the article's URL]?twd_ap_swipebook=1`, or use the "View as a swipe book" link shown under every article, or the "Swipe book link" shown in the popup while editing a published article.
 
-Use the `[twd_articles]` shortcode on any page for a fully interactive resources grid: a search box, category pills, "Load more" pagination -- all client-side, no page reload. Featured articles show first, then newest-first. Attributes: `category` (slug), `tag` (slug), `count` (default 9, per page), `columns` (default 3, max 4). Example: `[twd_articles count="9" columns="3"]`.
+Use the `[twd_articles]` shortcode on any page for a fully interactive resources grid: a search box, a category dropdown, "Load more" pagination -- all client-side, no page reload. Used bare, with no `category`/`tag` attribute, it defaults to a grouped-by-category landing view: the top categories, each as its own titled section, no article repeated across sections. Searching or picking a category from the dropdown switches to a flat, paginated list for that filter, with a "Show all categories" button to return. Featured articles show first within any list, then newest-first. Attributes: `category` (slug), `tag` (slug), `count` (default 9, per page), `columns` (default 3, max 4). Example: `[twd_articles count="9" columns="3"]`.
 
 Give it an explicit `category` or `tag` attribute (e.g. `[twd_articles category="anxiety"]`) for a curated list without search/filters -- useful for a themed page. Or leave both off and drop the plain `[twd_articles]` shortcode straight onto a WordPress category or tag archive template (e.g. via Elementor Theme Builder): it automatically detects the current archive and shows only that category/tag's articles, so one shortcode works for every category page without hardcoding a slug per page.
 
@@ -55,6 +55,21 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.13.0): the [twd_articles] grid now has a grouped-by-category
+landing view by default: the top categories (by number of articles),
+each as its own titled section, no article repeated across sections.
+A category picks up a "primary category" for this purpose via a small
+star next to each ticked category in the popup's Categories field
+(defaults to the first ticked one if never explicitly set). A dropdown
+next to the search box jumps straight to one category's full list. For
+anyone who can publish articles, a small gear icon opens a "Customise
+this grid" popup right on the page: how many categories show, how many
+articles per category, drag-and-drop category order, and a "Show
+thumbnails" on/off toggle. Existing [twd_articles category="..."] or
+[twd_articles tag="..."] pages, and category/tag archive pages, are
+unaffected and keep their plain flat list as before, since grouping
+only applies to the bare, unfiltered [twd_articles] shortcode.
 
 NEW (1.12.0): every published article can now be viewed and shared as a
 swipe book. A "View as a swipe book" link appears under every article on

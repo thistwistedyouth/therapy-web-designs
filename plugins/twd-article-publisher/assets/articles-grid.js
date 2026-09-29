@@ -17,11 +17,14 @@
 			return;
 		}
 
-		var gridEl = root.querySelector('.twd-ap-articles-grid');
-		var emptyEl = root.querySelector('.twd-ap-articles-empty');
+		var groupsEl    = root.querySelector('.twd-ap-articles-groups');
+		var gridEl      = root.querySelector('.twd-ap-articles-grid');
+		var emptyEl     = root.querySelector('.twd-ap-articles-empty');
 		var loadMoreBtn = root.querySelector('.twd-ap-articles-loadmore');
-		var searchEl = root.querySelector('.twd-ap-articles-search');
-		var pillsEl = root.querySelector('.twd-ap-articles-pills');
+		var searchEl    = root.querySelector('.twd-ap-articles-search');
+		var selectEl    = root.querySelector('.twd-ap-articles-category-select');
+		var showAllBtn  = root.querySelector('.twd-ap-articles-showall');
+		var settingsBtn = root.querySelector('.twd-ap-articles-settings-btn');
 
 		var state = {
 			search: '',
@@ -29,12 +32,26 @@
 			tag: config.tag || '',
 			page: 1,
 			loading: false,
+			showThumbnails: true,
 		};
 
-		if (config.showFilters && pillsEl) {
+		// The grouped-by-category landing view only applies to the default,
+		// unfiltered usage of the shortcode (no explicit category/tag
+		// attribute) -- a page like [twd_articles category="anxiety"] always
+		// shows its own flat, paginated list, same as before this feature.
+		var canGroup = config.showFilters && '' === state.category && '' === state.tag;
+
+		loadThumbnailSetting();
+
+		if (config.showFilters && selectEl) {
 			loadFacets();
 		}
-		fetchArticles(true);
+
+		if (canGroup) {
+			fetchGrouped();
+		} else {
+			fetchArticles(true);
+		}
 
 		if (searchEl) {
 			var searchTimer = null;
@@ -43,8 +60,28 @@
 				searchTimer = setTimeout(function () {
 					state.search = searchEl.value.trim();
 					state.page = 1;
-					fetchArticles(true);
+					switchToFlatIfNeeded();
 				}, 350);
+			});
+		}
+
+		if (selectEl) {
+			selectEl.addEventListener('change', function () {
+				state.category = selectEl.value;
+				state.page = 1;
+				switchToFlatIfNeeded();
+			});
+		}
+
+		if (showAllBtn) {
+			showAllBtn.addEventListener('click', function () {
+				state.search = '';
+				state.category = '';
+				state.page = 1;
+				if (searchEl) { searchEl.value = ''; }
+				if (selectEl) { selectEl.value = ''; }
+				showAllBtn.hidden = true;
+				fetchGrouped();
 			});
 		}
 
@@ -53,37 +90,112 @@
 			fetchArticles(false);
 		});
 
-		function loadFacets() {
-			fetch(config.restUrl + '/articles/facets')
-				.then(function (r) {
-					return r.json();
-				})
+		if (settingsBtn) {
+			settingsBtn.addEventListener('click', function () {
+				openGridSettings(root, config, function () {
+					// Settings changed: re-render whichever view is current.
+					if (!state.search && !state.category && canGroup) {
+						fetchGrouped();
+					} else {
+						fetchArticles(true);
+					}
+					loadThumbnailSetting();
+				});
+			});
+		}
+
+		function switchToFlatIfNeeded() {
+			if (!canGroup) {
+				fetchArticles(true);
+				return;
+			}
+			var isDefault = !state.search && !state.category;
+			if (isDefault) {
+				if (showAllBtn) { showAllBtn.hidden = true; }
+				fetchGrouped();
+			} else {
+				if (showAllBtn) { showAllBtn.hidden = false; }
+				fetchArticles(true);
+			}
+		}
+
+		function loadThumbnailSetting() {
+			fetch(config.restUrl + '/grid-settings')
+				.then(function (r) { return r.json(); })
 				.then(function (data) {
-					renderPills(data.categories || []);
+					state.showThumbnails = data && false !== data.show_thumbnails;
+					root.classList.toggle('twd-ap-no-thumbnails', !state.showThumbnails);
 				})
 				.catch(function () {});
 		}
 
-		function renderPills(categories) {
-			var html = '<button type="button" class="twd-ap-pill twd-ap-pill-active" data-slug="">All</button>';
+		function loadFacets() {
+			fetch(config.restUrl + '/articles/facets')
+				.then(function (r) { return r.json(); })
+				.then(function (data) {
+					renderCategorySelect(data.categories || []);
+				})
+				.catch(function () {});
+		}
+
+		function renderCategorySelect(categories) {
+			var html = '<option value="">All categories</option>';
 			categories.forEach(function (cat) {
-				html += '<button type="button" class="twd-ap-pill" data-slug="' + escapeHtml(cat.slug) + '">' + escapeHtml(cat.name) + '</button>';
+				html += '<option value="' + escapeHtml(cat.slug) + '">' + escapeHtml(cat.name) + '</option>';
 			});
-			pillsEl.innerHTML = html;
-			pillsEl.addEventListener('click', function (e) {
-				var btn = e.target.closest('.twd-ap-pill');
-				if (!btn) {
-					return;
-				}
-				var current = pillsEl.querySelector('.twd-ap-pill-active');
-				if (current) {
-					current.classList.remove('twd-ap-pill-active');
-				}
-				btn.classList.add('twd-ap-pill-active');
-				state.category = btn.dataset.slug;
-				state.page = 1;
-				fetchArticles(true);
-			});
+			selectEl.innerHTML = html;
+			selectEl.value = state.category;
+		}
+
+		function fetchGrouped() {
+			if (state.loading) { return; }
+			state.loading = true;
+			groupsEl.innerHTML = '<p class="twd-ap-muted">Loading articles…</p>';
+			gridEl.hidden = true;
+			emptyEl.hidden = true;
+			loadMoreBtn.hidden = true;
+
+			fetch(config.restUrl + '/articles/grouped')
+				.then(function (r) { return r.json(); })
+				.then(function (data) {
+					state.loading = false;
+					var groups = data.groups || [];
+					if (!groups.length) {
+						groupsEl.innerHTML = '';
+						emptyEl.hidden = false;
+						return;
+					}
+					var html = '';
+					groups.forEach(function (group) {
+						html += '<div class="twd-ap-articles-group">' +
+							'<div class="twd-ap-articles-group-head">' +
+								'<h2 class="twd-ap-articles-group-title">' + escapeHtml(group.category.name) + '</h2>' +
+								(group.total > group.posts.length
+									? '<button type="button" class="twd-ap-articles-group-more" data-slug="' + escapeHtml(group.category.slug || '') + '">See all</button>'
+									: '') +
+							'</div>' +
+							'<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: 3;">' +
+								group.posts.map(cardHtml).join('') +
+							'</div>' +
+						'</div>';
+					});
+					groupsEl.innerHTML = html;
+
+					groupsEl.querySelectorAll('.twd-ap-articles-group-more').forEach(function (btn) {
+						btn.addEventListener('click', function () {
+							state.category = btn.dataset.slug;
+							state.page = 1;
+							if (selectEl) { selectEl.value = state.category; }
+							if (showAllBtn) { showAllBtn.hidden = false; }
+							fetchArticles(true);
+							root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+						});
+					});
+				})
+				.catch(function () {
+					state.loading = false;
+					groupsEl.innerHTML = '';
+				});
 		}
 
 		function fetchArticles(replace) {
@@ -92,6 +204,8 @@
 			}
 			state.loading = true;
 			loadMoreBtn.textContent = 'Loading…';
+			groupsEl.innerHTML = '';
+			gridEl.hidden = false;
 
 			var params = ['per_page=' + encodeURIComponent(config.count), 'page=' + encodeURIComponent(state.page)];
 			if (state.search) {
@@ -134,9 +248,11 @@
 		}
 
 		function cardHtml(item) {
-			var thumb = item.thumbnail
-				? '<span class="twd-ap-article-thumb" style="background-image:url(\'' + escapeUrl(item.thumbnail) + '\')"></span>'
-				: '<span class="twd-ap-article-thumb twd-ap-article-thumb-placeholder" aria-hidden="true">' + PLACEHOLDER_SVG + '</span>';
+			var thumb = state.showThumbnails
+				? (item.thumbnail
+					? '<span class="twd-ap-article-thumb" style="background-image:url(\'' + escapeUrl(item.thumbnail) + '\')"></span>'
+					: '<span class="twd-ap-article-thumb twd-ap-article-thumb-placeholder" aria-hidden="true">' + PLACEHOLDER_SVG + '</span>')
+				: '';
 			var eyebrow = item.category ? escapeHtml(item.category) + ' &middot; ' : '';
 			var featuredBadge = item.featured ? '<span class="twd-ap-article-featured-badge">Featured</span>' : '';
 
@@ -151,6 +267,128 @@
 				'</span>' +
 			'</a>';
 		}
+	}
+
+	// -- Admin "Customise this grid" popup: category order (drag to reorder),
+	// how many categories/posts to show, and the thumbnails toggle. Opened
+	// per grid instance, but the settings it saves are site-wide.
+	function openGridSettings(root, config, onSaved) {
+		var overlay = document.querySelector('.twd-ap-grid-settings-overlay[data-for="' + root.id + '"]');
+		if (!overlay) { return; }
+
+		var closeBtn   = overlay.querySelector('.twd-ap-grid-settings-close');
+		var catsCount  = overlay.querySelector('#twd-ap-gs-cats-count');
+		var postsCount = overlay.querySelector('#twd-ap-gs-posts-count');
+		var thumbsBox  = overlay.querySelector('#twd-ap-gs-thumbnails');
+		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
+		var saveBtn    = overlay.querySelector('#twd-ap-gs-save');
+		var statusEl   = overlay.querySelector('#twd-ap-grid-settings-status');
+
+		function close() {
+			overlay.hidden = true;
+		}
+		closeBtn.addEventListener('click', close);
+		overlay.addEventListener('click', function (e) {
+			if (e.target === overlay) { close(); }
+		});
+
+		function setStatus(msg, ok) {
+			statusEl.textContent = msg;
+			statusEl.hidden = !msg;
+			statusEl.classList.toggle('twd-ap-status-ok', !!ok);
+		}
+
+		function renderOrderList(categories) {
+			orderList.innerHTML = '';
+			categories.forEach(function (cat) {
+				var li = document.createElement('li');
+				li.className = 'twd-ap-gs-cat-row';
+				li.draggable = true;
+				li.dataset.id = cat.id;
+				li.innerHTML = '<span class="twd-ap-gs-drag-handle" aria-hidden="true">&#8942;&#8942;</span><span>' + escapeHtml(cat.name) + '</span>';
+				orderList.appendChild(li);
+			});
+		}
+
+		var dragging = null;
+		orderList.addEventListener('dragstart', function (e) {
+			var li = e.target.closest('.twd-ap-gs-cat-row');
+			if (!li) { return; }
+			dragging = li;
+			li.classList.add('is-dragging');
+		});
+		orderList.addEventListener('dragend', function () {
+			if (dragging) { dragging.classList.remove('is-dragging'); }
+			dragging = null;
+		});
+		orderList.addEventListener('dragover', function (e) {
+			e.preventDefault();
+			var after = getDragAfterElement(orderList, e.clientY);
+			if (!dragging) { return; }
+			if (after == null) {
+				orderList.appendChild(dragging);
+			} else {
+				orderList.insertBefore(dragging, after);
+			}
+		});
+
+		function getDragAfterElement(container, y) {
+			var rows = Array.prototype.slice.call(container.querySelectorAll('.twd-ap-gs-cat-row:not(.is-dragging)'));
+			var closest = { offset: -Infinity, element: null };
+			rows.forEach(function (row) {
+				var box = row.getBoundingClientRect();
+				var offset = y - box.top - box.height / 2;
+				if (offset < 0 && offset > closest.offset) {
+					closest = { offset: offset, element: row };
+				}
+			});
+			return closest.element;
+		}
+
+		fetch(config.restUrl + '/grid-settings')
+			.then(function (r) { return r.json(); })
+			.then(function (data) {
+				catsCount.value = data.categories_count || 4;
+				postsCount.value = data.posts_per_category || 6;
+				thumbsBox.checked = false !== data.show_thumbnails;
+				renderOrderList(data.categories || []);
+				overlay.hidden = false;
+			})
+			.catch(function () {
+				overlay.hidden = false;
+			});
+
+		saveBtn.onclick = function () {
+			var order = Array.prototype.map.call(orderList.querySelectorAll('.twd-ap-gs-cat-row'), function (li) {
+				return parseInt(li.dataset.id, 10);
+			});
+			var payload = {
+				categories_count: parseInt(catsCount.value, 10) || 4,
+				posts_per_category: parseInt(postsCount.value, 10) || 6,
+				show_thumbnails: !!thumbsBox.checked,
+				category_order: order,
+			};
+
+			setStatus('Saving…', false);
+			fetch(config.restUrl + '/grid-settings', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
+				body: JSON.stringify(payload),
+			})
+				.then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+				.then(function (result) {
+					if (!result.ok) {
+						setStatus('Could not save. Please try again.', false);
+						return;
+					}
+					setStatus('Saved.', true);
+					if (onSaved) { onSaved(); }
+					setTimeout(close, 700);
+				})
+				.catch(function () {
+					setStatus('Could not save. Please try again.', false);
+				});
+		};
 	}
 
 	function escapeHtml(str) {

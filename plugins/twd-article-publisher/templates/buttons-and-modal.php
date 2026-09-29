@@ -105,6 +105,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<div id="twd-ap-categories" class="twd-ap-categories">
 							<span class="twd-ap-muted"><?php esc_html_e( 'Loading…', 'twd-article-publisher' ); ?></span>
 						</div>
+						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Click the star to set which category this article is grouped under on the resources page.', 'twd-article-publisher' ); ?></p>
 						<div class="twd-ap-btn-row twd-ap-spaced">
 							<input type="text" id="twd-ap-cat-add-input" class="twd-ap-input" placeholder="<?php esc_attr_e( 'New category name', 'twd-article-publisher' ); ?>" />
 							<button type="button" id="twd-ap-cat-add-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Add', 'twd-article-publisher' ); ?></button>

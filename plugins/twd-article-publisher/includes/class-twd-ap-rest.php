@@ -103,6 +103,33 @@ class TWD_AP_REST {
 				'permission_callback' => '__return_true',
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/articles/grouped',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'list_articles_grouped' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/grid-settings',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $this, 'get_grid_settings' ),
+					'permission_callback' => '__return_true',
+				),
+				array(
+					'methods'             => 'POST',
+					'callback'            => array( $this, 'save_grid_settings' ),
+					'permission_callback' => array( $this, 'check_permission' ),
+				),
+			)
+		);
 	}
 
 	public function check_permission() {
@@ -282,6 +309,18 @@ class TWD_AP_REST {
 			}
 		}
 
+		// Primary category: which section this article appears under on
+		// the grouped resources view. Falls back to the first ticked
+		// category, so nothing breaks for an article saved before this
+		// field existed or if the chosen primary wasn't actually ticked.
+		if ( ! empty( $cat_ids ) ) {
+			$primary = isset( $request['primary_category'] ) ? absint( $request['primary_category'] ) : 0;
+			if ( ! $primary || ! in_array( $primary, $cat_ids, true ) ) {
+				$primary = $cat_ids[0];
+			}
+			update_post_meta( $post_id, '_twd_ap_primary_category', $primary );
+		}
+
 		// Tags.
 		if ( isset( $request['tags'] ) ) {
 			$raw_tags = TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( wp_unslash( $request['tags'] ) ) );
@@ -362,6 +401,8 @@ class TWD_AP_REST {
 			$post_tags            = wp_get_post_tags( $post_id, array( 'fields' => 'names' ) );
 			$data['tags']         = implode( ', ', $post_tags );
 			$data['featured']     = (bool) get_post_meta( $post_id, '_twd_ap_featured', true );
+			$primary               = (int) get_post_meta( $post_id, '_twd_ap_primary_category', true );
+			$data['primary_category'] = ( $primary && in_array( $primary, $data['category_ids'], true ) ) ? $primary : ( ! empty( $data['category_ids'] ) ? $data['category_ids'][0] : 0 );
 		}
 
 		return $data;
@@ -419,28 +460,7 @@ class TWD_AP_REST {
 
 		$items = array();
 		foreach ( $query->posts as $post ) {
-			$thumb_id   = get_post_thumbnail_id( $post );
-			$cats       = get_the_category( $post->ID );
-			$word_count = str_word_count( wp_strip_all_tags( $post->post_content ) );
-			$excerpt    = $post->post_excerpt ? $post->post_excerpt : wp_strip_all_tags( $post->post_content );
-
-			// get_the_title() runs wptexturize, which turns a plain apostrophe
-			// into the literal text "&#8217;" (an HTML entity meant for direct
-			// output), not a real character. The grid renders this via JS,
-			// which re-escapes it for safety, double-encoding it into visible
-			// "&#8217;" text on the page. Decoding back to real characters here
-			// means the client only ever encodes once, correctly.
-			$items[] = array(
-				'id'           => $post->ID,
-				'title'        => wp_specialchars_decode( get_the_title( $post ), ENT_QUOTES ),
-				'excerpt'      => wp_specialchars_decode( wp_trim_words( $excerpt, 22 ), ENT_QUOTES ),
-				'link'         => get_permalink( $post ),
-				'date'         => get_the_date( '', $post ),
-				'reading_time' => max( 1, (int) ceil( $word_count / 200 ) ),
-				'thumbnail'    => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '',
-				'category'     => ! empty( $cats ) ? wp_specialchars_decode( $cats[0]->name, ENT_QUOTES ) : '',
-				'featured'     => (bool) get_post_meta( $post->ID, '_twd_ap_featured', true ),
-			);
+			$items[] = $this->format_article_card( $post );
 		}
 
 		return rest_ensure_response(
@@ -451,6 +471,182 @@ class TWD_AP_REST {
 				'total'       => (int) $query->found_posts,
 			)
 		);
+	}
+
+	/**
+	 * The single place a post becomes a grid card, shared by list_articles()
+	 * and list_articles_grouped() so both stay in sync (entity decoding,
+	 * excerpt trimming, reading time). Accepts either a WP_Post or a post ID.
+	 */
+	private function format_article_card( $post ) {
+		$post = get_post( $post );
+
+		$thumb_id   = get_post_thumbnail_id( $post );
+		$cats       = get_the_category( $post->ID );
+		$word_count = str_word_count( wp_strip_all_tags( $post->post_content ) );
+		$excerpt    = $post->post_excerpt ? $post->post_excerpt : wp_strip_all_tags( $post->post_content );
+
+		// get_the_title() runs wptexturize, which turns a plain apostrophe
+		// into the literal text "&#8217;" (an HTML entity meant for direct
+		// output), not a real character. The grid renders this via JS,
+		// which re-escapes it for safety, double-encoding it into visible
+		// "&#8217;" text on the page. Decoding back to real characters here
+		// means the client only ever encodes once, correctly.
+		return array(
+			'id'           => $post->ID,
+			'title'        => wp_specialchars_decode( get_the_title( $post ), ENT_QUOTES ),
+			'excerpt'      => wp_specialchars_decode( wp_trim_words( $excerpt, 22 ), ENT_QUOTES ),
+			'link'         => get_permalink( $post ),
+			'date'         => get_the_date( '', $post ),
+			'reading_time' => max( 1, (int) ceil( $word_count / 200 ) ),
+			'thumbnail'    => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '',
+			'category'     => ! empty( $cats ) ? wp_specialchars_decode( $cats[0]->name, ENT_QUOTES ) : '',
+			'featured'     => (bool) get_post_meta( $post->ID, '_twd_ap_featured', true ),
+		);
+	}
+
+	/**
+	 * The default landing view: published posts grouped by their primary
+	 * category (never repeated across sections), top categories first. One
+	 * pass over all published posts, done in PHP rather than a per-category
+	 * WP_Query loop, so the "already used in an earlier section" exclusion
+	 * and the true per-primary-category counts (used for default ordering)
+	 * come from a single consistent source. posts_per_page is capped at a
+	 * generous but finite number since this plugin targets a single
+	 * therapist's or small practice's blog, not a high-volume publication.
+	 */
+	public function list_articles_grouped() {
+		$settings = TWD_AP_Grid_Settings::get();
+
+		$post_ids = get_posts(
+			array(
+				'post_type'      => 'post',
+				'post_status'    => 'publish',
+				'posts_per_page' => 500,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				'fields'         => 'ids',
+			)
+		);
+
+		$by_category = array();
+		foreach ( $post_ids as $post_id ) {
+			$cat_ids = wp_get_post_categories( $post_id );
+			if ( empty( $cat_ids ) ) {
+				continue;
+			}
+
+			$primary = (int) get_post_meta( $post_id, '_twd_ap_primary_category', true );
+			if ( ! $primary || ! in_array( $primary, $cat_ids, true ) ) {
+				$primary = $cat_ids[0];
+			}
+
+			if ( ! isset( $by_category[ $primary ] ) ) {
+				$by_category[ $primary ] = array();
+			}
+			$by_category[ $primary ][] = $post_id;
+		}
+
+		$ordered_cat_ids = array();
+		foreach ( $settings['category_order'] as $cat_id ) {
+			if ( isset( $by_category[ $cat_id ] ) ) {
+				$ordered_cat_ids[] = $cat_id;
+			}
+		}
+		$remaining = array_diff( array_keys( $by_category ), $ordered_cat_ids );
+		usort(
+			$remaining,
+			function ( $a, $b ) use ( $by_category ) {
+				return count( $by_category[ $b ] ) - count( $by_category[ $a ] );
+			}
+		);
+		$ordered_cat_ids = array_merge( $ordered_cat_ids, $remaining );
+		$ordered_cat_ids = array_slice( $ordered_cat_ids, 0, $settings['categories_count'] );
+
+		$groups = array();
+		foreach ( $ordered_cat_ids as $cat_id ) {
+			$term = get_category( $cat_id );
+			if ( ! $term || is_wp_error( $term ) ) {
+				continue;
+			}
+
+			// Featured first, otherwise the newest-first order already in
+			// $ids is kept as-is (array_merge, not usort, so this stays
+			// stable regardless of PHP version).
+			$featured = array();
+			$rest     = array();
+			foreach ( $by_category[ $cat_id ] as $id ) {
+				if ( get_post_meta( $id, '_twd_ap_featured', true ) ) {
+					$featured[] = $id;
+				} else {
+					$rest[] = $id;
+				}
+			}
+			$ids = array_slice( array_merge( $featured, $rest ), 0, $settings['posts_per_category'] );
+
+			$items = array();
+			foreach ( $ids as $id ) {
+				$items[] = $this->format_article_card( $id );
+			}
+
+			$groups[] = array(
+				'category' => array(
+					'id'   => $cat_id,
+					'name' => wp_specialchars_decode( $term->name, ENT_QUOTES ),
+					'slug' => $term->slug,
+				),
+				'posts'    => $items,
+				'total'    => count( $by_category[ $cat_id ] ),
+			);
+		}
+
+		return rest_ensure_response(
+			array(
+				'groups'   => $groups,
+				'settings' => array(
+					'show_thumbnails' => (bool) $settings['show_thumbnails'],
+				),
+			)
+		);
+	}
+
+	public function get_grid_settings() {
+		$settings   = TWD_AP_Grid_Settings::get();
+		$categories = get_categories( array( 'hide_empty' => true ) );
+
+		$order = array();
+		foreach ( $settings['category_order'] as $cat_id ) {
+			foreach ( $categories as $c ) {
+				if ( (int) $c->term_id === (int) $cat_id ) {
+					$order[] = array( 'id' => $cat_id, 'name' => wp_specialchars_decode( $c->name, ENT_QUOTES ) );
+					break;
+				}
+			}
+		}
+		$ordered_ids = wp_list_pluck( $order, 'id' );
+		foreach ( $categories as $c ) {
+			if ( ! in_array( (int) $c->term_id, $ordered_ids, true ) ) {
+				$order[] = array( 'id' => (int) $c->term_id, 'name' => wp_specialchars_decode( $c->name, ENT_QUOTES ) );
+			}
+		}
+
+		return rest_ensure_response(
+			array(
+				'categories_count'   => $settings['categories_count'],
+				'posts_per_category' => $settings['posts_per_category'],
+				'show_thumbnails'    => (bool) $settings['show_thumbnails'],
+				'categories'         => $order,
+			)
+		);
+	}
+
+	public function save_grid_settings( $request ) {
+		$params = $request->get_json_params();
+		if ( ! is_array( $params ) ) {
+			$params = array();
+		}
+		TWD_AP_Grid_Settings::save( $params );
+		return rest_ensure_response( array( 'saved' => true ) );
 	}
 
 	public function list_facets() {

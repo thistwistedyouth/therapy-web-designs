@@ -81,13 +81,16 @@ class TWD_AP_Shortcode {
 		$instance_id = 'twd-ap-grid-' . self::$instance_count;
 		$columns     = max( 1, min( 4, (int) $atts['columns'] ) );
 		$show_filters = ( '' === $atts['category'] && '' === $atts['tag'] );
+		$is_admin_user = TWD_AP_Frontend::current_user_allowed();
 
 		$config = array(
 			'restUrl'     => esc_url_raw( rest_url( 'twd-publisher/v1' ) ),
+			'nonce'       => wp_create_nonce( 'wp_rest' ),
 			'category'    => sanitize_title( $atts['category'] ),
 			'tag'         => sanitize_title( $atts['tag'] ),
 			'count'       => max( 1, (int) $atts['count'] ),
 			'showFilters' => $show_filters,
+			'isAdmin'     => $is_admin_user,
 		);
 
 		ob_start();
@@ -96,9 +99,16 @@ class TWD_AP_Shortcode {
 			<?php if ( $show_filters ) : ?>
 				<div class="twd-ap-articles-toolbar">
 					<input type="search" class="twd-ap-articles-search" placeholder="<?php esc_attr_e( 'Search articles…', 'twd-article-publisher' ); ?>" aria-label="<?php esc_attr_e( 'Search articles', 'twd-article-publisher' ); ?>" />
-					<div class="twd-ap-articles-pills" aria-label="<?php esc_attr_e( 'Filter by category', 'twd-article-publisher' ); ?>"></div>
+					<select class="twd-ap-articles-category-select" aria-label="<?php esc_attr_e( 'Jump to a category', 'twd-article-publisher' ); ?>">
+						<option value=""><?php esc_html_e( 'All categories', 'twd-article-publisher' ); ?></option>
+					</select>
+					<button type="button" class="twd-ap-articles-showall" hidden><?php esc_html_e( 'Show all categories', 'twd-article-publisher' ); ?></button>
+					<?php if ( $is_admin_user ) : ?>
+						<button type="button" class="twd-ap-articles-settings-btn" aria-label="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>">&#9881;</button>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
+			<div class="twd-ap-articles-groups"></div>
 			<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: <?php echo esc_attr( $columns ); ?>;">
 				<p class="twd-ap-muted"><?php esc_html_e( 'Loading articles…', 'twd-article-publisher' ); ?></p>
 			</div>
@@ -107,6 +117,36 @@ class TWD_AP_Shortcode {
 				<button type="button" class="twd-ap-articles-loadmore" hidden><?php esc_html_e( 'Load more', 'twd-article-publisher' ); ?></button>
 			</div>
 		</div>
+		<?php if ( $show_filters && $is_admin_user ) : ?>
+			<div class="twd-ap-overlay twd-ap-grid-settings-overlay" data-for="<?php echo esc_attr( $instance_id ); ?>" hidden>
+				<div class="twd-ap-modal twd-ap-grid-settings-modal">
+					<div class="twd-ap-modal-header">
+						<p class="twd-ap-modal-title"><?php esc_html_e( 'Customise this grid', 'twd-article-publisher' ); ?></p>
+						<button type="button" class="twd-ap-close-btn twd-ap-grid-settings-close" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
+					</div>
+					<div class="twd-ap-modal-body">
+						<p id="twd-ap-grid-settings-status" class="twd-ap-status" hidden></p>
+						<label class="twd-ap-label" for="twd-ap-gs-cats-count"><?php esc_html_e( 'How many categories to show', 'twd-article-publisher' ); ?></label>
+						<input type="number" id="twd-ap-gs-cats-count" class="twd-ap-input" min="1" max="12" />
+
+						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-posts-count"><?php esc_html_e( 'How many articles per category', 'twd-article-publisher' ); ?></label>
+						<input type="number" id="twd-ap-gs-posts-count" class="twd-ap-input" min="1" max="24" />
+
+						<label class="twd-ap-checkbox-label twd-ap-spaced">
+							<input type="checkbox" id="twd-ap-gs-thumbnails" />
+							<?php esc_html_e( 'Show thumbnails', 'twd-article-publisher' ); ?>
+						</label>
+
+						<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Category order (drag to reorder; only the top categories above show on the grid)', 'twd-article-publisher' ); ?></label>
+						<ul id="twd-ap-gs-cat-order" class="twd-ap-gs-cat-order"></ul>
+					</div>
+					<div class="twd-ap-modal-footer">
+						<div class="twd-ap-footer-spacer"></div>
+						<button type="button" id="twd-ap-gs-save" class="twd-ap-btn-primary"><?php esc_html_e( 'Save', 'twd-article-publisher' ); ?></button>
+					</div>
+				</div>
+			</div>
+		<?php endif; ?>
 		<?php
 		return ob_get_clean();
 	}

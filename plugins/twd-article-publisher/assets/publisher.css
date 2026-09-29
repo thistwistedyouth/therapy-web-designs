@@ -356,12 +356,34 @@
 .twd-ap-cat-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   font-size: 14px;
   margin-bottom: 6px;
 }
 .twd-ap-cat-item:last-child {
   margin-bottom: 0;
+}
+.twd-ap-cat-item label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.twd-ap-cat-star {
+  border: none;
+  background: none;
+  box-shadow: none;
+  padding: 2px 4px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--twd-ap-input-border);
+  cursor: pointer;
+}
+.twd-ap-cat-star:hover {
+  color: var(--twd-ap-muted);
+}
+.twd-ap-cat-star.is-primary {
+  color: #d4a72c;
 }
 .twd-ap-muted {
   color: var(--twd-ap-muted);
