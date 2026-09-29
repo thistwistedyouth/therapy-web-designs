@@ -351,10 +351,24 @@ class TWD_AP_REST {
 		// the grouped resources view. Falls back to the first ticked
 		// category, so nothing breaks for an article saved before this
 		// field existed or if the chosen primary wasn't actually ticked.
+		// Never left as the site's Uncategorized (default) category while
+		// a real one is also ticked: list_articles_grouped() drops that
+		// whole bucket outright, so a post primary'd there vanishes from
+		// the grid entirely, even though it's also ticked under a category
+		// that would otherwise show it. This came up in practice for a
+		// post whose only category used to be Uncategorized -- ticking an
+		// additional real category left the primary stuck on Uncategorized
+		// (it was already non-empty, so the old "only if unset" fallback
+		// never re-picked it), and the post disappeared from the grid on
+		// save despite the new category looking ticked in the popup.
 		if ( ! empty( $cat_ids ) ) {
-			$primary = isset( $request['primary_category'] ) ? absint( $request['primary_category'] ) : 0;
-			if ( ! $primary || ! in_array( $primary, $cat_ids, true ) ) {
-				$primary = $cat_ids[0];
+			$uncategorized_id = $this->uncategorized_id();
+			$real_ids         = array_values( array_diff( $cat_ids, array( $uncategorized_id ) ) );
+			$primary          = isset( $request['primary_category'] ) ? absint( $request['primary_category'] ) : 0;
+			$primary_ok       = $primary && in_array( $primary, $cat_ids, true )
+				&& ( $primary !== $uncategorized_id || empty( $real_ids ) );
+			if ( ! $primary_ok ) {
+				$primary = ! empty( $real_ids ) ? $real_ids[0] : $cat_ids[0];
 			}
 			update_post_meta( $post_id, '_twd_ap_primary_category', $primary );
 		}

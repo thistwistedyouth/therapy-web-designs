@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.18.1
+Stable tag: 1.18.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,18 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+IMPORTANT FIX (1.18.2): an article whose only category used to be
+Uncategorized (WordPress's own default) could vanish from the grouped
+resources grid entirely after ticking an additional real category and
+saving, even though the new category looked ticked in the popup. The
+"primary category" (which section the article appears under) only got
+replaced automatically when it was completely unset, so it stayed
+Uncategorized, and the grouped view drops that whole bucket outright.
+Saving an article now never leaves its primary category stuck on
+Uncategorized while a real category is also ticked. If this already
+happened to an article, opening it in the popup and clicking Update
+(no other change needed) fixes it, since this runs on every save.
 
 FIX (1.18.1): article titles and excerpts with an apostrophe, or a
 trimmed excerpt's "...", could still show as literal "&#8217;" or

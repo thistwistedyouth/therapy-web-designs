@@ -96,6 +96,7 @@ class TWD_AP_Frontend {
 			array(
 				'restUrl'       => esc_url_raw( rest_url( 'twd-publisher/v1' ) ),
 				'nonce'         => wp_create_nonce( 'wp_rest' ),
+				'uncategorizedId' => (int) get_option( 'default_category' ),
 				'yoastEnabled'  => defined( 'WPSEO_VERSION' ) ? 1 : 0,
 				'currentPostId' => is_singular( 'post' ) ? get_the_ID() : 0,
 				'canEditThis'   => $this->should_show_edit_button() ? 1 : 0,

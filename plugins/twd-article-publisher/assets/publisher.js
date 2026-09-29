@@ -370,8 +370,15 @@
 		if (primaryId === undefined) {
 			primaryId = state.primaryCategoryId;
 		}
-		if (!primaryId && checkedIds.length) {
-			primaryId = checkedIds[0];
+		// The site's Uncategorized/default category never wins as the
+		// automatic primary while a real category is also ticked -- the
+		// grouped resources view drops that whole bucket outright, so a
+		// post left primary'd there would silently vanish from the grid
+		// even though it's ticked under a category that would show it.
+		var uncategorizedId = (typeof TWD_AP !== 'undefined' && TWD_AP.uncategorizedId) || 0;
+		var realCheckedIds = checkedIds.filter(function (id) { return id !== uncategorizedId; });
+		if ((!primaryId || (primaryId === uncategorizedId && realCheckedIds.length)) && checkedIds.length) {
+			primaryId = realCheckedIds.length ? realCheckedIds[0] : checkedIds[0];
 		}
 		state.primaryCategoryId = primaryId || 0;
 
