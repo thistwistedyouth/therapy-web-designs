@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.18.2
+Stable tag: 1.19.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,19 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.19.0): "Load more" on the resources grid no longer shows once
+there's genuinely nothing left to load -- it now also checks that the
+page just loaded actually came back full, not just what the server's
+page count claimed. Loading articles now shows skeleton placeholder
+cards, sized the same as real ones, instead of a plain "Loading
+articles..." line, so the page no longer visibly resizes/jumps once
+the real cards land. The popup's Close button is now pinned to the
+modal's own top-right corner, outside the row of header buttons, so it
+never moves regardless of how many are showing (Delete, Edit in
+WordPress, Swipe book link, Article Assist, help); Delete this article
+is restyled as a smaller, quieter icon+label link there too, since it
+no longer needs to compete visually with the other header buttons.
 
 IMPORTANT FIX (1.18.2): an article whose only category used to be
 Uncategorized (WordPress's own default) could vanish from the grouped

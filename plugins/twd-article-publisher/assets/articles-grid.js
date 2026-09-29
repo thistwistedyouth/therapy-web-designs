@@ -4,6 +4,28 @@
 	var PLACEHOLDER_SVG = '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">' +
 		'<rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9.5" r="1.5" /><path d="M21 16l-5.5-5.5-4 4L8 11l-5 5" /></svg>';
 
+	// Same box shape as a real .twd-ap-article-card (thumb height, body
+	// padding, line count) so swapping skeleton cards for real ones never
+	// changes the grid's height -- that swap, not the shimmer itself, is
+	// what read as the page "resizing" while articles loaded in.
+	function skeletonCardHtml() {
+		return '<div class="twd-ap-article-card twd-ap-skeleton-card" aria-hidden="true">' +
+			'<span class="twd-ap-article-thumb twd-ap-skeleton-block"></span>' +
+			'<span class="twd-ap-article-body">' +
+				'<span class="twd-ap-skeleton-line twd-ap-skeleton-line-date"></span>' +
+				'<span class="twd-ap-skeleton-line twd-ap-skeleton-line-title"></span>' +
+				'<span class="twd-ap-skeleton-line twd-ap-skeleton-line-title-short"></span>' +
+				'<span class="twd-ap-skeleton-line twd-ap-skeleton-line-excerpt"></span>' +
+				'<span class="twd-ap-skeleton-line twd-ap-skeleton-line-excerpt"></span>' +
+			'</span>' +
+		'</div>';
+	}
+	function skeletonCardsHtml(count) {
+		var html = '';
+		for (var i = 0; i < count; i++) { html += skeletonCardHtml(); }
+		return html;
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var containers = document.querySelectorAll('.twd-ap-articles');
 		Array.prototype.forEach.call(containers, initGrid);
@@ -146,7 +168,11 @@
 		function fetchGrouped() {
 			if (state.loading) { return; }
 			state.loading = true;
-			groupsEl.innerHTML = '<p class="twd-ap-muted">Loading articles…</p>';
+			groupsEl.innerHTML =
+				'<div class="twd-ap-articles-group">' +
+					'<span class="twd-ap-skeleton-line twd-ap-skeleton-line-heading"></span>' +
+					'<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: 3;">' + skeletonCardsHtml(3) + '</div>' +
+				'</div>';
 			gridEl.hidden = true;
 			emptyEl.hidden = true;
 			loadMoreBtn.hidden = true;
@@ -201,6 +227,14 @@
 			loadMoreBtn.textContent = 'Loading…';
 			groupsEl.innerHTML = '';
 			gridEl.hidden = false;
+			// A fresh list (new filter/search, or the very first load) has
+			// nothing on screen yet to keep shape while it fetches, so
+			// skeleton cards go up immediately instead of an empty grid
+			// popping into a full one. "Load more" leaves what's already
+			// showing alone and just appends below it.
+			if (replace) {
+				gridEl.innerHTML = skeletonCardsHtml(config.count);
+			}
 
 			var params = ['per_page=' + encodeURIComponent(config.count), 'page=' + encodeURIComponent(state.page)];
 			if (state.search) {
@@ -233,12 +267,20 @@
 					emptyEl.hidden = hasResults;
 					gridEl.hidden = !hasResults;
 
-					var hasMore = data.total_pages && state.page < data.total_pages;
+					// total_pages alone isn't trusted on its own: a page that
+					// came back with fewer items than asked for is clearly the
+					// last one, whatever total_pages says, so Load more never
+					// shows a page that would come back empty.
+					var hasMore = !!data.total_pages && state.page < data.total_pages && items.length >= config.count;
 					loadMoreBtn.hidden = !hasMore;
 				})
 				.catch(function () {
 					state.loading = false;
 					loadMoreBtn.textContent = 'Load more';
+					if (replace) {
+						gridEl.innerHTML = '';
+						gridEl.hidden = true;
+					}
 				});
 		}
 

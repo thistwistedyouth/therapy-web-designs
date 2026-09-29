@@ -74,6 +74,7 @@
 }
 
 .twd-ap-modal {
+  position: relative;
   background: var(--twd-ap-bg);
   width: 100%;
   max-width: 760px;
@@ -88,7 +89,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   row-gap: 10px;
-  padding: 18px 22px;
+  padding: 18px 56px 18px 22px;
   border-bottom: 1px solid var(--twd-ap-border);
   background: var(--twd-ap-bg-soft);
 }
@@ -130,22 +131,26 @@
   gap: 10px;
 }
 .twd-ap-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   color: var(--twd-ap-danger);
+  opacity: 0.75;
   background: none;
-  border: 1px solid var(--twd-ap-danger);
-  border-radius: 999px;
-  padding: 5px 12px;
+  border: none;
+  padding: 5px 2px;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: opacity 0.2s ease, color 0.2s ease;
 }
 .twd-ap-delete-btn:hover {
-  background: var(--twd-ap-danger);
-  color: #fff;
+  opacity: 1;
+  color: #8a2f1e;
+  text-decoration: underline;
 }
 .twd-ap-delete-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -199,16 +204,32 @@
   border-color: var(--twd-ap-primary) !important;
 }
 
+/* Pinned to the modal's own corner, outside the header-actions row, so it
+   never shifts or wraps out of reach no matter how many other header
+   buttons/links are showing (Delete, Edit in WordPress, Swipe book link,
+   Article Assist, help). */
 .twd-ap-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
   border: none !important;
-  background: none !important;
+  border-radius: 50% !important;
+  background: rgba(0, 0, 0, 0.04) !important;
   box-shadow: none !important;
-  font-size: 26px !important;
+  font-size: 22px !important;
   line-height: 1 !important;
   cursor: pointer;
   color: var(--twd-ap-muted) !important;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 .twd-ap-close-btn:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
   color: var(--twd-ap-text) !important;
 }
 
@@ -679,7 +700,7 @@
     border-radius: 10px;
   }
   .twd-ap-modal-header {
-    padding: 14px 16px;
+    padding: 14px 48px 14px 16px;
   }
   .twd-ap-modal-header-actions {
     width: 100%;
@@ -688,5 +709,9 @@
   .twd-ap-assist-btn {
     font-size: 12px;
     padding: 6px 12px;
+  }
+  .twd-ap-close-btn {
+    top: 10px;
+    right: 10px;
   }
 }

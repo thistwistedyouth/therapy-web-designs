@@ -186,6 +186,64 @@
   grid-column: 1 / -1 !important;
 }
 
+/* Loading skeleton: same card box (thumb height, body padding) as a real
+   .twd-ap-article-card, so nothing changes size when real cards replace
+   these -- that swap, not the shimmer, is what read as the page
+   "resizing" while articles loaded in. */
+.twd-ap-skeleton-card {
+  cursor: default !important;
+}
+.twd-ap-skeleton-card:hover {
+  transform: none !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06) !important;
+}
+.twd-ap-skeleton-block,
+.twd-ap-skeleton-line {
+  display: block !important;
+  border-radius: 5px !important;
+  background: linear-gradient(90deg, #eef0f3 25%, #f7f8fa 37%, #eef0f3 63%) !important;
+  background-size: 400% 100% !important;
+  animation: twd-ap-skeleton-shimmer 1.4s ease infinite !important;
+}
+.twd-ap-skeleton-block {
+  height: 170px !important;
+  border-radius: 0 !important;
+}
+.twd-ap-skeleton-line {
+  height: 12px !important;
+  margin: 0 !important;
+}
+.twd-ap-skeleton-line-date {
+  width: 45% !important;
+  height: 10px !important;
+}
+.twd-ap-skeleton-line-title {
+  width: 90% !important;
+  height: 15px !important;
+}
+.twd-ap-skeleton-line-title-short {
+  width: 60% !important;
+  height: 15px !important;
+}
+.twd-ap-skeleton-line-excerpt {
+  width: 100% !important;
+}
+.twd-ap-skeleton-line-heading {
+  width: 200px !important;
+  height: 21px !important;
+  margin: 0 0 16px !important;
+}
+@keyframes twd-ap-skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .twd-ap-skeleton-block,
+  .twd-ap-skeleton-line {
+    animation: none !important;
+  }
+}
+
 .twd-ap-articles-empty {
   text-align: center !important;
   color: #6b7280 !important;
