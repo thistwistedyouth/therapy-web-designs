@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.24.0
+Stable tag: 1.25.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,18 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.25.0): removed the "Featured" pill badge and its blue border ring
+from the resources grid entirely, no featured visual treatment on cards
+any more (featured articles still sort first, just without calling
+attention to it). The card's own category label no longer shows
+"Featured Articles" (an organisational category for the landing view's
+own section heading, not a topic) when a post also carries a real topic
+category, so a hormones article now reads "Menopause" instead of
+"Featured Articles" above its title. The "Customise this grid" colour
+picker previously called "Card border / featured pill colour" is
+renamed "Accent colour (search focus, category links)" to match what it
+still controls now that the featured styling is gone.
 
 NEW (1.24.0): clicking "Update" (or "Schedule") on an article that was
 already published/scheduled before that click now saves and closes the

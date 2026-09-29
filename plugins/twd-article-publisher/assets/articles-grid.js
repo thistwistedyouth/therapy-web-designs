@@ -330,11 +330,9 @@
 					: '<span class="twd-ap-article-thumb twd-ap-article-thumb-placeholder" aria-hidden="true">' + PLACEHOLDER_SVG + '</span>')
 				: '';
 			var eyebrow = item.category ? escapeHtml(item.category) + ' &middot; ' : '';
-			var featuredBadge = item.featured ? '<span class="twd-ap-article-featured-badge">Featured</span>' : '';
 
-			return '<a class="twd-ap-article-card' + (item.featured ? ' twd-ap-article-card-featured' : '') + '" href="' + escapeHtml(item.link) + '">' +
+			return '<a class="twd-ap-article-card" href="' + escapeHtml(item.link) + '">' +
 				thumb +
-				featuredBadge +
 				'<span class="twd-ap-article-body">' +
 					'<span class="twd-ap-article-date">' + eyebrow + escapeHtml(item.date) + ' &middot; ' + parseInt(item.reading_time, 10) + ' min read</span>' +
 					'<span class="twd-ap-article-title">' + escapeHtml(item.title) + '</span>' +

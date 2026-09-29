@@ -588,6 +588,22 @@ class TWD_AP_REST {
 
 		$thumb_id   = get_post_thumbnail_id( $post );
 		$cats       = get_the_category( $post->ID );
+		// "Featured Articles" is an organisational category for the grouped
+		// landing view's own section heading, not a topic -- showing it as a
+		// card's own eyebrow label reads as a sales tag rather than saying
+		// anything about what the article covers. Prefer any other assigned
+		// category (a post can carry both, with this one only as its primary
+		// for grouping purposes), falling back to it only when it's the sole
+		// category on the post.
+		$topic_cats = array_values(
+			array_filter(
+				$cats,
+				function ( $c ) {
+					return 0 !== strcasecmp( $c->name, 'Featured Articles' );
+				}
+			)
+		);
+		$topic_cats = ! empty( $topic_cats ) ? $topic_cats : $cats;
 		$word_count = str_word_count( wp_strip_all_tags( $post->post_content ) );
 		$excerpt    = $post->post_excerpt ? $post->post_excerpt : wp_strip_all_tags( $post->post_content );
 
@@ -610,7 +626,7 @@ class TWD_AP_REST {
 			'date'         => get_the_date( '', $post ),
 			'reading_time' => max( 1, (int) ceil( $word_count / 200 ) ),
 			'thumbnail'    => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '',
-			'category'     => ! empty( $cats ) ? html_entity_decode( $cats[0]->name, ENT_QUOTES, 'UTF-8' ) : '',
+			'category'     => ! empty( $topic_cats ) ? html_entity_decode( $topic_cats[0]->name, ENT_QUOTES, 'UTF-8' ) : '',
 			'featured'     => (bool) get_post_meta( $post->ID, '_twd_ap_featured', true ),
 		);
 	}
