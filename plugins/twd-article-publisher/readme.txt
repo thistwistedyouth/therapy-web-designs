@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.13.3
+Stable tag: 1.14.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.14.0): a "Getting Started With Your New Articles Plugin" article
+is now published automatically the first time the plugin is activated
+on a site, so the resources page has real content on day one and new
+users have a walkthrough of the New Article button, the Visual, HTML
+and Import JSON tabs, the primary-category star, the resources page
+and its settings gear, and the swipe book, without leaving the site. Edit
+it into your own message or delete it once your team is comfortable.
+Created once only, even across deactivate and reactivate.
 
 NEW (1.13.3): renamed to "Articles & Resource Production Plugin" (from
 "TWD Article Publisher") so it sorts near the top of the alphabetical
