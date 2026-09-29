@@ -34,6 +34,9 @@
 		els.modalSubtitle = document.getElementById('twd-ap-modal-subtitle');
 		els.status = document.getElementById('twd-ap-status');
 		els.title = document.getElementById('twd-ap-title');
+		els.titleWrap = document.getElementById('twd-ap-title-wrap');
+		els.fieldsWrap = document.getElementById('twd-ap-fields-wrap');
+		els.modalFooter = document.getElementById('twd-ap-modal-footer');
 		els.featuredPreview = document.getElementById('twd-ap-featured-preview');
 		els.featuredSelect = document.getElementById('twd-ap-featured-select');
 		els.featuredRemove = document.getElementById('twd-ap-featured-remove');
@@ -268,6 +271,17 @@
 		els.htmlEditor.hidden = tab !== 'html';
 		els.jsonPanel.hidden = tab !== 'json';
 		els.toolbar.style.display = tab === 'visual' ? 'flex' : 'none';
+		setFieldsVisible(tab !== 'json');
+	}
+
+	// On the Paste JSON tab, nothing has been filled in yet, so the title
+	// and every other field (plus Save Draft/Publish) stay out of the way
+	// until "Fill fields from JSON" actually populates them and switches
+	// back to the Visual tab.
+	function setFieldsVisible(visible) {
+		els.titleWrap.hidden = !visible;
+		els.fieldsWrap.hidden = !visible;
+		els.modalFooter.hidden = !visible;
 	}
 
 	function saveSelection() {
@@ -698,6 +712,7 @@
 		els.htmlEditor.hidden = tab !== 'html';
 		els.jsonPanel.hidden = tab !== 'json';
 		els.toolbar.style.display = tab === 'visual' ? 'flex' : 'none';
+		setFieldsVisible(tab !== 'json');
 	}
 
 	function updateSwipebookLink(status, link) {

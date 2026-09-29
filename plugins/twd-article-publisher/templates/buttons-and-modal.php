@@ -44,14 +44,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="twd-ap-modal-body">
 			<p id="twd-ap-status" class="twd-ap-status" hidden></p>
 
-			<label class="twd-ap-label" for="twd-ap-title"><?php esc_html_e( 'Title', 'twd-article-publisher' ); ?></label>
-			<input type="text" id="twd-ap-title" class="twd-ap-input" placeholder="<?php esc_attr_e( 'Article title', 'twd-article-publisher' ); ?>" />
+			<div id="twd-ap-title-wrap">
+				<label class="twd-ap-label" for="twd-ap-title"><?php esc_html_e( 'Title', 'twd-article-publisher' ); ?></label>
+				<input type="text" id="twd-ap-title" class="twd-ap-input" placeholder="<?php esc_attr_e( 'Article title', 'twd-article-publisher' ); ?>" />
+			</div>
 
 			<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Article content', 'twd-article-publisher' ); ?></label>
 			<div class="twd-ap-editor-tabs">
 				<button type="button" id="twd-ap-tab-visual" class="twd-ap-tab twd-ap-tab-active" data-tab="visual"><?php esc_html_e( 'Visual', 'twd-article-publisher' ); ?></button>
 				<button type="button" id="twd-ap-tab-html" class="twd-ap-tab" data-tab="html"><?php esc_html_e( 'HTML', 'twd-article-publisher' ); ?></button>
-				<button type="button" id="twd-ap-tab-json" class="twd-ap-tab" data-tab="json"><?php esc_html_e( 'Import JSON', 'twd-article-publisher' ); ?></button>
+				<button type="button" id="twd-ap-tab-json" class="twd-ap-tab" data-tab="json"><?php esc_html_e( 'Paste JSON', 'twd-article-publisher' ); ?></button>
 			</div>
 
 			<div id="twd-ap-toolbar" class="twd-ap-toolbar">
@@ -71,76 +73,78 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div id="twd-ap-visual-editor" class="twd-ap-visual-editor" contenteditable="true" data-placeholder="<?php esc_attr_e( 'Write, or paste AI-formatted HTML using the HTML tab above', 'twd-article-publisher' ); ?>"></div>
 			<textarea id="twd-ap-html-editor" class="twd-ap-html-editor" hidden placeholder="<?php esc_attr_e( 'Paste formatted HTML here', 'twd-article-publisher' ); ?>"></textarea>
 			<div id="twd-ap-json-panel" class="twd-ap-json-panel" hidden>
-				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (the button above, or anywhere producing the same shape) to fill in the title, excerpt, SEO fields, category, tags and content below in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
+				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (the button above, or anywhere producing the same shape). Fill fields from it below to bring in the title, excerpt, SEO fields, category, tags and content in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
 				<textarea id="twd-ap-json-input" class="twd-ap-html-editor" rows="8" placeholder='{"title": "...", "seo_title": "...", "meta_description": "...", "category": "...", "tags": "...", "html": "..."}'></textarea>
 				<div class="twd-ap-btn-row twd-ap-spaced">
-					<button type="button" id="twd-ap-json-fill-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Fill fields from JSON', 'twd-article-publisher' ); ?></button>
+					<button type="button" id="twd-ap-json-fill-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Fill fields from JSON', 'twd-article-publisher' ); ?></button>
 				</div>
 			</div>
 
-			<label class="twd-ap-label twd-ap-spaced" for="twd-ap-excerpt"><?php esc_html_e( 'Excerpt (shown on article cards)', 'twd-article-publisher' ); ?></label>
-			<textarea id="twd-ap-excerpt" class="twd-ap-textarea-small" placeholder="<?php esc_attr_e( 'A short summary of the article', 'twd-article-publisher' ); ?>"></textarea>
+			<div id="twd-ap-fields-wrap">
+				<label class="twd-ap-label twd-ap-spaced" for="twd-ap-excerpt"><?php esc_html_e( 'Excerpt (shown on article cards)', 'twd-article-publisher' ); ?></label>
+				<textarea id="twd-ap-excerpt" class="twd-ap-textarea-small" placeholder="<?php esc_attr_e( 'A short summary of the article', 'twd-article-publisher' ); ?>"></textarea>
 
-			<div class="twd-ap-section">
-				<p class="twd-ap-section-heading"><?php esc_html_e( 'Details', 'twd-article-publisher' ); ?></p>
+				<div class="twd-ap-section">
+					<p class="twd-ap-section-heading"><?php esc_html_e( 'Details', 'twd-article-publisher' ); ?></p>
 
-				<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
-					<input type="checkbox" id="twd-ap-featured-toggle" />
-					<?php esc_html_e( 'Feature this article (shows first on the resources grid)', 'twd-article-publisher' ); ?>
-				</label>
+					<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
+						<input type="checkbox" id="twd-ap-featured-toggle" />
+						<?php esc_html_e( 'Feature this article (shows first on the resources grid)', 'twd-article-publisher' ); ?>
+					</label>
 
-				<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
-					<input type="checkbox" id="twd-ap-include-bio-toggle" />
-					<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup)', 'twd-article-publisher' ); ?>
-				</label>
+					<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
+						<input type="checkbox" id="twd-ap-include-bio-toggle" />
+						<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup)', 'twd-article-publisher' ); ?>
+					</label>
 
-				<div class="twd-ap-field-row">
-					<div class="twd-ap-field-col">
-						<label class="twd-ap-label"><?php esc_html_e( 'Featured image', 'twd-article-publisher' ); ?></label>
-						<div id="twd-ap-featured-preview" class="twd-ap-featured-preview"></div>
-						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Recommended 3:2 (e.g. 1200×800px)', 'twd-article-publisher' ); ?></p>
-						<div class="twd-ap-btn-row">
-							<button type="button" id="twd-ap-featured-select" class="twd-ap-btn-secondary"><?php esc_html_e( 'Choose Image', 'twd-article-publisher' ); ?></button>
-							<button type="button" id="twd-ap-featured-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
+					<div class="twd-ap-field-row">
+						<div class="twd-ap-field-col">
+							<label class="twd-ap-label"><?php esc_html_e( 'Featured image', 'twd-article-publisher' ); ?></label>
+							<div id="twd-ap-featured-preview" class="twd-ap-featured-preview"></div>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Recommended 3:2 (e.g. 1200×800px)', 'twd-article-publisher' ); ?></p>
+							<div class="twd-ap-btn-row">
+								<button type="button" id="twd-ap-featured-select" class="twd-ap-btn-secondary"><?php esc_html_e( 'Choose Image', 'twd-article-publisher' ); ?></button>
+								<button type="button" id="twd-ap-featured-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
+							</div>
+						</div>
+
+						<div class="twd-ap-field-col">
+							<label class="twd-ap-label"><?php esc_html_e( 'Categories', 'twd-article-publisher' ); ?></label>
+							<div id="twd-ap-categories" class="twd-ap-categories">
+								<span class="twd-ap-muted"><?php esc_html_e( 'Loading…', 'twd-article-publisher' ); ?></span>
+							</div>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Click the star to set which category this article is grouped under on the resources page.', 'twd-article-publisher' ); ?></p>
+							<div class="twd-ap-btn-row twd-ap-spaced">
+								<input type="text" id="twd-ap-cat-add-input" class="twd-ap-input" placeholder="<?php esc_attr_e( 'New category name', 'twd-article-publisher' ); ?>" />
+								<button type="button" id="twd-ap-cat-add-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Add', 'twd-article-publisher' ); ?></button>
+							</div>
 						</div>
 					</div>
 
-					<div class="twd-ap-field-col">
-						<label class="twd-ap-label"><?php esc_html_e( 'Categories', 'twd-article-publisher' ); ?></label>
-						<div id="twd-ap-categories" class="twd-ap-categories">
-							<span class="twd-ap-muted"><?php esc_html_e( 'Loading…', 'twd-article-publisher' ); ?></span>
-						</div>
-						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Click the star to set which category this article is grouped under on the resources page.', 'twd-article-publisher' ); ?></p>
-						<div class="twd-ap-btn-row twd-ap-spaced">
-							<input type="text" id="twd-ap-cat-add-input" class="twd-ap-input" placeholder="<?php esc_attr_e( 'New category name', 'twd-article-publisher' ); ?>" />
-							<button type="button" id="twd-ap-cat-add-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Add', 'twd-article-publisher' ); ?></button>
-						</div>
-					</div>
+					<label class="twd-ap-label twd-ap-spaced" for="twd-ap-tags"><?php esc_html_e( 'Tags (comma separated)', 'twd-article-publisher' ); ?></label>
+					<input type="text" id="twd-ap-tags" class="twd-ap-input" list="twd-ap-tag-datalist" placeholder="<?php esc_attr_e( 'anxiety, self-care, mindfulness', 'twd-article-publisher' ); ?>" />
+					<datalist id="twd-ap-tag-datalist"></datalist>
 				</div>
 
-				<label class="twd-ap-label twd-ap-spaced" for="twd-ap-tags"><?php esc_html_e( 'Tags (comma separated)', 'twd-article-publisher' ); ?></label>
-				<input type="text" id="twd-ap-tags" class="twd-ap-input" list="twd-ap-tag-datalist" placeholder="<?php esc_attr_e( 'anxiety, self-care, mindfulness', 'twd-article-publisher' ); ?>" />
-				<datalist id="twd-ap-tag-datalist"></datalist>
-			</div>
+				<div id="twd-ap-yoast-fields" class="twd-ap-yoast-fields" hidden>
+					<p class="twd-ap-section-heading"><?php esc_html_e( 'SEO', 'twd-article-publisher' ); ?></p>
+					<label class="twd-ap-label" for="twd-ap-yoast-title"><?php esc_html_e( 'SEO title', 'twd-article-publisher' ); ?></label>
+					<input type="text" id="twd-ap-yoast-title" class="twd-ap-input" />
+					<label class="twd-ap-label" for="twd-ap-yoast-desc"><?php esc_html_e( 'Meta description', 'twd-article-publisher' ); ?></label>
+					<textarea id="twd-ap-yoast-desc" class="twd-ap-textarea-small"></textarea>
+				</div>
 
-			<div id="twd-ap-yoast-fields" class="twd-ap-yoast-fields" hidden>
-				<p class="twd-ap-section-heading"><?php esc_html_e( 'SEO', 'twd-article-publisher' ); ?></p>
-				<label class="twd-ap-label" for="twd-ap-yoast-title"><?php esc_html_e( 'SEO title', 'twd-article-publisher' ); ?></label>
-				<input type="text" id="twd-ap-yoast-title" class="twd-ap-input" />
-				<label class="twd-ap-label" for="twd-ap-yoast-desc"><?php esc_html_e( 'Meta description', 'twd-article-publisher' ); ?></label>
-				<textarea id="twd-ap-yoast-desc" class="twd-ap-textarea-small"></textarea>
-			</div>
-
-			<div class="twd-ap-schedule-row">
-				<label class="twd-ap-checkbox-label">
-					<input type="checkbox" id="twd-ap-schedule-toggle" />
-					<?php esc_html_e( 'Schedule for later', 'twd-article-publisher' ); ?>
-				</label>
-				<input type="datetime-local" id="twd-ap-schedule-date" class="twd-ap-input twd-ap-schedule-date" hidden />
+				<div class="twd-ap-schedule-row">
+					<label class="twd-ap-checkbox-label">
+						<input type="checkbox" id="twd-ap-schedule-toggle" />
+						<?php esc_html_e( 'Schedule for later', 'twd-article-publisher' ); ?>
+					</label>
+					<input type="datetime-local" id="twd-ap-schedule-date" class="twd-ap-input twd-ap-schedule-date" hidden />
+				</div>
 			</div>
 		</div>
 
-		<div class="twd-ap-modal-footer">
+		<div id="twd-ap-modal-footer" class="twd-ap-modal-footer">
 			<div class="twd-ap-footer-spacer"></div>
 			<button type="button" id="twd-ap-draft-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Save Draft', 'twd-article-publisher' ); ?></button>
 			<button type="button" id="twd-ap-publish-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Publish', 'twd-article-publisher' ); ?></button>
