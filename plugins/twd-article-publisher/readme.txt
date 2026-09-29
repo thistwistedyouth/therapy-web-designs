@@ -1,10 +1,10 @@
-=== TWD Article Publisher ===
+=== Articles & Resource Production Plugin ===
 Contributors: therapywebdesigns
 Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.13.2
+Stable tag: 1.13.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,13 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.13.3): renamed to "Articles & Resource Production Plugin" (from
+"TWD Article Publisher") so it sorts near the top of the alphabetical
+Plugins list in wp-admin. Nothing else changed: same file, same
+settings, same shortcode, same update feed. WordPress matches plugins
+by file path, not display name, so this update applies cleanly and
+future updates will too.
 
 FIX (1.13.2): "Could not reach the update server" now shows the actual
 reason underneath (a timeout, a blocked request, an HTTP error code

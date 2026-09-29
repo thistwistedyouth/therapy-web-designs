@@ -194,7 +194,7 @@ class TWD_AP_Updater {
 		}
 
 		$info               = new stdClass();
-		$info->name         = 'TWD Article Publisher';
+		$info->name         = 'Articles & Resource Production Plugin';
 		$info->slug         = self::SLUG;
 		$info->version      = $remote->version;
 		$info->author       = '<a href="https://therapywebdesigns.co.uk/">Therapy Web Designs</a>';

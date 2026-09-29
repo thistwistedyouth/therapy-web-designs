@@ -1,4 +1,4 @@
-# TWD Article Publisher
+# Articles & Resource Production Plugin (formerly "TWD Article Publisher")
 
 A WordPress plugin, generic and reusable across every Therapy Web Designs client site. It lets an approved logged-in user (a therapist, not a developer) publish and edit blog posts from a popup on the live front end, without going into wp-admin. It was built to solve one recurring problem: therapists writing blog content with an AI assistant and needing a fast way to get formatted HTML onto their site as a properly tagged, SEO-ready post.
 
@@ -17,6 +17,7 @@ Not tied to any one client's design. Header, footer, page CSS, per-site palettes
 
 ## Why it's built this way
 
+- **The plugin's display name changed to "Articles & Resource Production Plugin" (from "TWD Article Publisher") so it sorts near the top of wp-admin's alphabetically-sorted Plugins list, on request.** Only the `Plugin Name` header (and the matching `readme.txt` title and `TWD_AP_Updater::plugin_info()`'s `$info->name`) changed. The folder name, main file name, text domain, REST namespace (`twd-publisher/v1`), all `TWD_AP_*` class/constant names, and the self-hosted updater's `SLUG` constant deliberately stayed as `twd-article-publisher` throughout — changing any of those would risk breaking the updater or require a full uninstall/reinstall on every client site for a purely cosmetic rename.
 - **Custom REST routes instead of `wp/v2/posts`.** The core posts endpoint doesn't give a clean hook point to force server-side HTML sanitisation before save. A dedicated namespace (`twd-publisher/v1`) means every write funnels through `TWD_AP_Sanitizer::clean()` first, no exceptions.
 - **Sanitise on the server, never trust the browser.** The popup can receive AI-generated HTML of unknown quality. `wp_kses` with an explicit allow-list strips scripts, inline styles and event handlers regardless of what the client sends. Any `<h1>` is demoted to `<h2>` so a pasted article never fights the theme's own post-title H1.
 - **Vanilla JS, no build step.** `execCommand` was chosen over pulling in TinyMCE or a bundler because this plugin has to drop into any client's WordPress with zero dependency risk. It is deliberately simple rather than feature-complete.
