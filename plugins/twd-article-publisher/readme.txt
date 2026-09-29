@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.20.0
+Stable tag: 1.20.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.20.1): the "View as a swipe book" pill moved to the top of the
+article in 1.20.0, but landed outside the article's own centred,
+styled content column, prepended after that wrapper had already been
+built around the rest of the content rather than inside it. It showed
+up full-width against the page's actual left edge instead of sitting
+neatly in the article column next to the theme's own "Back to
+Resources" link. Reordered so it's added before the content gets
+wrapped, landing inside that column like the rest of the article.
 
 NEW (1.20.0): the resources grid only splits into category sections
 once a site has more than 12 published articles; 12 or fewer now show

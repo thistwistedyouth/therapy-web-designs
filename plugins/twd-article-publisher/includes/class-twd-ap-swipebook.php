@@ -31,7 +31,12 @@ class TWD_AP_Swipebook {
 	private function __construct() {
 		add_filter( 'query_vars', array( $this, 'register_query_var' ) );
 		add_action( 'template_redirect', array( $this, 'maybe_render' ) );
-		add_filter( 'the_content', array( $this, 'append_button' ), 30 );
+		// Priority 15: before TWD_AP_Article_Style::wrap_content() (20), so
+		// the pill lands inside that centred, styled wrapper along with the
+		// rest of the content, instead of getting prepended outside it --
+		// which left it full-width against the page's actual left edge,
+		// disconnected from the article column entirely.
+		add_filter( 'the_content', array( $this, 'append_button' ), 15 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_inline' ) );
 	}
 
