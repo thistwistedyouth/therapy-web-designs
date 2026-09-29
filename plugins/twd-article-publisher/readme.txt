@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.23.0
+Stable tag: 1.24.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,18 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.24.0): clicking "Update" (or "Schedule") on an article that was
+already published/scheduled before that click now saves and closes the
+popup straight away, instead of staying open with a "you can keep
+editing" message. A brand new Publish, or any Save as Draft, still keeps
+the popup open, since the swipe book link and further edits are worth
+staying for on those.
+
+FIX (1.24.0): the swipe book's "Download as PDF" only ever captured
+whichever single slide was on screen when clicked. It now steps through
+every slide, capturing each the same way, and builds one multi-page PDF
+from all of them, so downloading the book actually gets the whole book.
 
 NEW (1.23.0): the "Customise this grid" popup now has a "Card border /
 featured pill colour" colour picker, alongside the existing "Read more"

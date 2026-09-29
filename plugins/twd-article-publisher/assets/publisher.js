@@ -872,6 +872,12 @@
 			return;
 		}
 
+		// Whether this was already an existing article before this save, not
+		// whether it still is after (state.editingId gets set either way once
+		// the response comes back) -- that's what decides whether the button
+		// read "Update"/"Schedule" rather than "Publish" just now.
+		var wasEditing = !!state.editingId;
+
 		deselectImage();
 		if (state.activeTab === 'html') {
 			els.visualEditor.innerHTML = els.htmlEditor.value;
@@ -934,6 +940,20 @@
 				state.editingId = result.data.id;
 				state.dirty = false;
 				var label = status === 'draft' ? 'Draft saved.' : status === 'future' ? 'Article scheduled.' : 'Article published.';
+
+				// Updating (or rescheduling) an article that was already
+				// published/scheduled before this click closes the popup
+				// straight away, same as clicking Close after -- there's
+				// nothing left to review that wasn't already reviewed the
+				// first time it was published. A brand new Publish, or any
+				// Save as Draft, keeps the popup open so the swipe book
+				// link/further edits are still reachable.
+				if (wasEditing && 'draft' !== status) {
+					showStatus(label, true);
+					setTimeout(closeModal, 600);
+					return;
+				}
+
 				showStatus(label + ' You can keep editing or close this window.', true);
 				els.modalSubtitle.textContent = 'Editing article';
 				els.draftBtn.textContent = 'Save as Draft';

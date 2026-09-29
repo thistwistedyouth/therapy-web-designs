@@ -233,6 +233,13 @@ body {
   transform: translateX(100%);
 }
 
+/* Download as PDF steps every slide to is-active in turn to snapshot it,
+   off the reader's own input -- without this, each step would visibly
+   animate through the normal 0.52s slide transition. */
+.twd-sb-backdrop.twd-sb-exporting .twd-sb-slide {
+  transition: none !important;
+}
+
 .twd-sb-card {
   position: relative !important;
   width: 100% !important;

@@ -230,12 +230,12 @@
 			});
 		}
 
-		// -- Save as image / Download as PDF both capture the currently
-		// active card exactly as it renders on screen (html2canvas), so the
-		// export always matches what the reader is looking at, not a
-		// separately-built layout. Both libraries are only fetched the
-		// first time either button is used, same lazy-load pattern as the
-		// pledge postcard's own save-as-image in 04 Page Shell.php.
+		// -- Save as image captures the currently active card exactly as it
+		// renders on screen (html2canvas). Download as PDF captures every
+		// slide the same way, one at a time, into a single multi-page PDF --
+		// both libraries are only fetched the first time either button is
+		// used, same lazy-load pattern as the pledge postcard's own
+		// save-as-image in 04 Page Shell.php.
 		function captureActiveCard(onCanvas) {
 			loadHtml2Canvas(function () {
 				var card = backdrop.querySelector('.twd-sb-slide.is-active .twd-sb-card');
@@ -244,10 +244,50 @@
 			});
 		}
 
-		function exportFilename(ext) {
+		// Steps every slide to is-active in turn (each one has to actually be
+		// the on-screen slide, not just off to the side under a transform,
+		// since .twd-sb-slides clips anything not at translateX(0)), snapshots
+		// its card, then restores whichever slide the reader was actually on.
+		// twd-sb-exporting turns off the slide transition for this so each
+		// step is instant, not a visible slide animation the reader didn't ask
+		// for.
+		function captureAllCards(onDone, onProgress) {
+			loadHtml2Canvas(function () {
+				if (!window.html2canvas) { onDone([]); return; }
+				var originalIndex = index;
+				backdrop.classList.add('twd-sb-exporting');
+				var canvases = [];
+				var i = 0;
+				function step() {
+					if (i >= total) {
+						backdrop.classList.remove('twd-sb-exporting');
+						goTo(originalIndex);
+						onDone(canvases);
+						return;
+					}
+					slides.forEach(function (slide, si) {
+						slide.classList.toggle('is-active', si === i);
+						slide.classList.toggle('is-past', si < i);
+						slide.classList.toggle('is-future', si > i);
+					});
+					if (onProgress) { onProgress(i + 1, total); }
+					requestAnimationFrame(function () {
+						window.html2canvas(slides[i].querySelector('.twd-sb-card'), { backgroundColor: '#13112e', scale: 2, useCORS: true })
+							.then(function (canvas) {
+								canvases.push(canvas);
+								i++;
+								step();
+							});
+					});
+				}
+				step();
+			});
+		}
+
+		function exportFilename(ext, pageNum) {
 			var title = backdrop.getAttribute('data-title') || 'summary-book';
 			var slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'summary-book';
-			return slug + '-page-' + (index + 1) + '.' + ext;
+			return slug + (pageNum ? '-page-' + pageNum : '') + '.' + ext;
 		}
 
 		if (saveBtn) {
@@ -257,7 +297,7 @@
 				saveBtn.disabled = true;
 				captureActiveCard(function (canvas) {
 					var link = document.createElement('a');
-					link.download = exportFilename('png');
+					link.download = exportFilename('png', index + 1);
 					link.href = canvas.toDataURL('image/png');
 					link.click();
 					saveBtn.textContent = original;
@@ -269,9 +309,14 @@
 		if (pdfBtn) {
 			pdfBtn.addEventListener('click', function () {
 				var original = pdfBtn.textContent;
-				pdfBtn.textContent = 'Preparing…';
 				pdfBtn.disabled = true;
-				captureActiveCard(function (canvas) {
+				captureAllCards(function (canvases) {
+					if (!canvases.length) {
+						pdfBtn.textContent = original;
+						pdfBtn.disabled = false;
+						return;
+					}
+					pdfBtn.textContent = 'Building PDF…';
 					loadJsPDF(function () {
 						if (!window.jspdf || !window.jspdf.jsPDF) {
 							pdfBtn.textContent = original;
@@ -279,16 +324,22 @@
 							return;
 						}
 						var JsPdfCtor = window.jspdf.jsPDF;
-						var pdf = new JsPdfCtor({
-							orientation: canvas.width >= canvas.height ? 'landscape' : 'portrait',
-							unit: 'px',
-							format: [canvas.width, canvas.height],
+						var pdf = null;
+						canvases.forEach(function (canvas, i) {
+							var orientation = canvas.width >= canvas.height ? 'landscape' : 'portrait';
+							if (0 === i) {
+								pdf = new JsPdfCtor({ orientation: orientation, unit: 'px', format: [canvas.width, canvas.height] });
+							} else {
+								pdf.addPage([canvas.width, canvas.height], orientation);
+							}
+							pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
 						});
-						pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
 						pdf.save(exportFilename('pdf'));
 						pdfBtn.textContent = original;
 						pdfBtn.disabled = false;
 					});
+				}, function (done, totalSlides) {
+					pdfBtn.textContent = 'Page ' + done + '/' + totalSlides + '…';
 				});
 			});
 		}
