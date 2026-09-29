@@ -244,6 +244,9 @@
   }
 }
 
+.twd-ap-articles-empty[hidden] {
+  display: none !important;
+}
 .twd-ap-articles-empty {
   text-align: center !important;
   color: #6b7280 !important;
@@ -255,6 +258,16 @@
   display: flex !important;
   justify-content: center !important;
   margin-top: 28px !important;
+}
+/* A theme or page builder's own global button styling (Elementor
+   especially) commonly forces display on every <button> with its own
+   !important, which the browser's built-in [hidden] { display: none }
+   (no !important, a UA stylesheet default) then loses to -- the JS was
+   correctly setting the button's hidden property (confirmed via the
+   DEBUG line: loadmore_hidden=true), it just wasn't actually hiding.
+   Same bug class as .twd-ap-articles-grid[hidden] below. */
+.twd-ap-articles-loadmore[hidden] {
+  display: none !important;
 }
 .twd-ap-articles-loadmore {
   min-width: 160px !important;

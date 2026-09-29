@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.21.0
+Stable tag: 1.21.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,21 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FOUND IT (1.21.1): "Load more" was never a logic bug at all. The
+1.21.0 DEBUG line showed loadmore_hidden=true on a site where the
+button was plainly still visible, meaning the JS was correctly hiding
+it and something else was overriding that. A theme or page builder's
+own global button styling (Elementor especially) commonly forces
+display on every <button> with its own !important, which beats the
+browser's plain, non-!important [hidden] default, the same class of
+bug already documented here for .twd-ap-articles-grid[hidden]. Added
+the same explicit [hidden] override to the Load more button, plus the
+empty-state message and the admin popup's small text-link buttons,
+which were exposed to the identical risk and just hadn't been reported
+yet. The temporary DEBUG line has done its job and is removed; the
+12-article decision moving into server-rendered HTML in 1.21.0 stays,
+since it's a genuine improvement on its own regardless of this fix.
 
 NEW APPROACH (1.21.0): whether a site has more than 12 published
 articles is now decided in PHP and baked directly into the resources

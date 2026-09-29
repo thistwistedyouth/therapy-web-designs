@@ -384,6 +384,9 @@
   cursor: not-allowed;
 }
 
+.twd-ap-btn-text[hidden] {
+  display: none !important;
+}
 .twd-ap-btn-text {
   border: none !important;
   background: none !important;

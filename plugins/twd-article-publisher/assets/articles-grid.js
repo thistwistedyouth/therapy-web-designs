@@ -47,27 +47,6 @@
 		var selectEl    = root.querySelector('.twd-ap-articles-category-select');
 		var settingsBtn = root.querySelector('.twd-ap-articles-settings-btn');
 
-		// TEMPORARY diagnostic: a plain-text line under Load more showing the
-		// actual numbers this run computed, so "still shows with nothing left"
-		// can be read straight off the page instead of guessed at again.
-		// Remove this whole block (and its one call site) once the real cause
-		// is confirmed and fixed.
-		var debugEl = null;
-		function showDebugLine(itemsCount) {
-			if (!debugEl) {
-				debugEl = document.createElement('p');
-				debugEl.style.cssText = 'text-align:center;font:12px monospace;color:#b91c1c;margin-top:8px;';
-				loadMoreBtn.parentNode.appendChild(debugEl);
-			}
-			debugEl.textContent = 'DEBUG config.manyArticles=' + config.manyArticles +
-				' state.manyArticles=' + state.manyArticles +
-				' rest_total_articles=' + state.debugTotal +
-				' config.count=' + config.count +
-				' items_returned=' + itemsCount +
-				' offset=' + state.offset +
-				' loadmore_hidden=' + loadMoreBtn.hidden;
-		}
-
 		var state = {
 			search: '',
 			category: config.category || '',
@@ -188,7 +167,6 @@
 						root.style.setProperty('--twd-ap-readmore-color', data.read_more_color);
 					}
 					var total = data && data.total_articles;
-					state.debugTotal = total;
 					state.manyArticles = 'number' === typeof total && total > GROUP_THRESHOLD;
 					// Fewer than the threshold: fetch enough in one go to
 					// show every article on this site, so "Load more" never
@@ -331,7 +309,6 @@
 					// Load more showing on a small site. This way it never
 					// can, whatever total_articles actually reported.
 					loadMoreBtn.hidden = !state.manyArticles || !data.has_more;
-					showDebugLine(items.length);
 				})
 				.catch(function () {
 					state.loading = false;
