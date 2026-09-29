@@ -108,6 +108,18 @@ class TWD_AP_Updater {
 
 	public function clear_cache() {
 		delete_transient( self::CACHE_KEY );
+		delete_transient( self::CACHE_KEY . '_error' );
+	}
+
+	/**
+	 * Records exactly why the last fetch failed (blocked outbound request,
+	 * DNS failure, a non-200 from GitHub, malformed JSON), since "could not
+	 * reach the update server" alone gives nothing to act on when a site's
+	 * own host or firewall is the actual cause. Read back by
+	 * render_checked_notice() only when a fetch just failed.
+	 */
+	private function set_last_error( $message ) {
+		set_transient( self::CACHE_KEY . '_error', $message, DAY_IN_SECONDS );
 	}
 
 	private function get_remote_info() {
@@ -117,15 +129,23 @@ class TWD_AP_Updater {
 		}
 
 		$response = wp_remote_get( self::UPDATE_JSON_URL, array( 'timeout' => 10 ) );
-		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+		if ( is_wp_error( $response ) ) {
+			$this->set_last_error( $response->get_error_message() );
+			return false;
+		}
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $code ) {
+			$this->set_last_error( 'GitHub returned HTTP ' . $code . '.' );
 			return false;
 		}
 
 		$data = json_decode( wp_remote_retrieve_body( $response ) );
 		if ( ! $data || empty( $data->version ) || empty( $data->download_url ) ) {
+			$this->set_last_error( 'The update file did not contain a valid version.' );
 			return false;
 		}
 
+		delete_transient( self::CACHE_KEY . '_error' );
 		set_transient( self::CACHE_KEY, $data, 12 * HOUR_IN_SECONDS );
 		return $data;
 	}
@@ -222,7 +242,8 @@ class TWD_AP_Updater {
 		$latest = isset( $_GET['twd_ap_latest'] ) ? sanitize_text_field( wp_unslash( $_GET['twd_ap_latest'] ) ) : '';
 
 		if ( '' === $latest ) {
-			echo '<div class="notice notice-warning is-dismissible"><p>' . esc_html__( 'Could not reach the update server just now. Try again shortly.', 'twd-article-publisher' ) . '</p></div>';
+			$detail = get_transient( self::CACHE_KEY . '_error' );
+			echo '<div class="notice notice-warning is-dismissible"><p>' . esc_html__( 'Could not reach the update server just now.', 'twd-article-publisher' ) . ( $detail ? ' <code>' . esc_html( $detail ) . '</code>' : '' ) . '</p></div>';
 			return;
 		}
 

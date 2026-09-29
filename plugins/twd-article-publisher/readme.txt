@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.13.1
+Stable tag: 1.13.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,11 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.13.2): "Could not reach the update server" now shows the actual
+reason underneath (a timeout, a blocked request, an HTTP error code
+from GitHub) instead of nothing else, so a site whose host is blocking
+the update check can actually be diagnosed instead of guessed at.
 
 NEW (1.13.1): the swipe book page is restyled to a dark, gold-accented
 look (Cormorant Garamond serif headings, thin gold hairlines, a gold
