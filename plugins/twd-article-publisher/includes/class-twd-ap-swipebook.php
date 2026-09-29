@@ -212,6 +212,9 @@ class TWD_AP_Swipebook {
 <?php if ( $image_url ) : ?>
 <meta property="og:image" content="<?php echo esc_url( $image_url ); ?>">
 <?php endif; ?>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo esc_url( TWD_AP_URL . 'assets/swipebook.css' ); ?>?v=<?php echo esc_attr( TWD_AP_VERSION ); ?>">
 </head>
 <body class="twd-sb-body">
@@ -223,9 +226,13 @@ class TWD_AP_Swipebook {
 		<?php endforeach; ?>
 	</div>
 
-	<?php if ( $logo_url ) : ?>
-		<div class="twd-sb-brand"><img src="<?php echo esc_url( $logo_url ); ?>" alt=""></div>
-	<?php endif; ?>
+	<div class="twd-sb-mast">
+		<?php if ( $logo_url ) : ?>
+			<img class="twd-sb-mast-logo" src="<?php echo esc_url( $logo_url ); ?>" alt="">
+		<?php else : ?>
+			<span class="twd-sb-mast-text"><?php echo esc_html( $site_name ); ?></span>
+		<?php endif; ?>
+	</div>
 
 	<div class="twd-sb-slides" id="twd-sb-slides">
 		<?php foreach ( $slides as $i => $slide ) : ?>

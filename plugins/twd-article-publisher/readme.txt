@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.13.0
+Stable tag: 1.13.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,12 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.13.1): the swipe book page is restyled to a dark, gold-accented
+look (Cormorant Garamond serif headings, thin gold hairlines, a gold
+progress bar and pager) closer to Therapy Resource Directory's own
+book reader, in place of the earlier bright green/blue gradient. No
+behaviour changed, styling only.
 
 NEW (1.13.0): the [twd_articles] grid now has a grouped-by-category
 landing view by default: the top categories (by number of articles),
