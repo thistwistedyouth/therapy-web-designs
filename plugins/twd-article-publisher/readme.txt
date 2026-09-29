@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.20.4
+Stable tag: 1.20.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+TEMPORARY DIAGNOSTIC (1.20.5): a small red DEBUG line now shows under
+"Load more" on the resources grid, printing the exact numbers that
+decided whether it's shown (total_articles, manyArticles, per_page,
+items returned, offset, and whether Load more ended up hidden). 1.20.4
+should already make Load more impossible to show with 12 or fewer
+articles; if it's still showing after that update on a site, this line
+says why directly instead of guessing again. Remove this once the real
+cause is confirmed and fixed.
 
 FIX (1.20.4): "Load more" could still show on a site with 12 or fewer
 articles (confirmed via the 1.20.3 deploy-check marker that updates
