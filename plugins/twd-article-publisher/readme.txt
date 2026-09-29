@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.19.0
+Stable tag: 1.19.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.19.1): "Load more" could still show with nothing left to load
+on a filtered/searched list whose total happened to land exactly on a
+page boundary (e.g. precisely the number of articles the grid shows
+per page). The 1.19.0 fix only caught a page that came back with
+fewer articles than asked for; it didn't catch this exact-multiple
+case, which depended on WP_Query's own page count, and that count
+isn't reliable with this grid's featured-articles-first query. The
+resources grid endpoint now fetches one extra article beyond what it
+shows, purely to answer "is there another page" from what actually
+came back rather than from a page count at all.
 
 NEW (1.19.0): "Load more" on the resources grid no longer shows once
 there's genuinely nothing left to load -- it now also checks that the

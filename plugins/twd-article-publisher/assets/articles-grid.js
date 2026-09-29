@@ -51,7 +51,7 @@
 			search: '',
 			category: config.category || '',
 			tag: config.tag || '',
-			page: 1,
+			offset: 0,
 			loading: false,
 			showThumbnails: true,
 		};
@@ -80,7 +80,7 @@
 				clearTimeout(searchTimer);
 				searchTimer = setTimeout(function () {
 					state.search = searchEl.value.trim();
-					state.page = 1;
+					state.offset = 0;
 					switchToFlatIfNeeded();
 				}, 350);
 			});
@@ -89,7 +89,7 @@
 		if (selectEl) {
 			selectEl.addEventListener('change', function () {
 				state.category = selectEl.value;
-				state.page = 1;
+				state.offset = 0;
 				// The empty-value "Show all" option means a full return to
 				// the default landing view, not just clearing the category
 				// filter while a search is still active.
@@ -102,7 +102,7 @@
 		}
 
 		loadMoreBtn.addEventListener('click', function () {
-			state.page += 1;
+			state.offset += config.count;
 			fetchArticles(false);
 		});
 
@@ -206,7 +206,7 @@
 					groupsEl.querySelectorAll('.twd-ap-articles-group-more').forEach(function (btn) {
 						btn.addEventListener('click', function () {
 							state.category = btn.dataset.slug;
-							state.page = 1;
+							state.offset = 0;
 							if (selectEl) { selectEl.value = state.category; }
 							fetchArticles(true);
 							root.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -236,7 +236,7 @@
 				gridEl.innerHTML = skeletonCardsHtml(config.count);
 			}
 
-			var params = ['per_page=' + encodeURIComponent(config.count), 'page=' + encodeURIComponent(state.page)];
+			var params = ['per_page=' + encodeURIComponent(config.count), 'offset=' + encodeURIComponent(state.offset)];
 			if (state.search) {
 				params.push('search=' + encodeURIComponent(state.search));
 			}
@@ -267,12 +267,7 @@
 					emptyEl.hidden = hasResults;
 					gridEl.hidden = !hasResults;
 
-					// total_pages alone isn't trusted on its own: a page that
-					// came back with fewer items than asked for is clearly the
-					// last one, whatever total_pages says, so Load more never
-					// shows a page that would come back empty.
-					var hasMore = !!data.total_pages && state.page < data.total_pages && items.length >= config.count;
-					loadMoreBtn.hidden = !hasMore;
+					loadMoreBtn.hidden = !data.has_more;
 				})
 				.catch(function () {
 					state.loading = false;

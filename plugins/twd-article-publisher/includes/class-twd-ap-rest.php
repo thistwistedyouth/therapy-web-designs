@@ -495,14 +495,25 @@ class TWD_AP_REST {
 		$search   = isset( $request['search'] ) ? sanitize_text_field( wp_unslash( $request['search'] ) ) : '';
 		$category = isset( $request['category'] ) ? sanitize_title( wp_unslash( $request['category'] ) ) : '';
 		$tag      = isset( $request['tag'] ) ? sanitize_title( wp_unslash( $request['tag'] ) ) : '';
-		$page     = isset( $request['page'] ) ? max( 1, (int) $request['page'] ) : 1;
+		$offset   = isset( $request['offset'] ) ? max( 0, (int) $request['offset'] ) : 0;
 		$per_page = isset( $request['per_page'] ) ? max( 1, min( 24, (int) $request['per_page'] ) ) : 9;
 
 		$query_args = array(
 			'post_type'      => 'post',
 			'post_status'    => 'publish',
-			'posts_per_page' => $per_page,
-			'paged'          => $page,
+			// One extra post is fetched beyond what's actually shown, purely
+			// to answer "is there a next page" directly from what came back,
+			// rather than from WP_Query's own found_posts/max_num_pages --
+			// those count matching rows before the featured/not-featured OR
+			// meta_query below is resolved down to one match per post, which
+			// in practice reported more pages than actually existed and left
+			// "Load more" showing with nothing left to load. offset (not
+			// paged) keeps every page's items lined up exactly count apart
+			// regardless of this +1. no_found_rows since found_posts/
+			// max_num_pages are never read here any more.
+			'posts_per_page' => $per_page + 1,
+			'offset'         => $offset,
+			'no_found_rows'  => true,
 			// A bare 'meta_key' query var is NOT a LEFT JOIN: WP_Query turns it
 			// into an implicit meta_query clause that INNER JOINs postmeta,
 			// which excludes every post that doesn't have that meta row at
@@ -540,18 +551,22 @@ class TWD_AP_REST {
 		}
 
 		$query = new WP_Query( $query_args );
+		$posts = $query->posts;
+
+		$has_more = count( $posts ) > $per_page;
+		if ( $has_more ) {
+			$posts = array_slice( $posts, 0, $per_page );
+		}
 
 		$items = array();
-		foreach ( $query->posts as $post ) {
+		foreach ( $posts as $post ) {
 			$items[] = $this->format_article_card( $post );
 		}
 
 		return rest_ensure_response(
 			array(
-				'items'       => $items,
-				'page'        => $page,
-				'total_pages' => (int) $query->max_num_pages,
-				'total'       => (int) $query->found_posts,
+				'items'    => $items,
+				'has_more' => $has_more,
 			)
 		);
 	}
