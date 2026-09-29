@@ -99,14 +99,23 @@ class TWD_AP_Shortcode {
 		$show_filters = ( '' === $atts['category'] && '' === $atts['tag'] );
 		$is_admin_user = TWD_AP_Frontend::current_user_allowed();
 
+		// Baked into the page's own server-rendered HTML, not fetched over
+		// REST after load: the "does this site even have enough articles to
+		// split into sections / ever need Load more" decision no longer
+		// depends on any async request landing correctly, or its response
+		// not being stale -- it's simply already true or false the moment
+		// the page itself is generated, same page load as everything else.
+		$total_articles = (int) wp_count_posts( 'post' )->publish;
+
 		$config = array(
-			'restUrl'     => esc_url_raw( rest_url( 'twd-publisher/v1' ) ),
-			'nonce'       => wp_create_nonce( 'wp_rest' ),
-			'category'    => sanitize_title( $atts['category'] ),
-			'tag'         => sanitize_title( $atts['tag'] ),
-			'count'       => max( 1, (int) $atts['count'] ),
-			'showFilters' => $show_filters,
-			'isAdmin'     => $is_admin_user,
+			'restUrl'      => esc_url_raw( rest_url( 'twd-publisher/v1' ) ),
+			'nonce'        => wp_create_nonce( 'wp_rest' ),
+			'category'     => sanitize_title( $atts['category'] ),
+			'tag'          => sanitize_title( $atts['tag'] ),
+			'count'        => max( 1, (int) $atts['count'] ),
+			'showFilters'  => $show_filters,
+			'isAdmin'      => $is_admin_user,
+			'manyArticles' => $total_articles > 12,
 		);
 
 		ob_start();

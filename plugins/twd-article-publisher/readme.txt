@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.20.5
+Stable tag: 1.21.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,21 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW APPROACH (1.21.0): whether a site has more than 12 published
+articles is now decided in PHP and baked directly into the resources
+grid's own server-rendered HTML (class-twd-ap-shortcode.php), instead
+of being fetched afterward over REST. The grouped-vs-flat decision,
+and whether "Load more" can ever show at all, no longer depend on any
+extra network request landing, or its response being fresh, since the
+same page load that renders everything else already carries the
+answer. The REST /grid-settings response is still read afterward (for
+thumbnails, the read-more colour, and to catch an article published or
+deleted since this exact page was rendered), but it no longer gates
+this specific decision the way it did in 1.20.0-1.20.5. The DEBUG line
+under Load more now also prints config.manyArticles (the new
+server-baked value) alongside the REST-based one, to make any gap
+between the two immediately visible.
 
 TEMPORARY DIAGNOSTIC (1.20.5): a small red DEBUG line now shows under
 "Load more" on the resources grid, printing the exact numbers that

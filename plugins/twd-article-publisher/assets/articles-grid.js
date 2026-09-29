@@ -59,8 +59,9 @@
 				debugEl.style.cssText = 'text-align:center;font:12px monospace;color:#b91c1c;margin-top:8px;';
 				loadMoreBtn.parentNode.appendChild(debugEl);
 			}
-			debugEl.textContent = 'DEBUG total_articles=' + state.debugTotal +
-				' manyArticles=' + state.manyArticles +
+			debugEl.textContent = 'DEBUG config.manyArticles=' + config.manyArticles +
+				' state.manyArticles=' + state.manyArticles +
+				' rest_total_articles=' + state.debugTotal +
 				' config.count=' + config.count +
 				' items_returned=' + itemsCount +
 				' offset=' + state.offset +
@@ -74,12 +75,18 @@
 			offset: 0,
 			loading: false,
 			showThumbnails: true,
-			// Known once loadThumbnailSetting()'s first fetch returns
-			// total_articles; assumed true until then so nothing flashes the
-			// wrong view while that's in flight.
-			manyArticles: true,
+			// Set once, synchronously, from config.manyArticles -- baked into
+			// this page's own server-rendered HTML (class-twd-ap-shortcode.php),
+			// not fetched over REST after load. Nothing async, nothing that
+			// can race, nothing that can go stale independently of the page
+			// itself. Only ever re-read from the REST /grid-settings response
+			// after that (loadThumbnailSetting), in case an article gets
+			// published/deleted without a full page reload.
+			manyArticles: !!config.manyArticles,
 		};
 
+		// Matches the 12 hard-coded in class-twd-ap-shortcode.php, for the
+		// re-check against a fresh /grid-settings response further down.
 		var GROUP_THRESHOLD = 12;
 
 		// The grouped-by-category landing view only applies to the default,
@@ -98,13 +105,18 @@
 			loadFacets();
 		}
 
-		loadThumbnailSetting(function () {
-			if (canGroup()) {
-				fetchGrouped();
-			} else {
-				fetchArticles(true);
-			}
-		});
+		// state.manyArticles is already known synchronously (from the page's
+		// own server-rendered config), so the very first render doesn't wait
+		// on any fetch to decide grouped vs. flat. loadThumbnailSetting still
+		// runs, for thumbnails/read-more colour and to catch an article
+		// published or deleted since this page itself was rendered, but it
+		// no longer gates this decision.
+		if (canGroup()) {
+			fetchGrouped();
+		} else {
+			fetchArticles(true);
+		}
+		loadThumbnailSetting();
 
 		if (searchEl) {
 			var searchTimer = null;
