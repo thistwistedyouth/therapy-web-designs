@@ -94,6 +94,12 @@ body {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
+  cursor: grab;
+  touch-action: pan-y;
+}
+.twd-sb-app.is-dragging .twd-sb-slides {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .twd-sb-slide {
@@ -119,17 +125,27 @@ body {
 .twd-sb-card {
   position: relative;
   width: 100%;
-  max-width: 520px;
-  max-height: 100%;
+  max-width: 480px;
+  max-height: min(100%, 720px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 30px 28px;
+  padding: 34px 30px;
   border: 1px solid var(--twd-sb-gold-faint);
-  border-radius: 14px;
+  border-radius: 18px;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.05) 0%, rgba(255, 209, 102, 0) 40%),
     rgba(19, 17, 36, 0.55);
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55), inset 0 0 30px rgba(255, 209, 102, 0.03);
+  /* The 7px/13px offset shadows either side read as thinner, dimmer pages
+     sitting behind the front one, the way a real bound book's block shows
+     past its cover -- the same idea as TRD's own reader card. */
+  box-shadow:
+    0 0 0 1px rgba(255, 209, 102, 0.18),
+    7px 0 0 -3px rgba(255, 209, 102, 0.08),
+    -7px 0 0 -3px rgba(255, 209, 102, 0.08),
+    13px 0 0 -6px rgba(255, 209, 102, 0.05),
+    -13px 0 0 -6px rgba(255, 209, 102, 0.05),
+    0 22px 60px rgba(0, 0, 0, 0.55),
+    inset 0 0 30px rgba(255, 209, 102, 0.03);
 }
 
 .twd-sb-heading {

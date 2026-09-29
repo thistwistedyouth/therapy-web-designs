@@ -47,28 +47,79 @@
 		if (e.key === 'ArrowLeft') { goTo(index - 1); }
 	});
 
-	// -- Swipe: horizontal drag past a threshold moves a slide, a mostly
-	// vertical drag is left alone so scrolling inside a long slide still works.
-	var touchStartX = 0;
-	var touchStartY = 0;
-	var touchActive = false;
+	// -- Swipe/drag: a touch swipe, a mouse drag, or a pen all go through the
+	// same Pointer Events handlers, same as a real book reader lets you drag
+	// a page with the mouse on desktop, not just swipe on a phone. The
+	// active card follows the pointer horizontally while dragging, for the
+	// same "turning a page" feel, and springs back if released short of the
+	// threshold. A mostly vertical drag is left alone so scrolling inside a
+	// long slide (and text selection, clicking a link) still works normally.
+	var dragStartX = 0;
+	var dragStartY = 0;
+	var dragActive = false;
+	var dragIsHorizontal = null;
+	var DRAG_THRESHOLD = 60;
 
-	slidesWrap.addEventListener('touchstart', function (e) {
-		if (e.touches.length !== 1) { return; }
-		touchStartX = e.touches[0].clientX;
-		touchStartY = e.touches[0].clientY;
-		touchActive = true;
-	}, { passive: true });
+	function activeCard() {
+		var slide = slides[index];
+		return slide ? slide.querySelector('.twd-sb-card') : null;
+	}
 
-	slidesWrap.addEventListener('touchend', function (e) {
-		if (!touchActive) { return; }
-		touchActive = false;
-		var touch = e.changedTouches[0];
-		var dx = touch.clientX - touchStartX;
-		var dy = touch.clientY - touchStartY;
-		if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) { return; }
+	slidesWrap.addEventListener('pointerdown', function (e) {
+		if (e.pointerType === 'mouse' && e.button !== 0) { return; }
+		dragStartX = e.clientX;
+		dragStartY = e.clientY;
+		dragActive = true;
+		dragIsHorizontal = null;
+		app.classList.add('is-dragging');
+		try { slidesWrap.setPointerCapture(e.pointerId); } catch (err) {}
+	});
+
+	slidesWrap.addEventListener('pointermove', function (e) {
+		if (!dragActive) { return; }
+		var dx = e.clientX - dragStartX;
+		var dy = e.clientY - dragStartY;
+
+		if (null === dragIsHorizontal && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+			dragIsHorizontal = Math.abs(dx) > Math.abs(dy);
+		}
+		if (false === dragIsHorizontal) { return; }
+
+		var card = activeCard();
+		if (card) {
+			var eased = dx * 0.6;
+			card.style.transform = 'translateX(' + eased + 'px)';
+		}
+	});
+
+	function endDrag(e) {
+		if (!dragActive) { return; }
+		dragActive = false;
+		app.classList.remove('is-dragging');
+
+		var card = activeCard();
+		var dx = e.clientX - dragStartX;
+		var crossedThreshold = dragIsHorizontal && Math.abs(dx) >= DRAG_THRESHOLD;
+
+		if (card) {
+			if (!crossedThreshold) {
+				card.style.transition = 'transform 0.2s ease';
+				card.style.transform = '';
+				setTimeout(function () { card.style.transition = ''; }, 220);
+			} else {
+				card.style.transform = '';
+			}
+		}
+
+		if (!crossedThreshold) { return; }
 		if (dx < 0) { goTo(index + 1); } else { goTo(index - 1); }
-	}, { passive: true });
+	}
+
+	slidesWrap.addEventListener('pointerup', endDrag);
+	slidesWrap.addEventListener('pointercancel', endDrag);
+	slidesWrap.addEventListener('pointerleave', function (e) {
+		if (dragActive && e.pointerType === 'mouse') { endDrag(e); }
+	});
 
 	if (shareBtn) {
 		shareBtn.addEventListener('click', function () {

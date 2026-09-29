@@ -93,6 +93,9 @@
   margin: 0 !important;
   padding: 0 !important;
 }
+.twd-ap-articles-grid[hidden] {
+  display: none !important;
+}
 .twd-ap-article-card {
   position: relative !important;
   display: flex !important;

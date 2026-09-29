@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.16.0
+Stable tag: 1.16.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,14 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.16.1): the grouped resources view could leave a stray "Loading
+articles..." line showing under the grid after it had actually
+finished loading (the grid's own forced display:grid style was
+beating the browser's built-in hidden-attribute behaviour). The swipe
+book can now also be dragged with the mouse on desktop, not just
+swiped on a touchscreen, and its card has a layered "page stack" shadow
+instead of a single flat drop shadow, closer to a real book reader.
 
 NEW (1.16.0): the category dropdown now sits before the search box, and
 the separate "Show all categories" button is gone -- a "Show all"
