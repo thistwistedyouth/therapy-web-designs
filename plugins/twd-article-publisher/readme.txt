@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.20.2
+Stable tag: 1.20.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+TEMPORARY DEPLOY-CHECK MARKER (1.20.3): the search box, category
+dropdown and "Load more" button borders are bright magenta on
+purpose, not a design choice. If a site keeps showing 1.20.2's plain
+grey borders after updating to this version and clearing every cache,
+that's proof the update isn't actually reaching that site (a host/CDN
+layer, not the plugin) rather than anything still to fix in the code.
+Once confirmed magenta, revert those three border colours back to
+#9ca3af.
 
 FIX (1.20.2): the resources grid's REST responses (article list,
 grouped view, category facets, grid settings) never sent explicit
