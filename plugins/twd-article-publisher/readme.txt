@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.16.3
+Stable tag: 1.17.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,20 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.17.0): the swipe book now opens as an overlay right over the
+resources/article page you were already on (dimmed and blurred behind
+it), in a fixed-size book card centred on screen, instead of navigating
+away to a full-page view -- a shared link still opens the full
+standalone page as before, for when there's no page behind it to show.
+Slide transitions are smoother (matched fade/move timing, no more
+mismatched jerk between them). Also new: a swipe book can end on a bio
+slide about you. Set it up once under "Customise this grid" > Profile
+page (photo, name, a short bio, and an optional link button), then tick
+"Include bio page at end" on any article in the popup to close that
+article's swipe book with it. Leave the toggle off, or the profile
+name blank, and articles end with the plain "Thanks for reading" slide
+as before.
 
 FIX (1.16.3): comments and pingbacks are now always off on an article
 saved through this popup, regardless of the site's own default comment

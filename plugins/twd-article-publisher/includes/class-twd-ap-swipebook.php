@@ -4,13 +4,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Renders any published article as a shareable, swipeable slide deck at
- * ?twd_ap_swipebook=1 on the article's own permalink. No new content is
- * stored: slides are built from the live post content every time the page
- * loads, so a swipe book always matches the article and never drifts out
- * of sync with it. Splitting is done in plain PHP (DOMDocument, chunked by
- * heading and length), not by an AI call, since this plugin runs on many
- * client sites and none of them carry an Anthropic key of their own.
+ * Renders any published article as a shareable, swipeable slide deck. Two
+ * ways in: a full standalone page at ?twd_ap_swipebook=1 on the article's
+ * own permalink (for a shared link opened fresh, no other page behind it to
+ * show), and an in-page overlay opened by JS over the resources/article page
+ * the visitor is already on (assets/swipebook-inline.js, fed by the
+ * /articles/{id}/swipebook REST route) -- the button under an article uses
+ * the overlay when JS runs, and falls back to the full page if it can't.
+ * No new content is stored either way: slides are built from the live post
+ * content every time, so a swipe book always matches the article. Splitting
+ * is done in plain PHP (DOMDocument, chunked by heading and length), not by
+ * an AI call, since this plugin runs on many client sites and none of them
+ * carry an Anthropic key of their own.
  */
 class TWD_AP_Swipebook {
 
@@ -27,6 +32,7 @@ class TWD_AP_Swipebook {
 		add_filter( 'query_vars', array( $this, 'register_query_var' ) );
 		add_action( 'template_redirect', array( $this, 'maybe_render' ) );
 		add_filter( 'the_content', array( $this, 'append_button' ), 30 );
+		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_inline' ) );
 	}
 
 	public function register_query_var( $vars ) {
@@ -56,9 +62,49 @@ class TWD_AP_Swipebook {
 	}
 
 	/**
-	 * A "View as a swipe book" link under every published article, so a
-	 * visitor (or the therapist themselves, sharing it) has an obvious way
-	 * in without needing to know the query param exists.
+	 * The overlay script only needs to load on a page that could actually
+	 * show the button (a single published article), not site-wide.
+	 */
+	public function maybe_enqueue_inline() {
+		if ( is_admin() || ! is_singular( 'post' ) ) {
+			return;
+		}
+		if ( '1' === (string) get_query_var( 'twd_ap_swipebook' ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'twd-ap-swipebook',
+			TWD_AP_URL . 'assets/swipebook.css',
+			array(),
+			TWD_AP_VERSION
+		);
+		wp_enqueue_script(
+			'twd-ap-swipebook',
+			TWD_AP_URL . 'assets/swipebook.js',
+			array(),
+			TWD_AP_VERSION,
+			true
+		);
+		wp_enqueue_script(
+			'twd-ap-swipebook-inline',
+			TWD_AP_URL . 'assets/swipebook-inline.js',
+			array( 'twd-ap-swipebook' ),
+			TWD_AP_VERSION,
+			true
+		);
+		wp_localize_script(
+			'twd-ap-swipebook-inline',
+			'TWD_AP_SB',
+			array( 'restUrl' => esc_url_raw( rest_url( 'twd-publisher/v1' ) ) )
+		);
+	}
+
+	/**
+	 * A "View as a swipe book" link under every published article. Carries
+	 * the post ID and the full-page URL so swipebook-inline.js can open it
+	 * as an in-page overlay when JS runs, and fall back to a normal link
+	 * (the full standalone page) if it doesn't.
 	 */
 	public function append_button( $content ) {
 		if ( is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
@@ -74,7 +120,7 @@ class TWD_AP_Swipebook {
 		}
 
 		$url = esc_url( self::url_for( $post ) );
-		$button = '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" href="' . $url . '">'
+		$button = '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
 			. esc_html__( 'View as a swipe book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
 
 		return $content . $button;
@@ -120,7 +166,10 @@ class TWD_AP_Swipebook {
 	/**
 	 * Chunks the article into slides: a cover slide (title + intro), one
 	 * slide per h2 section (further split if a section runs long, so no
-	 * single slide is a wall of text), and a closing slide. A continuation
+	 * single slide is a wall of text), and a closing slide -- a bio slide
+	 * about the site's own profile (Customise this grid > Profile page)
+	 * if this article has "Include bio page at end" ticked and a profile
+	 * name is actually set up, otherwise a plain thank-you. A continuation
 	 * slide from a long section doesn't repeat its heading, since the
 	 * progress bar already shows the reader is still in the same run.
 	 */
@@ -140,6 +189,7 @@ class TWD_AP_Swipebook {
 			}
 		}
 		$slides[] = array(
+			'type'    => 'text',
 			'heading' => get_the_title( $post ),
 			'html'    => $intro ? '<p>' . esc_html( $intro ) . '</p>' : '',
 		);
@@ -152,7 +202,7 @@ class TWD_AP_Swipebook {
 		foreach ( $blocks as $b ) {
 			if ( 'h2' === $b['tag'] ) {
 				if ( '' !== trim( $current_html ) ) {
-					$slides[] = array( 'heading' => $current_heading, 'html' => $current_html );
+					$slides[] = array( 'type' => 'text', 'heading' => $current_heading, 'html' => $current_html );
 				}
 				$current_html    = '';
 				$current_len     = 0;
@@ -161,7 +211,7 @@ class TWD_AP_Swipebook {
 			}
 
 			if ( '' !== trim( $current_html ) && ( $current_len + strlen( $b['text'] ) ) > $max_chars ) {
-				$slides[] = array( 'heading' => $current_heading, 'html' => $current_html );
+				$slides[] = array( 'type' => 'text', 'heading' => $current_heading, 'html' => $current_html );
 				$current_html    = '';
 				$current_len     = 0;
 				$current_heading = '';
@@ -171,28 +221,80 @@ class TWD_AP_Swipebook {
 			$current_len  += strlen( $b['text'] );
 		}
 		if ( '' !== trim( $current_html ) ) {
-			$slides[] = array( 'heading' => $current_heading, 'html' => $current_html );
+			$slides[] = array( 'type' => 'text', 'heading' => $current_heading, 'html' => $current_html );
 		}
 
-		$slides[] = array(
-			'heading' => __( 'Thanks for reading', 'twd-article-publisher' ),
-			'html'    => '<p>' . esc_html__( 'Share this with someone it might help, or read the full article again any time.', 'twd-article-publisher' ) . '</p>',
-		);
+		$bio_slide = $this->maybe_bio_slide( $post );
+		if ( $bio_slide ) {
+			$slides[] = $bio_slide;
+		} else {
+			$slides[] = array(
+				'type'    => 'text',
+				'heading' => __( 'Thanks for reading', 'twd-article-publisher' ),
+				'html'    => '<p>' . esc_html__( 'Share this with someone it might help, or read the full article again any time.', 'twd-article-publisher' ) . '</p>',
+			);
+		}
 
 		return $slides;
 	}
 
-	private function render( $post ) {
-		$slides      = $this->build_slides( $post );
+	private function maybe_bio_slide( $post ) {
+		if ( ! get_post_meta( $post->ID, '_twd_ap_include_bio', true ) ) {
+			return null;
+		}
+
+		$settings = TWD_AP_Grid_Settings::get();
+		$name     = trim( (string) $settings['profile_name'] );
+		if ( '' === $name ) {
+			return null;
+		}
+
+		$photo_url = '';
+		if ( ! empty( $settings['profile_photo_id'] ) ) {
+			$photo_url = wp_get_attachment_image_url( (int) $settings['profile_photo_id'], 'medium' );
+		}
+
+		return array(
+			'type'       => 'bio',
+			'heading'    => $name,
+			'photo'      => $photo_url ? $photo_url : '',
+			'bio'        => (string) $settings['profile_bio'],
+			'link_url'   => (string) $settings['profile_link_url'],
+			'link_label' => (string) $settings['profile_link_label'],
+		);
+	}
+
+	/**
+	 * The JSON payload swipebook-inline.js fetches to open the overlay, and
+	 * the same shape the standalone page embeds inline for its own JS to
+	 * read, so the two rendering paths are driven from one data structure.
+	 */
+	public function get_payload( $post ) {
 		$title       = get_the_title( $post );
 		$site_name   = get_bloginfo( 'name' );
 		$article_url = get_permalink( $post );
-		$share_url   = self::url_for( $post );
+		$logo_id     = get_theme_mod( 'custom_logo' );
+
+		return array(
+			'title'      => $title,
+			'siteName'   => $site_name,
+			'articleUrl' => $article_url,
+			'shareUrl'   => self::url_for( $post ),
+			'logoUrl'    => $logo_id ? wp_get_attachment_image_url( $logo_id, 'medium' ) : '',
+			'slides'     => $this->build_slides( $post ),
+		);
+	}
+
+	private function render( $post ) {
+		$payload     = $this->get_payload( $post );
+		$slides      = $payload['slides'];
+		$title       = $payload['title'];
+		$article_url = $payload['articleUrl'];
+		$share_url   = $payload['shareUrl'];
+		$logo_url    = $payload['logoUrl'];
 		$description = has_excerpt( $post ) ? get_the_excerpt( $post ) : wp_trim_words( wp_strip_all_tags( $post->post_content ), 30 );
 		$image_id    = get_post_thumbnail_id( $post );
 		$image_url   = $image_id ? wp_get_attachment_image_url( $image_id, 'large' ) : '';
-		$logo_id     = get_theme_mod( 'custom_logo' );
-		$logo_url    = $logo_id ? wp_get_attachment_image_url( $logo_id, 'medium' ) : '';
 
 		nocache_headers();
 		status_header( 200 );
@@ -202,7 +304,7 @@ class TWD_AP_Swipebook {
 <head>
 <meta charset="<?php bloginfo( 'charset' ); ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title><?php echo esc_html( $title . ' | ' . $site_name ); ?></title>
+<title><?php echo esc_html( $title . ' | ' . $payload['siteName'] ); ?></title>
 <meta name="robots" content="noindex, follow">
 <link rel="canonical" href="<?php echo esc_url( $article_url ); ?>">
 <meta property="og:type" content="article">
@@ -217,47 +319,8 @@ class TWD_AP_Swipebook {
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo esc_url( TWD_AP_URL . 'assets/swipebook.css' ); ?>?v=<?php echo esc_attr( TWD_AP_VERSION ); ?>">
 </head>
-<body class="twd-sb-body">
-<div class="twd-sb-app" id="twd-sb-app" data-article-url="<?php echo esc_url( $article_url ); ?>" data-share-url="<?php echo esc_url( $share_url ); ?>" data-title="<?php echo esc_attr( $title ); ?>">
-
-	<div class="twd-sb-progress" id="twd-sb-progress">
-		<?php foreach ( $slides as $i => $slide ) : ?>
-			<span class="twd-sb-seg" data-seg="<?php echo (int) $i; ?>"></span>
-		<?php endforeach; ?>
-	</div>
-
-	<div class="twd-sb-mast">
-		<?php if ( $logo_url ) : ?>
-			<img class="twd-sb-mast-logo" src="<?php echo esc_url( $logo_url ); ?>" alt="">
-		<?php else : ?>
-			<span class="twd-sb-mast-text"><?php echo esc_html( $site_name ); ?></span>
-		<?php endif; ?>
-	</div>
-
-	<div class="twd-sb-slides" id="twd-sb-slides">
-		<?php foreach ( $slides as $i => $slide ) : ?>
-			<section class="twd-sb-slide<?php echo 0 === $i ? ' is-active' : ''; ?>" data-index="<?php echo (int) $i; ?>">
-				<div class="twd-sb-card">
-					<?php if ( ! empty( $slide['heading'] ) ) : ?>
-						<h2 class="twd-sb-heading"><?php echo esc_html( $slide['heading'] ); ?></h2>
-					<?php endif; ?>
-					<div class="twd-sb-body-text"><?php echo $slide['html']; // Already sanitised by TWD_AP_Sanitizer on save. ?></div>
-				</div>
-			</section>
-		<?php endforeach; ?>
-	</div>
-
-	<div class="twd-sb-controls">
-		<button type="button" class="twd-sb-btn twd-sb-prev" id="twd-sb-prev" aria-label="<?php esc_attr_e( 'Previous', 'twd-article-publisher' ); ?>">&#8249;</button>
-		<span class="twd-sb-counter" id="twd-sb-counter"></span>
-		<button type="button" class="twd-sb-btn twd-sb-next" id="twd-sb-next" aria-label="<?php esc_attr_e( 'Next', 'twd-article-publisher' ); ?>">&#8250;</button>
-	</div>
-
-	<div class="twd-sb-footer">
-		<button type="button" class="twd-sb-share-btn" id="twd-sb-share-btn"><?php esc_html_e( 'Share', 'twd-article-publisher' ); ?></button>
-		<a class="twd-sb-read-link" href="<?php echo esc_url( $article_url ); ?>"><?php esc_html_e( 'Read the full article', 'twd-article-publisher' ); ?></a>
-	</div>
-</div>
+<body class="twd-sb-page">
+<script>window.TWD_AP_SB_DATA = <?php echo wp_json_encode( $payload ); ?>;</script>
 <script src="<?php echo esc_url( TWD_AP_URL . 'assets/swipebook.js' ); ?>?v=<?php echo esc_attr( TWD_AP_VERSION ); ?>"></script>
 </body>
 </html>

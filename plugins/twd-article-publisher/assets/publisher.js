@@ -38,6 +38,7 @@
 		els.featuredSelect = document.getElementById('twd-ap-featured-select');
 		els.featuredRemove = document.getElementById('twd-ap-featured-remove');
 		els.featuredToggle = document.getElementById('twd-ap-featured-toggle');
+		els.includeBioToggle = document.getElementById('twd-ap-include-bio-toggle');
 		els.categories = document.getElementById('twd-ap-categories');
 		els.catAddInput = document.getElementById('twd-ap-cat-add-input');
 		els.catAddBtn = document.getElementById('twd-ap-cat-add-btn');
@@ -192,6 +193,7 @@
 		window.addEventListener('resize', repositionImgUi);
 
 		els.featuredToggle.addEventListener('change', markDirty);
+		els.includeBioToggle.addEventListener('change', markDirty);
 
 		els.categories.addEventListener('click', onCategoriesClick);
 		els.categories.addEventListener('change', onCategoriesChange);
@@ -670,6 +672,7 @@
 		els.tags.value = '';
 		els.catAddInput.value = '';
 		els.featuredToggle.checked = false;
+		els.includeBioToggle.checked = false;
 		els.yoastTitle.value = '';
 		els.yoastDesc.value = '';
 		els.scheduleToggle.checked = false;
@@ -755,6 +758,7 @@
 				els.excerpt.value = data.excerpt || '';
 				els.tags.value = data.tags || '';
 				els.featuredToggle.checked = !!data.featured;
+				els.includeBioToggle.checked = !!data.include_bio;
 				state.featuredMediaId = data.featured_media || 0;
 				renderFeaturedPreview(data.featured_media_url || '');
 				renderCategories(data.category_ids || [], data.primary_category || 0);
@@ -822,6 +826,7 @@
 			excerpt: els.excerpt.value,
 			tags: els.tags.value,
 			featured: els.featuredToggle.checked,
+			include_bio: els.includeBioToggle.checked,
 			category_ids: getCheckedCategoryIds(),
 			primary_category: state.primaryCategoryId,
 			featured_media: state.featuredMediaId,

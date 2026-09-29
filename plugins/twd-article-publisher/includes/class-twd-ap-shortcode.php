@@ -157,6 +157,32 @@ class TWD_AP_Shortcode {
 
 						<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Category order (drag to reorder; only the top categories above show on the grid)', 'twd-article-publisher' ); ?></label>
 						<ul id="twd-ap-gs-cat-order" class="twd-ap-gs-cat-order"></ul>
+
+						<div class="twd-ap-section twd-ap-spaced">
+							<p class="twd-ap-section-heading"><?php esc_html_e( 'Profile page (for the swipe book bio slide)', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Shown as the closing slide on any article with "Include bio page at end" ticked.', 'twd-article-publisher' ); ?></p>
+
+							<div class="twd-ap-field-col">
+								<label class="twd-ap-label"><?php esc_html_e( 'Photo', 'twd-article-publisher' ); ?></label>
+								<div id="twd-ap-gs-profile-photo-preview" class="twd-ap-featured-preview"></div>
+								<div class="twd-ap-btn-row">
+									<button type="button" id="twd-ap-gs-profile-photo-select" class="twd-ap-btn-secondary"><?php esc_html_e( 'Choose Image', 'twd-article-publisher' ); ?></button>
+									<button type="button" id="twd-ap-gs-profile-photo-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
+								</div>
+							</div>
+
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-profile-name"><?php esc_html_e( 'Name', 'twd-article-publisher' ); ?></label>
+							<input type="text" id="twd-ap-gs-profile-name" class="twd-ap-input" placeholder="<?php esc_attr_e( 'e.g. Jane Smith, Counsellor', 'twd-article-publisher' ); ?>" />
+
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-profile-bio"><?php esc_html_e( 'Bio', 'twd-article-publisher' ); ?></label>
+							<textarea id="twd-ap-gs-profile-bio" class="twd-ap-textarea-small" placeholder="<?php esc_attr_e( 'A short line or two about you', 'twd-article-publisher' ); ?>"></textarea>
+
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-profile-link-url"><?php esc_html_e( 'Link URL', 'twd-article-publisher' ); ?></label>
+							<input type="url" id="twd-ap-gs-profile-link-url" class="twd-ap-input" placeholder="https://" />
+
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-profile-link-label"><?php esc_html_e( 'Link button text', 'twd-article-publisher' ); ?></label>
+							<input type="text" id="twd-ap-gs-profile-link-label" class="twd-ap-input" placeholder="<?php esc_attr_e( 'e.g. Book a session', 'twd-article-publisher' ); ?>" />
+						</div>
 					</div>
 					<div class="twd-ap-modal-footer">
 						<div class="twd-ap-footer-spacer"></div>

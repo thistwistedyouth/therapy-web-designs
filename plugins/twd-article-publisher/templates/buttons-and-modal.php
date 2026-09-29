@@ -89,6 +89,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<?php esc_html_e( 'Feature this article (shows first on the resources grid)', 'twd-article-publisher' ); ?>
 				</label>
 
+				<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
+					<input type="checkbox" id="twd-ap-include-bio-toggle" />
+					<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup)', 'twd-article-publisher' ); ?>
+				</label>
+
 				<div class="twd-ap-field-row">
 					<div class="twd-ap-field-col">
 						<label class="twd-ap-label"><?php esc_html_e( 'Featured image', 'twd-article-publisher' ); ?></label>

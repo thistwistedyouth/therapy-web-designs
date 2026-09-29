@@ -21,6 +21,11 @@ class TWD_AP_Grid_Settings {
 			'posts_per_category' => 6,
 			'show_thumbnails'    => true,
 			'read_more_color'    => '#1d4ed8',
+			'profile_photo_id'   => 0,
+			'profile_name'       => '',
+			'profile_bio'        => '',
+			'profile_link_url'   => '',
+			'profile_link_label' => '',
 		);
 		$saved = get_option( self::OPTION_KEY, array() );
 		if ( ! is_array( $saved ) ) {
@@ -38,6 +43,11 @@ class TWD_AP_Grid_Settings {
 			'posts_per_category' => $current['posts_per_category'],
 			'show_thumbnails'    => $current['show_thumbnails'],
 			'read_more_color'    => $current['read_more_color'],
+			'profile_photo_id'   => $current['profile_photo_id'],
+			'profile_name'       => $current['profile_name'],
+			'profile_bio'        => $current['profile_bio'],
+			'profile_link_url'   => $current['profile_link_url'],
+			'profile_link_label' => $current['profile_link_label'],
 		);
 
 		if ( isset( $input['category_order'] ) && is_array( $input['category_order'] ) ) {
@@ -57,6 +67,21 @@ class TWD_AP_Grid_Settings {
 			if ( $color ) {
 				$output['read_more_color'] = $color;
 			}
+		}
+		if ( isset( $input['profile_photo_id'] ) ) {
+			$output['profile_photo_id'] = absint( $input['profile_photo_id'] );
+		}
+		if ( isset( $input['profile_name'] ) ) {
+			$output['profile_name'] = sanitize_text_field( $input['profile_name'] );
+		}
+		if ( isset( $input['profile_bio'] ) ) {
+			$output['profile_bio'] = sanitize_textarea_field( $input['profile_bio'] );
+		}
+		if ( isset( $input['profile_link_url'] ) ) {
+			$output['profile_link_url'] = esc_url_raw( $input['profile_link_url'] );
+		}
+		if ( isset( $input['profile_link_label'] ) ) {
+			$output['profile_link_label'] = sanitize_text_field( $input['profile_link_label'] );
 		}
 
 		return $output;

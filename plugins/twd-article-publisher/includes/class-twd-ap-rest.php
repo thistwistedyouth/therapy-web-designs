@@ -130,6 +130,31 @@ class TWD_AP_REST {
 				),
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/articles/(?P<id>\d+)/swipebook',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_swipebook' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+	}
+
+	/**
+	 * Feeds the in-page swipe book overlay (assets/swipebook-inline.js),
+	 * same payload shape the standalone ?twd_ap_swipebook=1 page embeds
+	 * inline for its own copy of the same JS, built by TWD_AP_Swipebook
+	 * itself so both paths share one slide-splitting implementation.
+	 */
+	public function get_swipebook( $request ) {
+		$post_id = (int) $request['id'];
+		$post    = get_post( $post_id );
+		if ( ! $post || 'post' !== $post->post_type || 'publish' !== $post->post_status ) {
+			return new WP_Error( 'twd_ap_not_found', __( 'That article could not be found.', 'twd-article-publisher' ), array( 'status' => 404 ) );
+		}
+		return rest_ensure_response( TWD_AP_Swipebook::instance()->get_payload( $post ) );
 	}
 
 	public function check_permission() {
@@ -345,6 +370,15 @@ class TWD_AP_REST {
 			}
 		}
 
+		// Include bio page at end (swipe book's closing slide).
+		if ( isset( $request['include_bio'] ) ) {
+			if ( $request['include_bio'] ) {
+				update_post_meta( $post_id, '_twd_ap_include_bio', 1 );
+			} else {
+				delete_post_meta( $post_id, '_twd_ap_include_bio' );
+			}
+		}
+
 		// Featured image.
 		if ( isset( $request['featured_media'] ) ) {
 			$media_id = absint( $request['featured_media'] );
@@ -409,6 +443,7 @@ class TWD_AP_REST {
 			$post_tags            = wp_get_post_tags( $post_id, array( 'fields' => 'names' ) );
 			$data['tags']         = implode( ', ', $post_tags );
 			$data['featured']     = (bool) get_post_meta( $post_id, '_twd_ap_featured', true );
+			$data['include_bio']  = (bool) get_post_meta( $post_id, '_twd_ap_include_bio', true );
 			$primary               = (int) get_post_meta( $post_id, '_twd_ap_primary_category', true );
 			$data['primary_category'] = ( $primary && in_array( $primary, $data['category_ids'], true ) ) ? $primary : ( ! empty( $data['category_ids'] ) ? $data['category_ids'][0] : 0 );
 		}
@@ -665,13 +700,24 @@ class TWD_AP_REST {
 			}
 		}
 
+		$profile_photo_url = '';
+		if ( ! empty( $settings['profile_photo_id'] ) ) {
+			$profile_photo_url = wp_get_attachment_image_url( (int) $settings['profile_photo_id'], 'medium' );
+		}
+
 		return rest_ensure_response(
 			array(
-				'categories_count'   => $settings['categories_count'],
-				'posts_per_category' => $settings['posts_per_category'],
-				'show_thumbnails'    => (bool) $settings['show_thumbnails'],
-				'read_more_color'    => $settings['read_more_color'],
-				'categories'         => $order,
+				'categories_count'    => $settings['categories_count'],
+				'posts_per_category'  => $settings['posts_per_category'],
+				'show_thumbnails'     => (bool) $settings['show_thumbnails'],
+				'read_more_color'     => $settings['read_more_color'],
+				'categories'          => $order,
+				'profile_photo_id'    => (int) $settings['profile_photo_id'],
+				'profile_photo_url'   => $profile_photo_url ? $profile_photo_url : '',
+				'profile_name'        => $settings['profile_name'],
+				'profile_bio'         => $settings['profile_bio'],
+				'profile_link_url'    => $settings['profile_link_url'],
+				'profile_link_label'  => $settings['profile_link_label'],
 			)
 		);
 	}

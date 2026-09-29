@@ -280,6 +280,44 @@
 		var saveBtn    = overlay.querySelector('#twd-ap-gs-save');
 		var statusEl   = overlay.querySelector('#twd-ap-grid-settings-status');
 
+		var photoPreview = overlay.querySelector('#twd-ap-gs-profile-photo-preview');
+		var photoSelect  = overlay.querySelector('#twd-ap-gs-profile-photo-select');
+		var photoRemove  = overlay.querySelector('#twd-ap-gs-profile-photo-remove');
+		var nameInput    = overlay.querySelector('#twd-ap-gs-profile-name');
+		var bioInput     = overlay.querySelector('#twd-ap-gs-profile-bio');
+		var linkUrlInput = overlay.querySelector('#twd-ap-gs-profile-link-url');
+		var linkLabelInput = overlay.querySelector('#twd-ap-gs-profile-link-label');
+		var profilePhotoId = 0;
+		var profileFrame = null;
+
+		function renderPhotoPreview(url) {
+			if (url) {
+				photoPreview.style.backgroundImage = 'url(' + url + ')';
+				photoRemove.hidden = false;
+			} else {
+				photoPreview.style.backgroundImage = '';
+				photoRemove.hidden = true;
+			}
+		}
+
+		photoSelect.addEventListener('click', function () {
+			if (!window.wp || !wp.media) { return; }
+			if (!profileFrame) {
+				profileFrame = wp.media({ title: 'Choose Profile Photo', multiple: false, library: { type: 'image' } });
+				profileFrame.on('select', function () {
+					var att = profileFrame.state().get('selection').first().toJSON();
+					profilePhotoId = att.id;
+					var url = (att.sizes && att.sizes.medium) ? att.sizes.medium.url : att.url;
+					renderPhotoPreview(url);
+				});
+			}
+			profileFrame.open();
+		});
+		photoRemove.addEventListener('click', function () {
+			profilePhotoId = 0;
+			renderPhotoPreview('');
+		});
+
 		function close() {
 			overlay.hidden = true;
 		}
@@ -349,6 +387,12 @@
 				thumbsBox.checked = false !== data.show_thumbnails;
 				colorInput.value = data.read_more_color || '#1d4ed8';
 				renderOrderList(data.categories || []);
+				profilePhotoId = data.profile_photo_id || 0;
+				renderPhotoPreview(data.profile_photo_url || '');
+				nameInput.value = data.profile_name || '';
+				bioInput.value = data.profile_bio || '';
+				linkUrlInput.value = data.profile_link_url || '';
+				linkLabelInput.value = data.profile_link_label || '';
 				overlay.hidden = false;
 			})
 			.catch(function () {
@@ -365,6 +409,11 @@
 				show_thumbnails: !!thumbsBox.checked,
 				read_more_color: colorInput.value,
 				category_order: order,
+				profile_photo_id: profilePhotoId,
+				profile_name: nameInput.value,
+				profile_bio: bioInput.value,
+				profile_link_url: linkUrlInput.value,
+				profile_link_label: linkLabelInput.value,
 			};
 
 			setStatus('Saving…', false);
