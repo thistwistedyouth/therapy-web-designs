@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.21.1
+Stable tag: 1.22.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.22.0): the swipe book is now titled "Summary Book" at the top,
+with a larger site logo underneath it. The page-progress bar moved from
+the top of the frame to sit small and compact directly under the page
+number counter. Each slide's card now fills the frame like a quote card,
+with clamp()-based text sizing so headings and body text scale smoothly
+with screen size instead of jumping between fixed breakpoints. Added a
+gold "Download as PDF" button and a "Save as image" button alongside
+Share, both capturing the currently active card exactly as it renders
+on screen (html2canvas, plus jsPDF for the PDF export), loaded on demand
+the first time either is used.
 
 FOUND IT (1.21.1): "Load more" was never a logic bug at all. The
 1.21.0 DEBUG line showed loadmore_hidden=true on a site where the

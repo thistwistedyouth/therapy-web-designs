@@ -39,20 +39,57 @@
 		return '<div class="twd-sb-backdrop" data-article-url="' + escapeAttr(data.articleUrl) + '" data-share-url="' + escapeAttr(data.shareUrl) + '" data-title="' + escapeAttr(data.title) + '">' +
 			'<div class="twd-sb-frame">' +
 				'<button type="button" class="twd-sb-close" aria-label="Close">&times;</button>' +
-				'<div class="twd-sb-progress">' + segsHtml + '</div>' +
-				'<div class="twd-sb-mast">' + mastHtml + '</div>' +
+				'<div class="twd-sb-header">' +
+					'<div class="twd-sb-title">Summary Book</div>' +
+					'<div class="twd-sb-mast">' + mastHtml + '</div>' +
+				'</div>' +
 				'<div class="twd-sb-slides">' + slidesHtml + '</div>' +
 				'<div class="twd-sb-controls">' +
 					'<button type="button" class="twd-sb-btn twd-sb-prev" aria-label="Previous">&#8249;</button>' +
 					'<span class="twd-sb-counter"></span>' +
 					'<button type="button" class="twd-sb-btn twd-sb-next" aria-label="Next">&#8250;</button>' +
 				'</div>' +
+				'<div class="twd-sb-progress">' + segsHtml + '</div>' +
 				'<div class="twd-sb-footer">' +
 					'<button type="button" class="twd-sb-share-btn">Share</button>' +
+					'<button type="button" class="twd-sb-save-btn">Save as image</button>' +
+					'<button type="button" class="twd-sb-pdf-btn">Download as PDF</button>' +
 					'<a class="twd-sb-read-link" href="' + escapeAttr(data.articleUrl) + '">Read the full article</a>' +
 				'</div>' +
 			'</div>' +
 		'</div>';
+	}
+
+	var html2canvasLoading = false;
+	var html2canvasQueue = [];
+	function loadHtml2Canvas(onReady) {
+		if (window.html2canvas) { onReady(); return; }
+		html2canvasQueue.push(onReady);
+		if (html2canvasLoading) { return; }
+		html2canvasLoading = true;
+		var s = document.createElement('script');
+		s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+		s.onload = function () {
+			html2canvasQueue.forEach(function (cb) { cb(); });
+			html2canvasQueue = [];
+		};
+		document.head.appendChild(s);
+	}
+
+	var jsPdfLoading = false;
+	var jsPdfQueue = [];
+	function loadJsPDF(onReady) {
+		if (window.jspdf && window.jspdf.jsPDF) { onReady(); return; }
+		jsPdfQueue.push(onReady);
+		if (jsPdfLoading) { return; }
+		jsPdfLoading = true;
+		var s = document.createElement('script');
+		s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+		s.onload = function () {
+			jsPdfQueue.forEach(function (cb) { cb(); });
+			jsPdfQueue = [];
+		};
+		document.head.appendChild(s);
 	}
 
 	/**
@@ -69,6 +106,8 @@
 		var nextBtn = backdrop.querySelector('.twd-sb-next');
 		var counterEl = backdrop.querySelector('.twd-sb-counter');
 		var shareBtn = backdrop.querySelector('.twd-sb-share-btn');
+		var saveBtn = backdrop.querySelector('.twd-sb-save-btn');
+		var pdfBtn = backdrop.querySelector('.twd-sb-pdf-btn');
 		var closeBtn = backdrop.querySelector('.twd-sb-close');
 
 		var total = slides.length;
@@ -188,6 +227,69 @@
 				try { document.execCommand('copy'); } catch (e) {}
 				document.body.removeChild(tmp);
 				flashShareLabel();
+			});
+		}
+
+		// -- Save as image / Download as PDF both capture the currently
+		// active card exactly as it renders on screen (html2canvas), so the
+		// export always matches what the reader is looking at, not a
+		// separately-built layout. Both libraries are only fetched the
+		// first time either button is used, same lazy-load pattern as the
+		// pledge postcard's own save-as-image in 04 Page Shell.php.
+		function captureActiveCard(onCanvas) {
+			loadHtml2Canvas(function () {
+				var card = backdrop.querySelector('.twd-sb-slide.is-active .twd-sb-card');
+				if (!card || !window.html2canvas) { return; }
+				window.html2canvas(card, { backgroundColor: '#13112e', scale: 2, useCORS: true }).then(onCanvas);
+			});
+		}
+
+		function exportFilename(ext) {
+			var title = backdrop.getAttribute('data-title') || 'summary-book';
+			var slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'summary-book';
+			return slug + '-page-' + (index + 1) + '.' + ext;
+		}
+
+		if (saveBtn) {
+			saveBtn.addEventListener('click', function () {
+				var original = saveBtn.textContent;
+				saveBtn.textContent = 'Saving…';
+				saveBtn.disabled = true;
+				captureActiveCard(function (canvas) {
+					var link = document.createElement('a');
+					link.download = exportFilename('png');
+					link.href = canvas.toDataURL('image/png');
+					link.click();
+					saveBtn.textContent = original;
+					saveBtn.disabled = false;
+				});
+			});
+		}
+
+		if (pdfBtn) {
+			pdfBtn.addEventListener('click', function () {
+				var original = pdfBtn.textContent;
+				pdfBtn.textContent = 'Preparing…';
+				pdfBtn.disabled = true;
+				captureActiveCard(function (canvas) {
+					loadJsPDF(function () {
+						if (!window.jspdf || !window.jspdf.jsPDF) {
+							pdfBtn.textContent = original;
+							pdfBtn.disabled = false;
+							return;
+						}
+						var JsPdfCtor = window.jspdf.jsPDF;
+						var pdf = new JsPdfCtor({
+							orientation: canvas.width >= canvas.height ? 'landscape' : 'portrait',
+							unit: 'px',
+							format: [canvas.width, canvas.height],
+						});
+						pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+						pdf.save(exportFilename('pdf'));
+						pdfBtn.textContent = original;
+						pdfBtn.disabled = false;
+					});
+				});
 			});
 		}
 
