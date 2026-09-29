@@ -492,6 +492,13 @@ class TWD_AP_REST {
 	}
 
 	public function list_articles( $request ) {
+		// Every response here changes as soon as an article is published,
+		// edited, featured or deleted, or the grid's own settings change --
+		// a browser's own HTTP cache, or a host's edge/CDN cache, can and
+		// does serve a stale response to a plain GET fetch() with no
+		// explicit cache directive, showing old article lists (or an old
+		// "Load more" decision) even once the plugin itself is updated.
+		nocache_headers();
 		$search   = isset( $request['search'] ) ? sanitize_text_field( wp_unslash( $request['search'] ) ) : '';
 		$category = isset( $request['category'] ) ? sanitize_title( wp_unslash( $request['category'] ) ) : '';
 		$tag      = isset( $request['tag'] ) ? sanitize_title( wp_unslash( $request['tag'] ) ) : '';
@@ -619,6 +626,7 @@ class TWD_AP_REST {
 	 * therapist's or small practice's blog, not a high-volume publication.
 	 */
 	public function list_articles_grouped() {
+		nocache_headers();
 		$settings = TWD_AP_Grid_Settings::get();
 
 		$post_ids = get_posts(
@@ -732,6 +740,7 @@ class TWD_AP_REST {
 	}
 
 	public function get_grid_settings() {
+		nocache_headers();
 		$settings     = TWD_AP_Grid_Settings::get();
 		$uncat_id     = $this->uncategorized_id();
 		$all_cats     = get_categories( array( 'hide_empty' => true ) );
@@ -797,6 +806,7 @@ class TWD_AP_REST {
 	}
 
 	public function list_facets() {
+		nocache_headers();
 		$uncat_id = $this->uncategorized_id();
 		$cats     = array_values(
 			array_filter(

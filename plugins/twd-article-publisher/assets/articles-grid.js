@@ -147,7 +147,7 @@
 		}
 
 		function loadThumbnailSetting(done) {
-			fetch(config.restUrl + '/grid-settings')
+			fetch(config.restUrl + '/grid-settings', { cache: 'no-store' })
 				.then(function (r) { return r.json(); })
 				.then(function (data) {
 					state.showThumbnails = data && false !== data.show_thumbnails;
@@ -171,7 +171,7 @@
 		}
 
 		function loadFacets() {
-			fetch(config.restUrl + '/articles/facets')
+			fetch(config.restUrl + '/articles/facets', { cache: 'no-store' })
 				.then(function (r) { return r.json(); })
 				.then(function (data) {
 					renderCategorySelect(data.categories || []);
@@ -201,7 +201,7 @@
 			emptyEl.hidden = true;
 			loadMoreBtn.hidden = true;
 
-			fetch(config.restUrl + '/articles/grouped')
+			fetch(config.restUrl + '/articles/grouped', { cache: 'no-store' })
 				.then(function (r) { return r.json(); })
 				.then(function (data) {
 					state.loading = false;
@@ -271,7 +271,7 @@
 				params.push('tag=' + encodeURIComponent(state.tag));
 			}
 
-			fetch(config.restUrl + '/articles?' + params.join('&'))
+			fetch(config.restUrl + '/articles?' + params.join('&'), { cache: 'no-store' })
 				.then(function (r) {
 					return r.json();
 				})
@@ -440,7 +440,7 @@
 			return closest.element;
 		}
 
-		fetch(config.restUrl + '/grid-settings')
+		fetch(config.restUrl + '/grid-settings', { cache: 'no-store' })
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
 				catsCount.value = data.categories_count || 4;

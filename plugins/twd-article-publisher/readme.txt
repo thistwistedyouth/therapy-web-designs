@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.20.1
+Stable tag: 1.20.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,24 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.20.2): the resources grid's REST responses (article list,
+grouped view, category facets, grid settings) never sent explicit
+no-cache headers, so a browser's own HTTP cache, or a host's edge/CDN
+cache, could serve a stale response to a plain fetch() even after the
+plugin itself had been updated -- most visibly, "Load more" still
+showing when nothing was actually left to load, or the 12-or-fewer
+plain-list behaviour not taking effect, despite both already being
+fixed server-side. Every one of these endpoints now sends
+nocache_headers(), and the grid's own fetch() calls now also pass
+cache: 'no-store', so this self-heals from here even for a browser
+that already has a stale response cached from before this update.
+
+FIX (1.20.2): the search box, category dropdown and "Load more"
+button on the resources grid were styled as plain soft-rounded boxes,
+inconsistent with the pill shape (border-radius: 999px) used
+everywhere else in this plugin (Article Assist, the swipe book link,
+the Featured badge). All three are pills now too.
 
 FIX (1.20.1): the "View as a swipe book" pill moved to the top of the
 article in 1.20.0, but landed outside the article's own centred,
