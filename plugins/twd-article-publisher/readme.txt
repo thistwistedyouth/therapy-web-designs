@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.28.0
+Stable tag: 1.29.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,24 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.29.0): a slide with a long section of text could overflow the
+card's fixed height with no way to scroll up to the part that had been
+pushed out of view above the visible area -- a flexbox-centering
+quirk, not a scrolling bug. Fixed by switching to "safe centering",
+which falls back to top-aligned (always scrollable) the moment content
+overflows. Also lowered the automatic slide-length threshold (420 to
+320 characters) so this is the rare exception rather than something
+every longer section runs into, and long slide headings now balance
+their line breaks instead of wrapping however happens to fit.
+
+NEW (1.29.0): the site heading, "Summary Book" label and logo now sit
+inside the card's own border as its top section, logo on the left,
+heading and label stacked to its right, instead of floating above it.
+This header stays fixed in place as a reader swipes between slides
+(only each slide's own content scrolls underneath it), and Save as
+image / Download as PDF already compose the same header into their
+exports, so this layout change carries over to both automatically.
 
 NEW (1.28.0): renamed "swipe book" to "Summary Book" everywhere it's
 user-facing (the "View summary book" button, popup labels, help text) --

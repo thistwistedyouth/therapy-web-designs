@@ -85,6 +85,49 @@ Two related decisions worth remembering if this needs extending:
 - **Why the picker in the editor popup reuses the public `/articles` REST route instead of a new one.** It already returns `{id, title, ...}` for every published post, sorted featured-first/newest-first, with no auth required — good enough for a "pick which articles to feature" list without a new endpoint to maintain. The picker only reads `id`/`title` off each item and ignores the rest.
 - **Why leaving every checkbox unticked doesn't store an empty array.** `after_save()` only writes `_twd_ap_related_ids` when the submitted array is non-empty; an empty selection deletes the meta key instead. This keeps "nobody's ever touched this picker" and "somebody explicitly picked nothing" indistinguishable from the reader's perspective (both fall back to the latest-6 automatic list) and avoids a stored empty array meaning something different from no meta row at all.
 
+## The overflowing-slide bug that looked like a scrolling bug (v1.29.0)
+
+A live screenshot showed a slide's heading cut off at the top of the
+card, with only the tail end of a long paragraph visible below it, no
+way to scroll up to see the missing top portion. `.twd-sb-card` already
+had `overflow-y: auto`, so the instinct was to look for something
+blocking scroll -- but the actual cause was `justify-content: center` on
+that same flex column. When a flex container's content is centred and
+overflows, the browser centres it around the container's middle exactly
+as asked, which means the portion that overflows *above* the visible
+area needs a *negative* scroll position to reach -- impossible, so it's
+permanently clipped, not just scrolled-past. Only the bottom overflow
+(reachable by scrolling down, a positive scrollTop) ever looked
+"scrollable"; that's why it read as a partial, confusing bug rather than
+a total scroll failure. The fix, `justify-content: safe center`, is
+built for exactly this case: centre when it fits, fall back to
+start-aligned (top, always scrollable) the moment it doesn't. Lowering
+`build_slides()`'s `$max_chars` from 420 to 320 doesn't fix the
+underlying mechanism -- it just makes an overflowing slide rarer in
+practice, so `safe center` is now a safety net rather than something a
+typical article-length section leans on.
+
+## Header moved inside the card's border (v1.29.0)
+
+Requested as: bring the logo/site heading/"Summary Book" label inside
+the card's visible border, logo top-left, heading and label stacked to
+its right (previously they floated centred above the card, outside its
+border entirely). Implemented by giving `.twd-sb-header` and
+`.twd-sb-card` matching border colour, matching `max-width`, and
+complementary border-radius (header rounded only on top, card only on
+the bottom) with zero gap between them, so two separate DOM elements
+read as one continuous card shape. The header stays a single shared
+element outside `.twd-sb-slides` -- it was already documented as
+deliberately not duplicated per slide (one book, one header, see the
+"Save as image / Download as PDF" entries above), and that reasoning
+didn't change just because it now visually sits inside the border
+rather than above it. Because `.twd-sb-export-compose` (the offscreen
+export wrapper) clones the same `.twd-sb-header` and `.twd-sb-card`
+elements, this layout change reached Save as image/PDF automatically --
+the export wrapper's own background/border/gap, which used to visually
+join the two pieces itself, was simplified away to nothing once the
+header and card could do that joining themselves.
+
 ## Zip-build gotcha (self-hosted updater)
 
 Building the release zip with `rsync` in the same shell invocation as the

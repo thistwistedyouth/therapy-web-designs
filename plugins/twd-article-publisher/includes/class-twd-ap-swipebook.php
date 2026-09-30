@@ -240,7 +240,14 @@ class TWD_AP_Swipebook {
 			'html'    => $intro ? '<p>' . esc_html( $intro ) . '</p>' : '',
 		);
 
-		$max_chars       = 420;
+		// Lowered from 420 -- a full 420 characters of body text plus its
+		// heading could overflow the card's fixed height on some screens
+		// even with the clamp()-sized text tuned as small as still reads
+		// comfortably. 320 leaves more headroom; the safe-center fix on
+		// .twd-sb-card (see swipebook.css) means an unusually long section
+		// still scrolls into view properly either way, this just makes
+		// that the exception rather than something to design around.
+		$max_chars       = 320;
 		$current_html    = '';
 		$current_len     = 0;
 		$current_heading = '';

@@ -111,12 +111,37 @@ body {
   border-color: var(--twd-sb-gold-soft) !important;
 }
 
+/* The header now reads as the top of the card itself, not a separate
+   block floating above it -- same border colour, flush against the
+   card with no gap, rounded only on top where the card is rounded only
+   on the bottom (see .twd-sb-card below). It stays outside
+   .twd-sb-slides, so it's a fixed "title bar" that never moves or
+   re-renders as slides change, while each card's own content scrolls
+   independently underneath it. Matched to the card's own max-width so
+   the two borders line up exactly. */
 .twd-sb-header {
   display: flex !important;
-  flex-direction: column !important;
+  flex-direction: row !important;
   align-items: center !important;
-  margin: 0 0 14px !important;
-  padding: 0 26px 0 0 !important;
+  gap: 12px !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  margin: 0 auto !important;
+  padding: 14px 18px 12px !important;
+  box-sizing: border-box !important;
+  border: 1px solid var(--twd-sb-gold-faint) !important;
+  border-bottom: none !important;
+  border-radius: 18px 18px 0 0 !important;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.06) 0%, rgba(255, 209, 102, 0) 42%),
+    rgba(19, 17, 36, 0.55) !important;
+}
+
+.twd-sb-header-text {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  min-width: 0 !important;
 }
 
 /* Site heading sits above the "Summary Book" label by default (blank
@@ -124,11 +149,12 @@ body {
    a distinct, slightly larger line from the small uppercase label below
    it, so the two never read as the same kind of text. */
 .twd-sb-sitename {
-  margin-bottom: 6px !important;
+  margin-bottom: 3px !important;
   font-family: "Cormorant Garamond", Garamond, Georgia, serif !important;
-  font-size: 19px !important;
+  font-size: 16px !important;
   font-weight: 600 !important;
   letter-spacing: 0.02em !important;
+  line-height: 1.25 !important;
   color: var(--twd-sb-cream) !important;
 }
 .twd-sb-sitename-link {
@@ -138,27 +164,25 @@ body {
 
 .twd-sb-title {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-  font-size: 11px !important;
+  font-size: 10px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.22em !important;
+  letter-spacing: 0.18em !important;
   text-transform: uppercase !important;
   color: var(--twd-sb-gold-soft) !important;
-  margin-bottom: 10px !important;
 }
 
 .twd-sb-mast {
   display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
+  flex-shrink: 0 !important;
 }
 .twd-sb-mast-link {
   text-decoration: none !important;
   display: inline-flex !important;
 }
 .twd-sb-mast-logo {
-  max-height: 64px !important;
+  max-height: 40px !important;
   width: auto !important;
-  padding: 6px 14px !important;
+  padding: 5px 10px !important;
   border-radius: 8px !important;
 }
 /* Three fixed background styles for the logo pill, picked in grid settings
@@ -176,41 +200,29 @@ body {
 }
 .twd-sb-mast-text {
   font-family: "Cormorant Garamond", Garamond, Georgia, serif !important;
-  font-size: 21px !important;
+  font-size: 18px !important;
   font-weight: 500 !important;
   letter-spacing: 0.03em !important;
   color: var(--twd-sb-gold-soft) !important;
   text-shadow: 0 0 16px rgba(255, 209, 102, 0.18) !important;
 }
-.twd-sb-mast::after {
-  content: "" !important;
-  display: block !important;
-  width: 42px !important;
-  height: 1px !important;
-  margin-top: 8px !important;
-  background: linear-gradient(90deg, rgba(255, 209, 102, 0) 0%, var(--twd-sb-gold-soft) 50%, rgba(255, 209, 102, 0) 100%) !important;
-}
 
 /* Save as image / Download as PDF, when branding is included, compose an
    offscreen clone of the header above the active card and capture that
-   instead of the card alone -- see captureNode() in swipebook.js. This
-   wrapper just needs to look like a continuation of the card's own frame
-   background so the seam between header and card is invisible in the
-   exported image. */
+   instead of the card alone -- see captureNode() in swipebook.js. Header
+   and card already carry their own matching border/background/radius to
+   read as one continuous shape, so the wrapper itself needs no styling
+   of its own beyond stacking them with zero gap. */
 .twd-sb-export-compose {
   display: flex !important;
   flex-direction: column !important;
-  align-items: center !important;
-  gap: 18px !important;
-  padding: 24px 20px !important;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.06) 0%, rgba(255, 209, 102, 0) 42%),
-    linear-gradient(180deg, #1b1836 0%, #100e20 60%, #0a0912 100%) !important;
-  border-radius: 22px !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: none !important;
 }
 .twd-sb-export-compose .twd-sb-header {
   margin: 0 !important;
-  padding: 0 !important;
 }
 
 /* Compact, sitting directly under the page-number counter now rather than
@@ -303,12 +315,21 @@ body {
   margin: 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: center !important;
+  /* "safe center" centers short content same as before, but falls back to
+     top-aligned the moment content overflows -- plain "center" on an
+     overflowing flex column clips whatever overflows ABOVE the centre
+     point, unreachable by scrolling since scrollTop can't go negative.
+     That's what was cutting off the top of a long slide's heading/text
+     with no way to scroll up to it. A browser that doesn't recognise
+     "safe" drops this whole declaration, which also lands on a safe
+     default (flex-start, i.e. always scrollable from the top). */
+  justify-content: safe center !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
-  padding: clamp(24px, 6vh, 40px) clamp(24px, 6vw, 34px) !important;
+  padding: clamp(20px, 5vh, 36px) clamp(24px, 6vw, 34px) !important;
   border: 1px solid var(--twd-sb-gold-faint) !important;
-  border-radius: 18px !important;
+  border-top: none !important;
+  border-radius: 0 0 18px 18px !important;
   text-align: center !important;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.05) 0%, rgba(255, 209, 102, 0) 40%),
@@ -331,10 +352,15 @@ body {
   padding: 0 !important;
   font-family: "Cormorant Garamond", Garamond, Georgia, serif !important;
   font-weight: 600 !important;
-  font-size: clamp(22px, 5.2vw, 30px) !important;
+  font-size: clamp(20px, 4.6vw, 28px) !important;
   line-height: 1.25 !important;
   color: var(--twd-sb-gold) !important;
   text-shadow: 0 0 22px rgba(255, 209, 102, 0.2) !important;
+  /* Distributes a wrapped heading's words evenly across its lines instead
+     of however the default greedy wrap happens to break it (often a
+     short, orphaned last line) -- a browser that doesn't support it just
+     keeps the default wrap, no fallback needed. */
+  text-wrap: balance !important;
 }
 
 .twd-sb-body-text {

@@ -66,9 +66,11 @@
 			'<div class="twd-sb-frame">' +
 				'<button type="button" class="twd-sb-close" aria-label="Close">&times;</button>' +
 				'<div class="twd-sb-header">' +
-					headingHtml +
-					'<div class="twd-sb-title">' + escapeHtml(data.label || 'Summary Book') + '</div>' +
 					'<div class="twd-sb-mast ' + logoBgClass + '">' + mastOpen + mastHtml + mastClose + '</div>' +
+					'<div class="twd-sb-header-text">' +
+						headingHtml +
+						'<div class="twd-sb-title">' + escapeHtml(data.label || 'Summary Book') + '</div>' +
+					'</div>' +
 				'</div>' +
 				'<div class="twd-sb-slides">' + slidesHtml + '</div>' +
 				'<div class="twd-sb-controls">' +
