@@ -129,11 +129,47 @@ class TWD_AP_Swipebook {
 			return $content;
 		}
 
-		$url = esc_url( self::url_for( $post ) );
-		$button = '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
+		$url   = esc_url( self::url_for( $post ) );
+		$color = TWD_AP_Grid_Settings::get()['swipebook_color'];
+		$style = 'style="' . esc_attr( self::color_custom_properties( $color ) ) . '"';
+		$button = '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" ' . $style . ' href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
 			. esc_html__( 'View as a swipe book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
 
 		return $content . $button;
+	}
+
+	/**
+	 * Inline CSS custom properties for the button's colour, set per-request
+	 * from TWD_AP_Grid_Settings rather than a REST fetch -- this button
+	 * renders on every published article page, not just ones carrying the
+	 * [twd_articles] shortcode, so it can't rely on that grid's own JS ever
+	 * having run. The faint/hover backgrounds are precomputed here (plain
+	 * rgba, not color-mix()) for broad browser support without a client-side
+	 * hex parser.
+	 */
+	private static function color_custom_properties( $hex ) {
+		list( $r, $g, $b ) = self::hex_to_rgb( $hex );
+		return sprintf(
+			'--twd-ap-swipebook-color:%s;--twd-ap-swipebook-bg:rgba(%d,%d,%d,0.08);--twd-ap-swipebook-bg-hover:rgba(%d,%d,%d,0.16);',
+			$hex,
+			$r,
+			$g,
+			$b,
+			$r,
+			$g,
+			$b
+		);
+	}
+
+	private static function hex_to_rgb( $hex ) {
+		$hex = ltrim( (string) $hex, '#' );
+		if ( 3 === strlen( $hex ) ) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+		if ( 6 !== strlen( $hex ) || ! ctype_xdigit( $hex ) ) {
+			return array( 91, 138, 114 ); // #5b8a72 fallback.
+		}
+		return array( hexdec( substr( $hex, 0, 2 ) ), hexdec( substr( $hex, 2, 2 ) ), hexdec( substr( $hex, 4, 2 ) ) );
 	}
 
 	/**

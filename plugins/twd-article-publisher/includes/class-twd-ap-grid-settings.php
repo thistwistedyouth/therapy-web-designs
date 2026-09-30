@@ -22,6 +22,7 @@ class TWD_AP_Grid_Settings {
 			'show_thumbnails'    => true,
 			'read_more_color'    => '#1d4ed8',
 			'accent_color'       => '#2563eb',
+			'swipebook_color'    => '#5b8a72',
 			'profile_photo_id'   => 0,
 			'profile_name'       => '',
 			'profile_bio'        => '',
@@ -45,6 +46,7 @@ class TWD_AP_Grid_Settings {
 			'show_thumbnails'    => $current['show_thumbnails'],
 			'read_more_color'    => $current['read_more_color'],
 			'accent_color'       => $current['accent_color'],
+			'swipebook_color'    => $current['swipebook_color'],
 			'profile_photo_id'   => $current['profile_photo_id'],
 			'profile_name'       => $current['profile_name'],
 			'profile_bio'        => $current['profile_bio'],
@@ -74,6 +76,12 @@ class TWD_AP_Grid_Settings {
 			$color = sanitize_hex_color( $input['accent_color'] );
 			if ( $color ) {
 				$output['accent_color'] = $color;
+			}
+		}
+		if ( isset( $input['swipebook_color'] ) ) {
+			$color = sanitize_hex_color( $input['swipebook_color'] );
+			if ( $color ) {
+				$output['swipebook_color'] = $color;
 			}
 		}
 		if ( isset( $input['profile_photo_id'] ) ) {

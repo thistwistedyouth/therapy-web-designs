@@ -798,6 +798,7 @@ class TWD_AP_REST {
 				'show_thumbnails'     => (bool) $settings['show_thumbnails'],
 				'read_more_color'     => $settings['read_more_color'],
 				'accent_color'        => $settings['accent_color'],
+				'swipebook_color'     => $settings['swipebook_color'],
 				'categories'          => $order,
 				'profile_photo_id'    => (int) $settings['profile_photo_id'],
 				'profile_photo_url'   => $profile_photo_url ? $profile_photo_url : '',

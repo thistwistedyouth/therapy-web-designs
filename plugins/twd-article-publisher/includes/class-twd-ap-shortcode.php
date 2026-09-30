@@ -167,6 +167,9 @@ class TWD_AP_Shortcode {
 						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-accent-color"><?php esc_html_e( 'Accent colour (search focus, category links)', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-accent-color" class="twd-ap-gs-color-input" />
 
+						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-swipebook-color"><?php esc_html_e( '"View as a swipe book" button colour', 'twd-article-publisher' ); ?></label>
+						<input type="color" id="twd-ap-gs-swipebook-color" class="twd-ap-gs-color-input" />
+
 						<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Category order (drag to reorder; only the top categories above show on the grid)', 'twd-article-publisher' ); ?></label>
 						<ul id="twd-ap-gs-cat-order" class="twd-ap-gs-cat-order"></ul>
 

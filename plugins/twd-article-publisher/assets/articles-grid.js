@@ -356,6 +356,12 @@
 		var thumbsBox  = overlay.querySelector('#twd-ap-gs-thumbnails');
 		var colorInput = overlay.querySelector('#twd-ap-gs-readmore-color');
 		var accentColorInput = overlay.querySelector('#twd-ap-gs-accent-color');
+		// Not applied via a CSS var on `root` like the other two colours --
+		// the swipe book button it styles lives on every article page, not
+		// just pages carrying this grid, so it's set server-side inline by
+		// TWD_AP_Swipebook::append_button() instead. This picker only reads
+		// and saves the value.
+		var swipebookColorInput = overlay.querySelector('#twd-ap-gs-swipebook-color');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var saveBtn    = overlay.querySelector('#twd-ap-gs-save');
 		var statusEl   = overlay.querySelector('#twd-ap-grid-settings-status');
@@ -467,6 +473,7 @@
 				thumbsBox.checked = false !== data.show_thumbnails;
 				colorInput.value = data.read_more_color || '#1d4ed8';
 				accentColorInput.value = data.accent_color || '#2563eb';
+				swipebookColorInput.value = data.swipebook_color || '#5b8a72';
 				renderOrderList(data.categories || []);
 				profilePhotoId = data.profile_photo_id || 0;
 				renderPhotoPreview(data.profile_photo_url || '');
@@ -490,6 +497,7 @@
 				show_thumbnails: !!thumbsBox.checked,
 				read_more_color: colorInput.value,
 				accent_color: accentColorInput.value,
+				swipebook_color: swipebookColorInput.value,
 				category_order: order,
 				profile_photo_id: profilePhotoId,
 				profile_name: nameInput.value,

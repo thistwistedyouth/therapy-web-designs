@@ -185,13 +185,21 @@
 .twd-ap-swipebook-row {
   margin: 1.8em 0 0 !important;
 }
-.twd-ap-swipebook-btn {
+/* Doubled class on purpose, not a typo: a theme/Elementor global "Text
+   Editor" widget link style (e.g. `.elementor-widget-text-editor a`) can
+   outrank a plain single-class selector on specificity even with
+   !important on both sides -- !important only wins ties on equal
+   specificity, it doesn't bypass specificity comparison entirely. This
+   button shipped with `!important` alone and still rendered as a bare
+   theme link on a live site, so the selector itself needs the extra
+   weight too. */
+a.twd-ap-swipebook-btn.twd-ap-swipebook-btn {
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
-  border: 1px solid #5b8a72 !important;
-  color: #5b8a72 !important;
-  background: #fff !important;
+  border: 1px solid var(--twd-ap-swipebook-color, #5b8a72) !important;
+  color: var(--twd-ap-swipebook-color, #5b8a72) !important;
+  background: var(--twd-ap-swipebook-bg, rgba(91, 138, 114, 0.08)) !important;
   padding: 9px 18px !important;
   margin: 0 !important;
   border-radius: 999px !important;
@@ -200,12 +208,13 @@
   font-weight: 600 !important;
   line-height: 1.2 !important;
   text-decoration: none !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+  box-shadow: none !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease !important;
 }
-.twd-ap-swipebook-btn:hover {
-  background: #f0f5f2 !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover {
+  background: var(--twd-ap-swipebook-bg-hover, rgba(91, 138, 114, 0.16)) !important;
+  text-decoration: none !important;
+  transform: translateY(-1px) !important;
 }
 
 @media (max-width: 600px) {

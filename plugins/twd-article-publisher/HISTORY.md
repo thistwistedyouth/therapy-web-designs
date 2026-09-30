@@ -29,6 +29,39 @@ Not needed for routine feature work — CLAUDE.md's rules cover that.
 - **Save as image and Download as PDF both had to solve the same underlying problem: capturing what's on screen via html2canvas, when `.twd-sb-slides` clips any slide not currently at `translateX(0)`.** Save as image only ever needs the one active card, so it's a direct `html2canvas()` call. Download as PDF needs every slide, so `captureAllCards()` steps each slide to `is-active` in turn (under a `twd-sb-exporting` class that kills the slide transition, so each step is instant rather than visibly animating through the whole book), snapshots it, then restores whichever slide the reader was actually on before the export started. The first version of this button (v1.22.0) only captured whichever slide happened to be active when clicked — a real usability bug, not a design choice — fixed properly in v1.24.0 once a user reported "download as pdf is only doing one page."
 - **Clicking Update on an already-published article now closes the popup automatically; a brand-new Publish or a Save as Draft still leaves it open.** Originally every save (including Update) left the popup open with a "you can keep editing or close this window" message, on the reasoning that someone might want to keep tweaking. A user explicitly asked for Update specifically to close, since there's nothing left to review on a second pass that wasn't already reviewed the first time something was published — the popup only stays open now for the two cases where there's a real reason to (a fresh publish's swipe book link just became available; a draft is, by definition, not finished).
 
+## "View as a swipe book" button shipped unstyled on a live site despite `!important` on every property
+
+The button (`assets/article-content.css`, `.twd-ap-swipebook-btn`) already
+had `!important` on every visual property, matching the CLAUDE.md rule
+about theme/Elementor styling winning otherwise — and it still rendered as
+a bare blue underlined link on a live client site (v1.26.0 report,
+screenshot showed it exactly like a default Elementor Text Editor link).
+The lesson from this one: `!important` only wins a tie between two
+`!important` declarations of *equal specificity* — it doesn't bypass
+specificity comparison itself. A theme's own compound selector (something
+like `.elementor-widget-text-editor a`, class+tag = higher specificity
+than a single `.twd-ap-swipebook-btn` class) can still beat a single-class
+`!important` rule with its own `!important` rule. Fixed by doubling the
+class in the selector (`a.twd-ap-swipebook-btn.twd-ap-swipebook-btn`),
+which raises this rule's own specificity without needing to know or match
+whatever the theme's selector actually is. Worth remembering as a second
+tool alongside the `[hidden]` rule: `!important` fixes losing on
+load-order/declaration-count, doubling a class fixes losing on
+specificity — they're different failure modes and need different fixes.
+
+While fixing this, also added a per-site colour picker (`swipebook_color`
+in `TWD_AP_Grid_Settings`) and softened the button's default look (faint
+background tint matching the border colour, no box-shadow, a small lift
+on hover instead). Since this button renders on every published article
+page — not just ones carrying `[twd_articles]` — it can't read its colour
+via the grid's own client-side REST fetch/CSS-var pattern the way
+`read_more_color`/`accent_color` do; `TWD_AP_Swipebook::append_button()`
+reads the setting directly in PHP and writes the colour, plus two
+precomputed faint/hover `rgba()` backgrounds, as inline CSS custom
+properties on the button itself (`color_custom_properties()`/
+`hex_to_rgb()`). Precomputing the rgba values server-side avoids needing a
+hex-to-rgba parser in JS just for this one button.
+
 ## Zip-build gotcha (self-hosted updater)
 
 Building the release zip with `rsync` in the same shell invocation as the

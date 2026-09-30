@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.25.0
+Stable tag: 1.26.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.26.0): the "View as a swipe book" button is softer now: a faint
+tinted background fill matching its border colour instead of plain
+white, no underline, and a gentle lift on hover instead of a harsh drop
+shadow. Its colour is a new picker in "Customise this grid" ("View as a
+swipe book" button colour), defaulting to the same sage green used
+before. This button also had the [hidden]-style CSS-specificity problem
+documented elsewhere in this plugin: a theme/Elementor global link style
+was beating its !important rules on some sites, showing it as a bare
+underlined blue link. The selector now carries extra specificity
+(doubled class) to guard against that.
 
 NEW (1.25.0): removed the "Featured" pill badge and its blue border ring
 from the resources grid entirely, no featured visual treatment on cards
