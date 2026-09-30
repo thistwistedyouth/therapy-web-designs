@@ -145,10 +145,68 @@ class TWD_AP_REST {
 				'permission_callback' => '__return_true',
 			)
 		);
+
+		// Summary Book: the curated, reviewed-before-publish deck, entirely
+		// separate from the swipe book routes above. Edit-gated like
+		// /posts/{id} -- this is an authoring surface, not a public one.
+		register_rest_route(
+			self::NAMESPACE,
+			'/posts/(?P<id>\d+)/summary-book',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $this, 'get_summary_book' ),
+					'permission_callback' => array( $this, 'check_edit_permission' ),
+				),
+				array(
+					'methods'             => 'POST',
+					'callback'            => array( $this, 'save_summary_book_draft' ),
+					'permission_callback' => array( $this, 'check_edit_permission' ),
+				),
+			)
+		);
+		register_rest_route(
+			self::NAMESPACE,
+			'/posts/(?P<id>\d+)/summary-book/publish',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'publish_summary_book' ),
+				'permission_callback' => array( $this, 'check_edit_permission' ),
+			)
+		);
+	}
+
+	public function get_summary_book( $request ) {
+		$post_id = (int) $request['id'];
+		return rest_ensure_response(
+			array(
+				'draft'     => TWD_AP_Summary_Book::get_draft( $post_id ),
+				'published' => TWD_AP_Summary_Book::get_published( $post_id ),
+			)
+		);
+	}
+
+	public function save_summary_book_draft( $request ) {
+		$post_id = (int) $request['id'];
+		$params  = $request->get_json_params();
+		$cards   = ( is_array( $params ) && isset( $params['cards'] ) && is_array( $params['cards'] ) ) ? $params['cards'] : array();
+		$saved   = TWD_AP_Summary_Book::save_draft( $post_id, $cards );
+		return rest_ensure_response( array( 'draft' => $saved ) );
+	}
+
+	public function publish_summary_book( $request ) {
+		$post_id = (int) $request['id'];
+		$params  = $request->get_json_params();
+		$cards   = ( is_array( $params ) && isset( $params['cards'] ) && is_array( $params['cards'] ) ) ? $params['cards'] : array();
+		$result  = TWD_AP_Summary_Book::publish( $post_id, $cards );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		return rest_ensure_response( array( 'published' => $result ) );
 	}
 
 	/**
-	 * Feeds the in-page Summary Book overlay (assets/swipebook-inline.js),
+	 * Feeds the in-page swipe book overlay (assets/swipebook-inline.js),
 	 * same payload shape the standalone ?twd_ap_swipebook=1 page embeds
 	 * inline for its own copy of the same JS, built by TWD_AP_Swipebook
 	 * itself so both paths share one slide-splitting implementation.
@@ -389,7 +447,7 @@ class TWD_AP_REST {
 			}
 		}
 
-		// Include bio page at end (Summary Book's closing slide).
+		// Include bio page at end (swipe book's closing slide).
 		if ( isset( $request['include_bio'] ) ) {
 			if ( $request['include_bio'] ) {
 				update_post_meta( $post_id, '_twd_ap_include_bio', 1 );
@@ -399,7 +457,7 @@ class TWD_AP_REST {
 		}
 
 		// "More articles" closing slide: up to 6 manually chosen articles.
-		// Empty/absent means the Summary Book falls back to the 6 most
+		// Empty/absent means the swipe book falls back to the 6 most
 		// recent other articles automatically -- see build_related_slide()
 		// in TWD_AP_Swipebook, which is where that fallback actually lives,
 		// not here. This only stores the manual override, when one exists.
@@ -410,6 +468,19 @@ class TWD_AP_REST {
 			} else {
 				delete_post_meta( $post_id, '_twd_ap_related_ids' );
 			}
+		}
+
+		// Summary Book draft, carried in from a pasted JSON block's own
+		// summary_book.slides (Article Assist bakes this in alongside the
+		// article itself). Only ever writes the draft -- saving the article
+		// never publishes or touches an already-published Summary Book;
+		// that only happens through the dedicated /summary-book/publish
+		// route, a deliberate separate action a therapist takes after
+		// reviewing it. Absent means "this save didn't carry a new draft,"
+		// not "clear the existing one" -- re-saving the article for an
+		// unrelated edit must never wipe out a draft from an earlier paste.
+		if ( isset( $request['summary_book_draft'] ) && is_array( $request['summary_book_draft'] ) ) {
+			TWD_AP_Summary_Book::save_draft( $post_id, $request['summary_book_draft'] );
 		}
 
 		// Featured image.
@@ -502,6 +573,8 @@ class TWD_AP_REST {
 			$data['related_ids']  = is_array( $related_ids ) ? array_map( 'intval', $related_ids ) : array();
 			$primary               = (int) get_post_meta( $post_id, '_twd_ap_primary_category', true );
 			$data['primary_category'] = ( $primary && in_array( $primary, $data['category_ids'], true ) ) ? $primary : ( ! empty( $data['category_ids'] ) ? $data['category_ids'][0] : 0 );
+			$data['summary_book_has_draft']     = ! empty( TWD_AP_Summary_Book::get_draft( $post_id ) );
+			$data['summary_book_is_published']  = TWD_AP_Summary_Book::is_published( $post_id );
 		}
 
 		return $data;

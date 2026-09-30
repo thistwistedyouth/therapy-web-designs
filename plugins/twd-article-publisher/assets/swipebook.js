@@ -10,7 +10,7 @@
 	 */
 	function buildMarkup(data) {
 		// Built once, then prepended into every card below -- the header
-		// (logo, site heading, "Summary Book" label) is part of each card's
+		// (logo, site heading, "Swipe Book" label) is part of each card's
 		// own single element now, not a separate fixed piece above it, so it
 		// slides with the card during a swipe and shares one continuous
 		// background/border with it instead of two boxes visibly seamed
@@ -34,7 +34,7 @@
 			'<div class="twd-sb-mast ' + logoBgClass + '">' + mastOpen + mastHtml + mastClose + '</div>' +
 			'<div class="twd-sb-header-text">' +
 				headingHtml +
-				'<div class="twd-sb-title">' + escapeHtml(data.label || 'Summary Book') + '</div>' +
+				'<div class="twd-sb-title">' + escapeHtml(data.label || 'Swipe Book') + '</div>' +
 			'</div>' +
 		'</div>';
 
@@ -53,10 +53,10 @@
 			} else if ('related' === slide.type) {
 				// Plain <a> tags, not click handlers -- swipebook-inline.js's
 				// existing delegated click listener (the same one the main
-				// "View summary book" button uses) opens these in the overlay
+				// "View as a swipe book" button uses) opens these in the overlay
 				// when it's loaded, closing the current book first. On the
 				// standalone page, where that script never loads, they just
-				// navigate to the linked article's own Summary Book normally.
+				// navigate to the linked article's own swipe book normally.
 				body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
 					'<div class="twd-sb-related-list">' +
 					(slide.items || []).map(function (item) {
@@ -278,7 +278,7 @@
 		// save-as-image in 04 Page Shell.php.
 		var includeBranding = '0' !== backdrop.getAttribute('data-include-branding');
 
-		// The header (logo, site heading, "Summary Book" label) is already
+		// The header (logo, site heading, "Swipe Book" label) is already
 		// part of each card's own markup (.twd-sb-card-header, the first
 		// child), so capturing the card captures it too, no composition
 		// needed. When branding is toggled off, that one child is hidden for

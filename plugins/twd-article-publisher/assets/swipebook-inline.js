@@ -6,7 +6,7 @@
 
 	document.addEventListener('click', function (e) {
 		// The main article-page button, and a "more articles" item inside an
-		// already-open Summary Book -- same open-in-overlay flow, but a
+		// already-open swipe book -- same open-in-overlay flow, but a
 		// related-item click also has to close the book it's inside of
 		// first, since open() no-ops while one is already showing.
 		var link = e.target.closest('.twd-ap-swipebook-btn, .twd-sb-related-item');
@@ -15,7 +15,7 @@
 		var postId = link.getAttribute('data-twd-ap-post-id');
 		if (!postId || typeof window.TWD_AP_SwipeBook === 'undefined') {
 			// No JS support or the shared module failed to load: fall back
-			// to the normal link, the full standalone Summary Book page.
+			// to the normal link, the full standalone swipe book page.
 			return;
 		}
 		e.preventDefault();

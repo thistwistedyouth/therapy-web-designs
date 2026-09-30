@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * /articles/{id}/swipebook REST route) -- the button under an article uses
  * the overlay when JS runs, and falls back to the full page if it can't.
  * No new content is stored either way: slides are built from the live post
- * content every time, so a Summary Book always matches the article. Splitting
+ * content every time, so a swipe book always matches the article. Splitting
  * is done in plain PHP (DOMDocument, chunked by heading and length), not by
  * an AI call, since this plugin runs on many client sites and none of them
  * carry an Anthropic key of their own.
@@ -106,7 +106,7 @@ class TWD_AP_Swipebook {
 	}
 
 	/**
-	 * A "View summary book" pill below every published article's content.
+	 * A "View as a swipe book" pill below every published article's content.
 	 * Carries the post ID and the full-page URL so swipebook-inline.js can
 	 * open it as an in-page overlay when JS runs, and fall back to a normal
 	 * link (the full standalone page) if it doesn't. Back at the bottom on
@@ -133,7 +133,7 @@ class TWD_AP_Swipebook {
 		$color = TWD_AP_Grid_Settings::get()['swipebook_color'];
 		$style = 'style="' . esc_attr( self::color_custom_properties( $color ) ) . '"';
 		$button = '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" ' . $style . ' href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
-			. esc_html__( 'View summary book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
+			. esc_html__( 'View as a swipe book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
 
 		return $content . $button;
 	}
@@ -397,7 +397,7 @@ class TWD_AP_Swipebook {
 		$settings    = TWD_AP_Grid_Settings::get();
 
 		// swipebook_logo_id overrides the site's own Customizer logo when
-		// set, so a client can carry a different mark on their Summary Books
+		// set, so a client can carry a different mark on their swipe books
 		// (e.g. a wordmark suited to a dark background) without changing
 		// their site logo everywhere else.
 		$logo_url = '';
@@ -411,8 +411,8 @@ class TWD_AP_Swipebook {
 			'title'            => $title,
 			'siteName'         => $site_name,
 			// Blank swipebook_heading falls back to the site's own name --
-			// the "site heading above Summary Book" line is on by default,
-			// not something a site has to opt into.
+			// the site heading line above the book's own label is on by
+			// default, not something a site has to opt into.
 			'siteHeading'      => '' !== $settings['swipebook_heading'] ? $settings['swipebook_heading'] : $site_name,
 			'siteUrl'          => home_url( '/' ),
 			'label'            => $settings['swipebook_label'],

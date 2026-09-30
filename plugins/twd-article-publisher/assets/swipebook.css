@@ -139,7 +139,7 @@ body {
   min-width: 0 !important;
 }
 
-/* Site heading sits above the "Summary Book" label by default (blank
+/* Site heading sits above the "Swipe Book" label by default (blank
    swipebook_heading in grid settings falls back to the site's own name) --
    a distinct, slightly larger line from the small uppercase label below
    it, so the two never read as the same kind of text. */

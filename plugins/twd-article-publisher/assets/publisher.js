@@ -13,8 +13,13 @@
 		primaryCategoryId: 0,
 		relatedIds: [],
 		relatedCandidatesLoaded: false,
+		summaryBookDraft: null,
+		summaryBookHasDraft: false,
+		summaryBookIsPublished: false,
+		articleStatus: '',
 	};
 	var RELATED_MAX = 6;
+	var SUMMARY_BOOK_TYPES = ['text', 'quote', 'question'];
 
 	var els = {};
 	var featuredFrame = null;
@@ -73,6 +78,16 @@
 		els.deleteBtn = document.getElementById('twd-ap-delete-btn');
 		els.adminEditLink = document.getElementById('twd-ap-admin-edit-link');
 		els.swipebookLink = document.getElementById('twd-ap-swipebook-link');
+		els.summaryBookBtn = document.getElementById('twd-ap-summary-book-btn');
+		els.summaryBookOverlay = document.getElementById('twd-ap-summary-book-overlay');
+		els.summaryBookCloseBtn = document.getElementById('twd-ap-summary-book-close-btn');
+		els.summaryBookStatus = document.getElementById('twd-ap-summary-book-status');
+		els.summaryBookEmpty = document.getElementById('twd-ap-summary-book-empty');
+		els.summaryBookPublishedNote = document.getElementById('twd-ap-summary-book-published-note');
+		els.summaryBookCards = document.getElementById('twd-ap-summary-book-cards');
+		els.summaryBookAddBtn = document.getElementById('twd-ap-summary-book-add-btn');
+		els.summaryBookSaveBtn = document.getElementById('twd-ap-summary-book-save-btn');
+		els.summaryBookPublishBtn = document.getElementById('twd-ap-summary-book-publish-btn');
 		els.helpBtn = document.getElementById('twd-ap-help-btn');
 		els.helpOverlay = document.getElementById('twd-ap-help-overlay');
 		els.helpCloseBtn = document.getElementById('twd-ap-help-close-btn');
@@ -107,7 +122,9 @@
 			if (e.key !== 'Escape') {
 				return;
 			}
-			if (!els.helpOverlay.hidden) {
+			if (els.summaryBookOverlay && !els.summaryBookOverlay.hidden) {
+				closeSummaryBookEditor();
+			} else if (!els.helpOverlay.hidden) {
 				els.helpOverlay.hidden = true;
 			} else if (!els.overlay.hasAttribute('hidden')) {
 				requestClose();
@@ -125,6 +142,25 @@
 				els.helpOverlay.hidden = true;
 			}
 		});
+		if (els.summaryBookBtn) {
+			els.summaryBookBtn.addEventListener('click', openSummaryBookEditor);
+			els.summaryBookCloseBtn.addEventListener('click', closeSummaryBookEditor);
+			els.summaryBookOverlay.addEventListener('click', function (e) {
+				if (e.target === els.summaryBookOverlay) {
+					closeSummaryBookEditor();
+				}
+			});
+			els.summaryBookAddBtn.addEventListener('click', function () {
+				addSummaryBookCard();
+			});
+			els.summaryBookCards.addEventListener('click', onSummaryBookCardsClick);
+			els.summaryBookCards.addEventListener('change', onSummaryBookCardsChange);
+			els.summaryBookSaveBtn.addEventListener('click', function () {
+				saveSummaryBookDraft();
+			});
+			els.summaryBookPublishBtn.addEventListener('click', publishSummaryBook);
+		}
+
 		els.copyShortcodeBtn.addEventListener('click', function () {
 			copyToClipboard(els.shortcodeExample.textContent, els.copyShortcodeBtn, 'Copy');
 		});
@@ -429,7 +465,7 @@
 	// -- "More articles" closing-slide picker: up to RELATED_MAX manually
 	// chosen articles, read/written as related_ids alongside the rest of the
 	// popup's fields. Leaving all unticked isn't stored at all (see
-	// after_save() in class-twd-ap-rest.php), so the Summary Book falls back
+	// after_save() in class-twd-ap-rest.php), so the swipe book falls back
 	// to the 6 most recent other articles on its own -- this picker only
 	// exists for overriding that default.
 	function loadRelatedPicker(excludeId, checkedIds) {
@@ -485,6 +521,202 @@
 		if (!els.relatedPicker) { return []; }
 		var boxes = els.relatedPicker.querySelectorAll('input[type="checkbox"]:checked');
 		return Array.prototype.map.call(boxes, function (b) { return parseInt(b.value, 10); });
+	}
+
+	// -- Summary Book: the curated, reviewed-before-publish deck. Separate
+	// overlay from the main popup, opened only for an already-published
+	// article that has a draft and/or a published Summary Book -- nothing
+	// to review or generate otherwise. Cards are rendered as plain editable
+	// fields (type, heading, text, attribution), not a live swipe-book
+	// preview -- simpler and more robust to build and use than making
+	// arbitrary nested card HTML directly contenteditable, at the cost of
+	// not being pixel-identical to the published result.
+	function updateSummaryBookButton() {
+		if (!els.summaryBookBtn) { return; }
+		var canShow = 'publish' === state.articleStatus && (state.summaryBookHasDraft || state.summaryBookIsPublished);
+		els.summaryBookBtn.hidden = !canShow;
+		if (!canShow) { return; }
+		els.summaryBookBtn.textContent = state.summaryBookIsPublished ? 'Summary Book (live)' : 'Summary Book (draft)';
+	}
+
+	function summaryBookCardTemplate(type) {
+		return { type: type || 'text', heading: '', text: '', attribution: '' };
+	}
+
+	function renderSummaryBookCards(cards) {
+		els.summaryBookCards.innerHTML = '';
+		cards.forEach(function (card) {
+			els.summaryBookCards.appendChild(buildSummaryBookCardRow(card));
+		});
+	}
+
+	function buildSummaryBookCardRow(card) {
+		var li = document.createElement('li');
+		li.className = 'twd-ap-sb-card-row';
+		li.dataset.type = card.type || 'text';
+
+		var typeSelect = '<select class="twd-ap-sb-card-type">' +
+			SUMMARY_BOOK_TYPES.map(function (t) {
+				var label = t.charAt(0).toUpperCase() + t.slice(1);
+				var selected = t === card.type ? ' selected' : '';
+				return '<option value="' + t + '"' + selected + '>' + label + '</option>';
+			}).join('') +
+			'</select>';
+
+		li.innerHTML =
+			'<div class="twd-ap-sb-card-row-top">' + typeSelect +
+				'<button type="button" class="twd-ap-sb-card-remove" aria-label="Remove card">&times;</button>' +
+			'</div>' +
+			'<input type="text" class="twd-ap-input twd-ap-sb-card-heading" placeholder="Heading (optional)" value="' + escapeHtml(card.heading || '') + '" />' +
+			'<textarea class="twd-ap-textarea-small twd-ap-sb-card-text" placeholder="Card text" rows="3">' + escapeHtml(card.text || '') + '</textarea>' +
+			'<input type="text" class="twd-ap-input twd-ap-sb-card-attribution" placeholder="Attribution (optional)" value="' + escapeHtml(card.attribution || '') + '" />';
+
+		applySummaryBookCardTypeVisibility(li);
+		return li;
+	}
+
+	// Heading only really makes sense on a plain text card; attribution
+	// only on a quote. Keeping the fields in the DOM regardless (just
+	// hidden) is deliberate -- switching a card's type and back doesn't
+	// lose whatever was typed into a field that's momentarily out of view.
+	function applySummaryBookCardTypeVisibility(li) {
+		var type = li.dataset.type;
+		var heading = li.querySelector('.twd-ap-sb-card-heading');
+		var attribution = li.querySelector('.twd-ap-sb-card-attribution');
+		if (heading) { heading.hidden = 'text' !== type; }
+		if (attribution) { attribution.hidden = 'quote' !== type; }
+	}
+
+	function addSummaryBookCard(type) {
+		els.summaryBookEmpty.hidden = true;
+		els.summaryBookCards.appendChild(buildSummaryBookCardRow(summaryBookCardTemplate(type)));
+	}
+
+	function onSummaryBookCardsClick(e) {
+		var removeBtn = e.target.closest('.twd-ap-sb-card-remove');
+		if (!removeBtn) { return; }
+		var row = removeBtn.closest('.twd-ap-sb-card-row');
+		if (row) { row.parentNode.removeChild(row); }
+	}
+
+	function onSummaryBookCardsChange(e) {
+		if (!e.target.matches('.twd-ap-sb-card-type')) { return; }
+		var row = e.target.closest('.twd-ap-sb-card-row');
+		if (!row) { return; }
+		row.dataset.type = e.target.value;
+		applySummaryBookCardTypeVisibility(row);
+	}
+
+	function collectSummaryBookCards() {
+		var rows = Array.prototype.slice.call(els.summaryBookCards.querySelectorAll('.twd-ap-sb-card-row'));
+		return rows.map(function (row) {
+			var card = {
+				type: row.dataset.type || 'text',
+				text: row.querySelector('.twd-ap-sb-card-text').value.trim(),
+			};
+			var heading = row.querySelector('.twd-ap-sb-card-heading').value.trim();
+			if (heading) { card.heading = heading; }
+			var attribution = row.querySelector('.twd-ap-sb-card-attribution').value.trim();
+			if (attribution) { card.attribution = attribution; }
+			return card;
+		}).filter(function (card) { return '' !== card.text; });
+	}
+
+	function setSummaryBookStatus(msg, ok) {
+		els.summaryBookStatus.textContent = msg;
+		els.summaryBookStatus.hidden = !msg;
+		els.summaryBookStatus.classList.toggle('twd-ap-status-ok', !!ok);
+	}
+
+	function openSummaryBookEditor() {
+		if (!state.editingId) { return; }
+		els.summaryBookOverlay.hidden = false;
+		setSummaryBookStatus('Loading…', false);
+		els.summaryBookCards.innerHTML = '';
+		els.summaryBookEmpty.hidden = true;
+		els.summaryBookPublishedNote.hidden = !state.summaryBookIsPublished;
+
+		fetch(TWD_AP.restUrl + '/posts/' + state.editingId + '/summary-book', {
+			headers: { 'X-WP-Nonce': TWD_AP.nonce },
+		})
+			.then(function (r) { return r.json(); })
+			.then(function (data) {
+				els.summaryBookStatus.hidden = true;
+				var cards = (data.draft && data.draft.length) ? data.draft : (data.published || []);
+				if (!cards.length) {
+					els.summaryBookEmpty.hidden = false;
+					return;
+				}
+				renderSummaryBookCards(cards);
+			})
+			.catch(function () {
+				setSummaryBookStatus('Could not load the Summary Book.', false);
+			});
+	}
+
+	function closeSummaryBookEditor() {
+		els.summaryBookOverlay.hidden = true;
+	}
+
+	function saveSummaryBookDraft(onSaved) {
+		if (!state.editingId) { return; }
+		var cards = collectSummaryBookCards();
+		if (!cards.length) {
+			setSummaryBookStatus('Add at least one card first.', false);
+			return;
+		}
+		setSummaryBookStatus('Saving…', false);
+		fetch(TWD_AP.restUrl + '/posts/' + state.editingId + '/summary-book', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': TWD_AP.nonce },
+			body: JSON.stringify({ cards: cards }),
+		})
+			.then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+			.then(function (result) {
+				if (!result.ok) {
+					setSummaryBookStatus('Could not save. Please try again.', false);
+					return;
+				}
+				state.summaryBookHasDraft = !!(result.data.draft && result.data.draft.length);
+				updateSummaryBookButton();
+				if ('function' === typeof onSaved) {
+					onSaved(result.data.draft || cards);
+				} else {
+					setSummaryBookStatus('Draft saved.', true);
+				}
+			})
+			.catch(function () {
+				setSummaryBookStatus('Could not save. Please try again.', false);
+			});
+	}
+
+	function publishSummaryBook() {
+		var cards = collectSummaryBookCards();
+		if (!cards.length) {
+			setSummaryBookStatus('Add at least one card before publishing.', false);
+			return;
+		}
+		setSummaryBookStatus('Publishing…', false);
+		fetch(TWD_AP.restUrl + '/posts/' + state.editingId + '/summary-book/publish', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': TWD_AP.nonce },
+			body: JSON.stringify({ cards: cards }),
+		})
+			.then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+			.then(function (result) {
+				if (!result.ok) {
+					setSummaryBookStatus((result.data && result.data.message) ? result.data.message : 'Could not publish. Please try again.', false);
+					return;
+				}
+				state.summaryBookHasDraft = true;
+				state.summaryBookIsPublished = true;
+				updateSummaryBookButton();
+				els.summaryBookPublishedNote.hidden = false;
+				setSummaryBookStatus('Summary Book published.', true);
+			})
+			.catch(function () {
+				setSummaryBookStatus('Could not publish. Please try again.', false);
+			});
 	}
 
 	function ensureImgToolbar() {
@@ -638,6 +870,15 @@
 			els.htmlEditor.value = html;
 		}
 
+		// Summary Book draft, if Article Assist baked one in -- held here,
+		// not written anywhere yet. It rides along in the next save's
+		// payload (see submitPost()) so it's stored atomically with the
+		// rest of the article, but nothing about it is shown or published
+		// until "Summary Book" is opened after saving.
+		if (data.summary_book && Array.isArray(data.summary_book.slides)) {
+			state.summaryBookDraft = data.summary_book.slides;
+		}
+
 		markDirty();
 		showStatus('Fields filled from JSON. Review them below before saving.', true);
 		switchTabImmediate('visual');
@@ -771,6 +1012,11 @@
 		els.includeBioToggle.checked = false;
 		state.relatedIds = [];
 		if (els.relatedPicker) { els.relatedPicker.innerHTML = ''; }
+		state.summaryBookDraft = null;
+		state.summaryBookHasDraft = false;
+		state.summaryBookIsPublished = false;
+		state.articleStatus = '';
+		updateSummaryBookButton();
 		els.yoastTitle.value = '';
 		els.yoastDesc.value = '';
 		els.scheduleToggle.checked = false;
@@ -870,6 +1116,10 @@
 					els.yoastDesc.value = data.yoast_desc || '';
 				}
 				updateSwipebookLink(data.status, data.link);
+				state.summaryBookHasDraft = !!data.summary_book_has_draft;
+				state.summaryBookIsPublished = !!data.summary_book_is_published;
+				state.articleStatus = data.status || '';
+				updateSummaryBookButton();
 				state.dirty = false;
 				hideStatus();
 			})
@@ -975,6 +1225,13 @@
 			status: status,
 		};
 
+		// Only included when this save actually carries a freshly-pasted
+		// draft -- see after_save() in class-twd-ap-rest.php, an absent key
+		// leaves any existing stored draft untouched rather than wiping it.
+		if (state.summaryBookDraft) {
+			payload.summary_book_draft = state.summaryBookDraft;
+		}
+
 		if (status === 'future') {
 			if (!els.scheduleDate.value) {
 				showStatus('Please choose a date and time to schedule this article.', false);
@@ -1017,6 +1274,15 @@
 				}
 				state.editingId = result.data.id;
 				state.dirty = false;
+				if (state.summaryBookDraft) {
+					// Now persisted server-side -- clear it so it isn't resent
+					// (and potentially overwrite a newer edit made through the
+					// Summary Book review screen itself) on a later save in
+					// this same popup session.
+					state.summaryBookDraft = null;
+					state.summaryBookHasDraft = true;
+				}
+				updateSummaryBookButton();
 				var label = status === 'draft' ? 'Draft saved.' : status === 'future' ? 'Article scheduled.' : 'Article published.';
 
 				// Updating (or rescheduling) an article that was already

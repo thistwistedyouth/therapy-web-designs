@@ -427,7 +427,7 @@
 		sbLogoSelect.addEventListener('click', function () {
 			if (!window.wp || !wp.media) { return; }
 			if (!sbLogoFrame) {
-				sbLogoFrame = wp.media({ title: 'Choose Summary Book Logo', multiple: false, library: { type: 'image' } });
+				sbLogoFrame = wp.media({ title: 'Choose Swipe Book Logo', multiple: false, library: { type: 'image' } });
 				sbLogoFrame.on('select', function () {
 					var att = sbLogoFrame.state().get('selection').first().toJSON();
 					sbLogoId = att.id;

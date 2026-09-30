@@ -471,6 +471,56 @@
   list-style: none;
 }
 
+.twd-ap-summary-book-cards {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.twd-ap-sb-card-row {
+  border: 1px solid var(--twd-ap-input-border);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--twd-ap-bg-soft);
+}
+.twd-ap-sb-card-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.twd-ap-sb-card-type {
+  border: 1px solid var(--twd-ap-input-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  background: var(--twd-ap-bg);
+  color: inherit;
+}
+.twd-ap-sb-card-remove {
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--twd-ap-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.twd-ap-sb-card-remove:hover {
+  color: #b42318;
+}
+.twd-ap-sb-card-heading,
+.twd-ap-sb-card-attribution {
+  margin-bottom: 8px;
+}
+.twd-ap-sb-card-text {
+  width: 100%;
+  resize: vertical;
+}
+
 .twd-ap-editor-tabs {
   display: flex;
   gap: 4px;

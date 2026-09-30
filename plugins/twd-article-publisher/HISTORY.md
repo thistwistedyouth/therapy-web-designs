@@ -148,6 +148,77 @@ underlying mechanism -- it just makes an overflowing slide rarer in
 practice, so `safe center` is now a safety net rather than something a
 typical article-length section leans on.
 
+## "Summary Book" name bounced between two features before settling (v1.28.0 → v1.31.0)
+
+Worth knowing if you ever find "Summary Book" wording in an old commit,
+screenshot, or a client's own notes that doesn't match what the code does
+today: the name has meant two different things at different points.
+
+v1.28.0 renamed the *swipe book's* own user-facing text from "swipe book"
+to "Summary Book" (button: "View summary book," the in-book label, popup
+copy) — purely cosmetic at the time, no behaviour changed. That stuck
+through v1.29.0 and v1.30.0, both of which fixed real bugs in that same
+renamed feature (the overflow-clipping bug, the header-seam/swipe bug).
+
+Then a new, genuinely different feature was designed: a curated,
+reviewed-before-publish deck of typed cards, fed by Article Assist's own
+JSON, that a therapist explicitly approves before anything goes live —
+the opposite of the swipe book's always-live auto-split. Calling it
+anything close to "Summary Book" while the *swipe book* was already using
+that exact name was caught before it shipped (two different things with
+the same label, on the same article, is a real bug waiting to happen, not
+a style question) — so v1.31.0 reverted the swipe book's wording back to
+"swipe book" everywhere, and "Summary Book" is now reserved exclusively
+for the new curated feature.
+
+Net effect: anywhere in this codebase or its docs that still says
+"Summary Book" refers to `class-twd-ap-summary-book.php` and nothing
+else. The live auto-split book is the swipe book, full stop, in every
+version from here on. Internal identifiers (file names, `TWD_AP_Swipebook`,
+`twd-sb-*` CSS classes, the `?twd_ap_swipebook=1` query var, the
+`/articles/{id}/swipebook` REST route) were never touched by any of this
+naming back-and-forth, on the standing rule that renaming those risks
+breaking live shared links and the self-hosted updater — only the words a
+person actually reads moved.
+
+## Summary Book v1: storage and an editor, deliberately nothing public yet (v1.31.0)
+
+Built as the first slice of a larger planned feature (see the design
+conversation this came out of, not reproduced here) that also includes:
+Article Assist generating the `summary_book.slides` draft in its own JSON
+output, a public "View summary book" button and page, a compact link
+from inside the swipe book to the Summary Book and back (reusing the
+same close-current/open-new mechanism the "More Articles" slide already
+uses), and Share/Save-as-image/Download-as-PDF parity with the swipe
+book. None of that is built yet. This version deliberately stops at
+storage (`TWD_AP_Summary_Book`, two post meta rows) and the therapist-facing
+editor (the popup's "Summary Book" button and review screen) — on purpose,
+not as an oversight: shipping a "View summary book" button with nothing
+sensible to render would be worse than not shipping it, and the storage
+layer needed to exist and be stable before anything gets built on top of
+it.
+
+Why draft and published are two separate meta rows rather than one row
+with a status flag: publishing has to be impossible to do by accident.
+A single row with a status flag means some code path, someday, could
+flip `draft` to `published` without actually copying reviewed content
+into it — a bug that would silently publish stale or half-edited text.
+Two rows means "publish" can only mean one thing: `TWD_AP_Summary_Book::publish()`
+copies the given cards into both rows at once, so the published copy is
+always exactly what was just reviewed, never something left over from a
+previous edit that never got explicitly approved.
+
+Why the review screen edits plain fields (a type dropdown, heading,
+text, attribution) instead of rendering real swipe-book-style cards
+with `contenteditable` text: the fidelity would be nicer, but making
+arbitrary nested HTML (headings, quote blocks with attribution rows,
+question styling) reliably editable in place is a meaningfully harder
+and more fragile thing to build than a form, and the therapist using
+this is reviewing for accuracy and tone, not fine typography — a plain
+field list serves that need without the risk of a `contenteditable`
+edge case corrupting a card's markup. Worth revisiting once the public
+rendering exists and there's a real published card to preview against.
+
 ## Header moved inside the card's border (v1.29.0)
 
 Requested as: bring the logo/site heading/"Summary Book" label inside

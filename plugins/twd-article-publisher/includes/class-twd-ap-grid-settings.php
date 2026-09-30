@@ -24,7 +24,7 @@ class TWD_AP_Grid_Settings {
 			'accent_color'       => '#2563eb',
 			'swipebook_color'    => '#5b8a72',
 			'swipebook_heading'  => '',
-			'swipebook_label'    => 'Summary Book',
+			'swipebook_label'    => 'Swipe Book',
 			'swipebook_logo_id'  => 0,
 			'swipebook_logo_bg'  => 'light',
 			'swipebook_export_branding' => true,
@@ -99,7 +99,7 @@ class TWD_AP_Grid_Settings {
 		}
 		if ( isset( $input['swipebook_label'] ) ) {
 			$label = sanitize_text_field( $input['swipebook_label'] );
-			$output['swipebook_label'] = '' !== $label ? $label : 'Summary Book';
+			$output['swipebook_label'] = '' !== $label ? $label : 'Swipe Book';
 		}
 		if ( isset( $input['swipebook_logo_id'] ) ) {
 			$output['swipebook_logo_id'] = absint( $input['swipebook_logo_id'] );

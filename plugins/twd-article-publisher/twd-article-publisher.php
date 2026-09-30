@@ -3,7 +3,7 @@
  * Plugin Name: Articles & Resource Production Plugin
  * Plugin URI: https://therapywebdesigns.co.uk/
  * Description: Lets approved users publish and edit blog articles from the live site in a popup, without going into wp-admin. Paste AI-formatted HTML or write visually, tag categories, set a featured image, and publish.
- * Version: 1.30.0
+ * Version: 1.31.0
  * Author: Therapy Web Designs
  * Author URI: https://therapywebdesigns.co.uk/
  * License: GPL v2 or later
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TWD_AP_VERSION', '1.30.0' );
+define( 'TWD_AP_VERSION', '1.31.0' );
 define( 'TWD_AP_PATH', plugin_dir_path( __FILE__ ) );
 define( 'TWD_AP_URL', plugin_dir_url( __FILE__ ) );
 define( 'TWD_AP_ARTICLE_ASSIST_URL', 'https://therapyresourcedirectory.com/article-assist/?aa=open' );
@@ -29,6 +29,7 @@ require_once TWD_AP_PATH . 'includes/class-twd-ap-frontend.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-shortcode.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-article-style.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-swipebook.php';
+require_once TWD_AP_PATH . 'includes/class-twd-ap-summary-book.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-starter-content.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-updater.php';
 

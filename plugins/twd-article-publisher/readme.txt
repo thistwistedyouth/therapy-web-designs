@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.30.0
+Stable tag: 1.31.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,25 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.31.0): the foundation for a curated "Summary Book", entirely
+separate from the existing swipe book. The swipe book stays exactly
+what it always was: a live view auto-split from the article, its
+button and labels reverted to "swipe book" wording after a brief
+detour through "Summary Book" naming last version. "Summary Book" is
+now reserved for a new, opt-in, reviewed-before-publish deck of typed
+cards (text/quote/question), meant to be baked into Article Assist's
+JSON as a draft and never auto-published from AI output.
+
+This version only ships the storage and editor side: a draft is stored
+as post meta when a pasted JSON block carries one, and a "Summary Book"
+button (published articles only) opens a review screen listing the
+draft's cards as plain editable fields, add/remove cards, Save Draft
+or Publish Summary Book. Publishing is a deliberate, separate action
+from saving the article; nothing about a Summary Book goes live on its
+own. No public-facing button or page renders a published Summary Book
+yet, and Article Assist doesn't produce the draft field yet either --
+both are follow-up work.
 
 FIX (1.30.0): the header's background showed a visible seam against the
 card below it (two separately-computed gradients meeting at an edge),
