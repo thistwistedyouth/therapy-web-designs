@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.31.0
+Stable tag: 1.32.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,24 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.32.0): the Summary Book is now publicly viewable. A published
+Summary Book gets its own standalone page (?twd_ap_summary_book=1 on
+the article's permalink) and an in-page overlay, same two-path pattern
+the swipe book already uses, sharing the same header/logo/branding and
+the same Save as image, Download as PDF and Share features. A "View
+Summary Book" button appears on the article once one's published, next
+to the existing swipe book button. Each book now links to the other:
+the swipe book's footer carries a "View Summary Book" link when one
+exists, and the Summary Book's own footer carries a "Back to swipe
+book" link -- clicking either closes the current book and opens the
+other, reusing the same mechanism the swipe book's "More Articles"
+slide already used for jumping between articles. Quote and question
+cards render in their own styles (centred italic serif, gold for a
+quote with its attribution line, warmer amber for a question), styled
+after Therapy Resource Directory's own book reader. Article Assist
+still doesn't produce the draft field yet -- that remains follow-up
+work in the therapy-resource-directory repo.
 
 NEW (1.31.0): the foundation for a curated "Summary Book", entirely
 separate from the existing swipe book. The swipe book stays exactly

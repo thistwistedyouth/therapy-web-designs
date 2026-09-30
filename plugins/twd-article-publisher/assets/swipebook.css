@@ -448,9 +448,76 @@ body {
   color: var(--twd-sb-gold) !important;
 }
 
+/* Quote / question card slides (curated Summary Book only -- the swipe book
+   never emits these types). Styled after Therapy Resource Directory's own
+   book reader: quote in gold with a hairline border top/bottom and a
+   smaller attribution line below; question in a warmer amber, no
+   attribution, since it's addressed to the reader rather than quoting
+   someone. */
+.twd-sb-quote,
+.twd-sb-question {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+.twd-sb-quote-text {
+  margin: 14px 0 !important;
+  padding: 16px 0 !important;
+  max-width: 13em !important;
+  border-top: 1px solid var(--twd-sb-gold-faint) !important;
+  border-bottom: 1px solid var(--twd-sb-gold-faint) !important;
+  font-family: "Cormorant Garamond", Garamond, Georgia, serif !important;
+  font-style: italic !important;
+  font-size: clamp(18px, 4vw, 22px) !important;
+  line-height: 1.6 !important;
+  color: var(--twd-sb-gold) !important;
+}
+.twd-sb-quote-text p {
+  margin: 0 !important;
+}
+.twd-sb-quote-attribution {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 13px !important;
+  letter-spacing: 0.03em !important;
+  color: var(--twd-sb-cream-muted) !important;
+}
+.twd-sb-question-text {
+  margin: 14px 0 !important;
+  padding: 16px 0 !important;
+  max-width: 13em !important;
+  border-top: 1px solid rgba(255, 176, 84, 0.35) !important;
+  border-bottom: 1px solid rgba(255, 176, 84, 0.35) !important;
+  font-family: "Cormorant Garamond", Garamond, Georgia, serif !important;
+  font-style: italic !important;
+  font-size: clamp(18px, 4vw, 22px) !important;
+  line-height: 1.6 !important;
+  color: rgba(255, 199, 138, 0.95) !important;
+}
+.twd-sb-question-text p {
+  margin: 0 !important;
+}
+
+/* Cross-link between a swipe book and its Summary Book (or back), shown
+   only when the other book has actually been published for this article. */
+.twd-sb-companion-link {
+  display: inline-block !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  color: var(--twd-sb-gold) !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid var(--twd-sb-gold-faint) !important;
+  margin-top: 4px !important;
+}
+.twd-sb-companion-link:hover {
+  color: var(--twd-sb-gold-soft) !important;
+}
+
 /* "More Articles" closing slide -- a compact, no-thumbnail list (unlike
-   the rest of this plugin's thumbnail-forward card grid) since a Summary
-   Book slide is a small, portrait space, not a resources page. */
+   the rest of this plugin's thumbnail-forward card grid) since a swipe
+   book slide is a small, portrait space, not a resources page. */
 .twd-sb-related-list {
   display: flex !important;
   flex-direction: column !important;

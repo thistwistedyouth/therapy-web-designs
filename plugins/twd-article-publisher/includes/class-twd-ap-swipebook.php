@@ -62,7 +62,7 @@ class TWD_AP_Swipebook {
 			return;
 		}
 
-		$this->render( $post );
+		self::render_standalone_page( $post, $this->get_payload( $post ) );
 		exit;
 	}
 
@@ -378,23 +378,17 @@ class TWD_AP_Swipebook {
 	}
 
 	/**
-	 * The JSON payload swipebook-inline.js fetches to open the overlay, and
-	 * the same shape the standalone page embeds inline for its own JS to
-	 * read, so the two rendering paths are driven from one data structure.
+	 * The header fields both books share (logo, site heading, branding
+	 * toggle -- all site-wide "Customise this grid" settings, not specific
+	 * to either book), parametrised only by which label to show. Pulled out
+	 * of get_payload() so TWD_AP_Summary_Book can build its own payload
+	 * without duplicating this, and so the two books can never quietly
+	 * drift apart on what counts as "the header."
 	 */
-	public function get_payload( $post ) {
-		// get_the_title() runs wptexturize, which turns a plain apostrophe or
-		// a run of dots into literal entity text ("&#8217;", "&hellip;"),
-		// meant for direct, unescaped HTML output. Both the page's own
-		// esc_html()/esc_attr() calls below and the JS overlay's escapeHtml()
-		// re-escape that, leaving the entity text itself showing instead of
-		// the punctuation it stands for. html_entity_decode() turns it back
-		// into a real character first, so it only ever gets encoded once.
-		$title       = html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' );
-		$site_name   = get_bloginfo( 'name' );
-		$article_url = get_permalink( $post );
-		$logo_id     = get_theme_mod( 'custom_logo' );
-		$settings    = TWD_AP_Grid_Settings::get();
+	public static function get_header_fields( $label ) {
+		$site_name = get_bloginfo( 'name' );
+		$logo_id   = get_theme_mod( 'custom_logo' );
+		$settings  = TWD_AP_Grid_Settings::get();
 
 		// swipebook_logo_id overrides the site's own Customizer logo when
 		// set, so a client can carry a different mark on their swipe books
@@ -408,25 +402,71 @@ class TWD_AP_Swipebook {
 		}
 
 		return array(
-			'title'            => $title,
-			'siteName'         => $site_name,
+			'siteName'        => $site_name,
 			// Blank swipebook_heading falls back to the site's own name --
 			// the site heading line above the book's own label is on by
 			// default, not something a site has to opt into.
-			'siteHeading'      => '' !== $settings['swipebook_heading'] ? $settings['swipebook_heading'] : $site_name,
-			'siteUrl'          => home_url( '/' ),
-			'label'            => $settings['swipebook_label'],
-			'articleUrl'       => $article_url,
-			'shareUrl'         => self::url_for( $post ),
-			'logoUrl'          => $logo_url ? $logo_url : '',
-			'logoBg'           => $settings['swipebook_logo_bg'],
-			'includeBranding'  => (bool) $settings['swipebook_export_branding'],
-			'slides'           => $this->build_slides( $post ),
+			'siteHeading'     => '' !== $settings['swipebook_heading'] ? $settings['swipebook_heading'] : $site_name,
+			'siteUrl'         => home_url( '/' ),
+			'label'           => $label,
+			'logoUrl'         => $logo_url ? $logo_url : '',
+			'logoBg'          => $settings['swipebook_logo_bg'],
+			'includeBranding' => (bool) $settings['swipebook_export_branding'],
 		);
 	}
 
-	private function render( $post ) {
-		$payload     = $this->get_payload( $post );
+	/**
+	 * The JSON payload swipebook-inline.js fetches to open the overlay, and
+	 * the same shape the standalone page embeds inline for its own JS to
+	 * read, so the two rendering paths are driven from one data structure.
+	 */
+	public function get_payload( $post ) {
+		// get_the_title() runs wptexturize, which turns a plain apostrophe or
+		// a run of dots into literal entity text ("&#8217;", "&hellip;"),
+		// meant for direct, unescaped HTML output. Both the page's own
+		// esc_html()/esc_attr() calls below and the JS overlay's escapeHtml()
+		// re-escape that, leaving the entity text itself showing instead of
+		// the punctuation it stands for. html_entity_decode() turns it back
+		// into a real character first, so it only ever gets encoded once.
+		$title    = html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' );
+		$settings = TWD_AP_Grid_Settings::get();
+		$header   = self::get_header_fields( $settings['swipebook_label'] );
+
+		$payload = array_merge(
+			$header,
+			array(
+				'title'      => $title,
+				'articleUrl' => get_permalink( $post ),
+				'shareUrl'   => self::url_for( $post ),
+				'slides'     => $this->build_slides( $post ),
+			)
+		);
+
+		// A companion link to the curated Summary Book, only when one's
+		// actually been published for this article -- swipebook.js renders
+		// this as a small footer link, opened the same way the "More
+		// Articles" slide opens another article's book (close this one,
+		// open the other), just within the same article instead of across
+		// to a different one.
+		if ( class_exists( 'TWD_AP_Summary_Book' ) && TWD_AP_Summary_Book::is_published( $post->ID ) ) {
+			$payload['companionUrl']         = TWD_AP_Summary_Book::url_for( $post );
+			$payload['companionLabel']       = __( 'View Summary Book', 'twd-article-publisher' );
+			$payload['companionPostId']      = $post->ID;
+			$payload['companionBookVariant'] = 'summary-book';
+		}
+
+		return $payload;
+	}
+
+	/**
+	 * Shared HTML shell for the standalone full-page view -- built once so
+	 * TWD_AP_Summary_Book's own standalone page (?twd_ap_summary_book=1)
+	 * renders identically to the swipe book's, parametrised only by the
+	 * payload (already built by the caller) and which query var brought the
+	 * visitor here (only used for the OG/canonical URLs, which already live
+	 * in the payload, so this barely does anything post-specific itself).
+	 */
+	public static function render_standalone_page( $post, $payload ) {
 		$slides      = $payload['slides'];
 		$title       = $payload['title'];
 		$article_url = $payload['articleUrl'];

@@ -174,6 +174,19 @@ class TWD_AP_REST {
 				'permission_callback' => array( $this, 'check_edit_permission' ),
 			)
 		);
+
+		// Public read of a published Summary Book, mirroring /articles/{id}/swipebook
+		// above -- feeds the in-page overlay (swipebook-inline.js), which needs
+		// no login to open a book someone already chose to publish.
+		register_rest_route(
+			self::NAMESPACE,
+			'/articles/(?P<id>\d+)/summary-book',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_summary_book_public' ),
+				'permission_callback' => '__return_true',
+			)
+		);
 	}
 
 	public function get_summary_book( $request ) {
@@ -218,6 +231,24 @@ class TWD_AP_REST {
 			return new WP_Error( 'twd_ap_not_found', __( 'That article could not be found.', 'twd-article-publisher' ), array( 'status' => 404 ) );
 		}
 		return rest_ensure_response( TWD_AP_Swipebook::instance()->get_payload( $post ) );
+	}
+
+	/**
+	 * Feeds the in-page Summary Book overlay, same pattern as get_swipebook()
+	 * above. Only ever returns a payload when a Summary Book has actually
+	 * been published for this article -- an unpublished or never-generated
+	 * one is a 404, not an empty book.
+	 */
+	public function get_summary_book_public( $request ) {
+		$post_id = (int) $request['id'];
+		$post    = get_post( $post_id );
+		if ( ! $post || 'post' !== $post->post_type || 'publish' !== $post->post_status ) {
+			return new WP_Error( 'twd_ap_not_found', __( 'That article could not be found.', 'twd-article-publisher' ), array( 'status' => 404 ) );
+		}
+		if ( ! TWD_AP_Summary_Book::is_published( $post_id ) ) {
+			return new WP_Error( 'twd_ap_not_found', __( 'No summary book has been published for this article yet.', 'twd-article-publisher' ), array( 'status' => 404 ) );
+		}
+		return rest_ensure_response( TWD_AP_Summary_Book::instance()->get_payload( $post ) );
 	}
 
 	public function check_permission() {

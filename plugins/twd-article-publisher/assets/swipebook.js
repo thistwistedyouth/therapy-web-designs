@@ -66,6 +66,17 @@
 						'</a>';
 					}).join('') +
 					'</div>';
+			} else if ('quote' === slide.type) {
+				body = '<div class="twd-sb-quote">' +
+					(slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
+					'<blockquote class="twd-sb-quote-text">' + slide.html + '</blockquote>' +
+					(slide.attribution ? '<div class="twd-sb-quote-attribution">' + escapeHtml(slide.attribution) + '</div>' : '') +
+					'</div>';
+			} else if ('question' === slide.type) {
+				body = '<div class="twd-sb-question">' +
+					(slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
+					'<div class="twd-sb-question-text">' + slide.html + '</div>' +
+					'</div>';
 			} else {
 				body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
 					'<div class="twd-sb-body-text">' + slide.html + '</div>';
@@ -79,6 +90,15 @@
 		var segsHtml = data.slides.map(function (s, i) {
 			return '<span class="twd-sb-seg" data-seg="' + i + '"></span>';
 		}).join('');
+
+		// The cross-link to the article's other book (swipe book <-> Summary
+		// Book), only present when one's actually been published -- opened
+		// the same close-current/open-other way as a "More Articles" item,
+		// via data-twd-ap-post-id + data-twd-ap-book-variant and
+		// swipebook-inline.js's delegated click handler.
+		var companionHtml = data.companionUrl
+			? '<a class="twd-sb-companion-link" href="' + escapeAttr(data.companionUrl) + '" data-twd-ap-post-id="' + data.companionPostId + '" data-twd-ap-book-variant="' + escapeAttr(data.companionBookVariant || '') + '">' + escapeHtml(data.companionLabel || '') + '</a>'
+			: '';
 
 		return '<div class="twd-sb-backdrop" data-article-url="' + escapeAttr(data.articleUrl) + '" data-share-url="' + escapeAttr(data.shareUrl) + '" data-title="' + escapeAttr(data.title) + '" data-include-branding="' + (false === data.includeBranding ? '0' : '1') + '">' +
 			'<div class="twd-sb-frame">' +
@@ -95,6 +115,7 @@
 					'<button type="button" class="twd-sb-save-btn">Save as image</button>' +
 					'<button type="button" class="twd-sb-pdf-btn">Download as PDF</button>' +
 					'<a class="twd-sb-read-link" href="' + escapeAttr(data.articleUrl) + '">Read the full article</a>' +
+					companionHtml +
 				'</div>' +
 			'</div>' +
 		'</div>';

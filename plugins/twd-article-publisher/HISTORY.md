@@ -240,6 +240,44 @@ the export wrapper's own background/border/gap, which used to visually
 join the two pieces itself, was simplified away to nothing once the
 header and card could do that joining themselves.
 
+## Summary Book v2: public rendering, built by reusing the swipe book's own shell (v1.32.0)
+
+The second slice of the Summary Book plan (see the v1.31.0 entry above for
+the first). This version adds everything the previous one deliberately
+left out: the standalone page, the in-page overlay, the "View Summary
+Book" button, and cross-links between the two books.
+
+The guiding decision was to reuse `TWD_AP_Swipebook`'s own rendering
+machinery rather than duplicate it. `get_header_fields()` was pulled out
+of `TWD_AP_Swipebook::get_payload()` into its own public static method so
+both books build an identical header from one place, and `render()`
+(private, took no arguments) became `render_standalone_page( $post,
+$payload )` (public static, payload passed in) so `TWD_AP_Summary_Book`
+could call it directly instead of re-implementing the same HTML shell,
+OG tags and inline `TWD_AP_SB_DATA` script a second time. `assets/
+swipebook.js`'s `buildMarkup()` is the one JS template both books render
+through; a Summary Book's payload is just a different `slides` array
+(built from published cards, not a live split of the article) shaped to
+match what that template already expects, plus two new slide types it
+now understands (`quote`, `question`) and a `companionUrl`/
+`companionLabel` pair it renders as a footer link when present. Nothing
+about the swipe book's own live-split behavior changed.
+
+The cross-link between books reuses the exact mechanism the "More
+Articles" slide already used for jumping between articles' swipe books:
+close the current overlay, fetch the other book's payload, open it.
+`swipebook-inline.js`'s click delegation used to assume every click it
+handled was fetching `/swipebook`; it now reads a `data-twd-ap-book-
+variant` attribute (`swipebook` or `summary-book`) off whatever was
+clicked -- the main button, a related-article item, or a companion link
+-- and picks the REST endpoint accordingly. A new public (no
+login required) REST route, `/articles/{id}/summary-book`, mirrors the
+existing public `/articles/{id}/swipebook` route for this purpose, kept
+separate from the edit-gated `/posts/{id}/summary-book` route added in
+v1.31.0 for the review screen -- a public visitor reading a shared
+Summary Book link has no `edit_post` capability and was never meant to
+need one.
+
 ## Zip-build gotcha (self-hosted updater)
 
 Building the release zip with `rsync` in the same shell invocation as the
