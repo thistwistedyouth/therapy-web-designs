@@ -9,6 +9,35 @@
 	 * never drift apart.
 	 */
 	function buildMarkup(data) {
+		// Built once, then prepended into every card below -- the header
+		// (logo, site heading, "Summary Book" label) is part of each card's
+		// own single element now, not a separate fixed piece above it, so it
+		// slides with the card during a swipe and shares one continuous
+		// background/border with it instead of two boxes visibly seamed
+		// together. A toggle to exclude it from Save as image/PDF (see
+		// captureNode() below) hides this one child node during that
+		// specific capture rather than needing a second markup path.
+		var mastHtml = data.logoUrl
+			? '<img class="twd-sb-mast-logo" src="' + escapeAttr(data.logoUrl) + '" alt="">'
+			: '<span class="twd-sb-mast-text">' + escapeHtml(data.siteName || '') + '</span>';
+		var siteUrl = data.siteUrl || '';
+		var mastOpen = siteUrl ? '<a class="twd-sb-mast-link" href="' + escapeAttr(siteUrl) + '" target="_blank" rel="noopener">' : '';
+		var mastClose = siteUrl ? '</a>' : '';
+		var headingText = data.siteHeading || data.siteName || '';
+		var headingOpen = siteUrl ? '<a class="twd-sb-sitename-link" href="' + escapeAttr(siteUrl) + '" target="_blank" rel="noopener">' : '';
+		var headingClose = siteUrl ? '</a>' : '';
+		var headingHtml = headingText
+			? '<div class="twd-sb-sitename">' + headingOpen + escapeHtml(headingText) + headingClose + '</div>'
+			: '';
+		var logoBgClass = 'twd-sb-mast-bg-' + (data.logoBg || 'light');
+		var cardHeaderHtml = '<div class="twd-sb-card-header">' +
+			'<div class="twd-sb-mast ' + logoBgClass + '">' + mastOpen + mastHtml + mastClose + '</div>' +
+			'<div class="twd-sb-header-text">' +
+				headingHtml +
+				'<div class="twd-sb-title">' + escapeHtml(data.label || 'Summary Book') + '</div>' +
+			'</div>' +
+		'</div>';
+
 		var slidesHtml = data.slides.map(function (slide, i) {
 			var active = 0 === i ? ' is-active' : '';
 			var body;
@@ -41,37 +70,19 @@
 				body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
 					'<div class="twd-sb-body-text">' + slide.html + '</div>';
 			}
-			return '<section class="twd-sb-slide' + active + '" data-index="' + i + '"><div class="twd-sb-card">' + body + '</div></section>';
+			return '<section class="twd-sb-slide' + active + '" data-index="' + i + '"><div class="twd-sb-card">' +
+				cardHeaderHtml +
+				'<div class="twd-sb-card-body">' + body + '</div>' +
+			'</div></section>';
 		}).join('');
 
 		var segsHtml = data.slides.map(function (s, i) {
 			return '<span class="twd-sb-seg" data-seg="' + i + '"></span>';
 		}).join('');
 
-		var mastHtml = data.logoUrl
-			? '<img class="twd-sb-mast-logo" src="' + escapeAttr(data.logoUrl) + '" alt="">'
-			: '<span class="twd-sb-mast-text">' + escapeHtml(data.siteName || '') + '</span>';
-		var siteUrl = data.siteUrl || '';
-		var mastOpen = siteUrl ? '<a class="twd-sb-mast-link" href="' + escapeAttr(siteUrl) + '" target="_blank" rel="noopener">' : '';
-		var mastClose = siteUrl ? '</a>' : '';
-		var headingText = data.siteHeading || data.siteName || '';
-		var headingOpen = siteUrl ? '<a class="twd-sb-sitename-link" href="' + escapeAttr(siteUrl) + '" target="_blank" rel="noopener">' : '';
-		var headingClose = siteUrl ? '</a>' : '';
-		var headingHtml = headingText
-			? '<div class="twd-sb-sitename">' + headingOpen + escapeHtml(headingText) + headingClose + '</div>'
-			: '';
-		var logoBgClass = 'twd-sb-mast-bg-' + (data.logoBg || 'light');
-
 		return '<div class="twd-sb-backdrop" data-article-url="' + escapeAttr(data.articleUrl) + '" data-share-url="' + escapeAttr(data.shareUrl) + '" data-title="' + escapeAttr(data.title) + '" data-include-branding="' + (false === data.includeBranding ? '0' : '1') + '">' +
 			'<div class="twd-sb-frame">' +
 				'<button type="button" class="twd-sb-close" aria-label="Close">&times;</button>' +
-				'<div class="twd-sb-header">' +
-					'<div class="twd-sb-mast ' + logoBgClass + '">' + mastOpen + mastHtml + mastClose + '</div>' +
-					'<div class="twd-sb-header-text">' +
-						headingHtml +
-						'<div class="twd-sb-title">' + escapeHtml(data.label || 'Summary Book') + '</div>' +
-					'</div>' +
-				'</div>' +
 				'<div class="twd-sb-slides">' + slidesHtml + '</div>' +
 				'<div class="twd-sb-controls">' +
 					'<button type="button" class="twd-sb-btn twd-sb-prev" aria-label="Previous">&#8249;</button>' +
@@ -267,33 +278,18 @@
 		// save-as-image in 04 Page Shell.php.
 		var includeBranding = '0' !== backdrop.getAttribute('data-include-branding');
 
-		// When branding is on, the export needs the header (site heading,
-		// "Summary Book" label, logo) above the card, but the header is one
-		// shared element for the whole book, not per-slide, and lives outside
-		// .twd-sb-slides entirely -- so a card alone can't be captured with it
-		// in shot. Builds an offscreen clone of {header, card} stacked in the
-		// card's own frame styling, captures that instead, then removes it.
-		// Cloning (not moving the live nodes) means the visible modal never
-		// flickers during an export.
+		// The header (logo, site heading, "Summary Book" label) is already
+		// part of each card's own markup (.twd-sb-card-header, the first
+		// child), so capturing the card captures it too, no composition
+		// needed. When branding is toggled off, that one child is hidden for
+		// just the moment of capture and restored right after -- the same
+		// "briefly change the live DOM for an export" approach
+		// captureAllCards() already uses to step through slides.
 		function captureNode(cardEl, onCanvas) {
-			if (!includeBranding) {
-				window.html2canvas(cardEl, { backgroundColor: '#13112e', scale: 2, useCORS: true }).then(onCanvas);
-				return;
-			}
-			var headerEl = backdrop.querySelector('.twd-sb-header');
-			var wrap = document.createElement('div');
-			wrap.className = 'twd-sb-export-compose';
-			wrap.style.position = 'fixed';
-			wrap.style.left = '-9999px';
-			wrap.style.top = '0';
-			wrap.style.width = cardEl.getBoundingClientRect().width + 'px';
-			if (headerEl) {
-				wrap.appendChild(headerEl.cloneNode(true));
-			}
-			wrap.appendChild(cardEl.cloneNode(true));
-			document.body.appendChild(wrap);
-			window.html2canvas(wrap, { backgroundColor: '#13112e', scale: 2, useCORS: true }).then(function (canvas) {
-				document.body.removeChild(wrap);
+			var headerEl = includeBranding ? null : cardEl.querySelector('.twd-sb-card-header');
+			if (headerEl) { headerEl.style.display = 'none'; }
+			window.html2canvas(cardEl, { backgroundColor: '#13112e', scale: 2, useCORS: true }).then(function (canvas) {
+				if (headerEl) { headerEl.style.display = ''; }
 				onCanvas(canvas);
 			});
 		}

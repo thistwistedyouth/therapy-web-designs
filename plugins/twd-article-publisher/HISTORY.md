@@ -85,6 +85,47 @@ Two related decisions worth remembering if this needs extending:
 - **Why the picker in the editor popup reuses the public `/articles` REST route instead of a new one.** It already returns `{id, title, ...}` for every published post, sorted featured-first/newest-first, with no auth required — good enough for a "pick which articles to feature" list without a new endpoint to maintain. The picker only reads `id`/`title` off each item and ignores the rest.
 - **Why leaving every checkbox unticked doesn't store an empty array.** `after_save()` only writes `_twd_ap_related_ids` when the submitted array is non-empty; an empty selection deletes the meta key instead. This keeps "nobody's ever touched this picker" and "somebody explicitly picked nothing" indistinguishable from the reader's perspective (both fall back to the latest-6 automatic list) and avoids a stored empty array meaning something different from no meta row at all.
 
+## Header moved again: from one fixed shared element to inside every card (v1.30.0)
+
+v1.29.0 moved the header inside the card's *visible border* but kept it as
+a single shared DOM element sitting outside `.twd-sb-slides`, styled to
+look flush with whichever card was showing (matching border colour,
+complementary border-radius, zero gap). That produced two visible
+problems in practice, both from the same root cause: header and card were
+still two separate elements with two separately-computed backgrounds.
+- **The gradient seam.** Both `.twd-sb-header` and `.twd-sb-card` had their own `radial-gradient(ellipse at 50% 0%, ...)`, each computed relative to its own box — so the ellipse's centre point landed in a different place in each, and the join between them showed as a visible line/discontinuity rather than one continuous background, exactly as reported from a live screenshot.
+- **The header didn't "swipe with the page."** Because it lived outside `.twd-sb-slides` and never had a `transform` applied to it, it stayed visually still while cards translated past underneath — deliberate at the time (documented as "a fixed title bar"), but the person paying for this wanted the opposite: logo, border and titles as part of the same physical "page" that moves as one unit on every swipe, closer to a real page in a book than a chrome/toolbar sitting above the content.
+
+Fixed by moving `.twd-sb-header` (renamed `.twd-sb-card-header`) to be the
+first child *inside* every `.twd-sb-card`, built once as an HTML string in
+`buildMarkup()` and prepended into each slide's markup rather than
+appearing once outside the loop. This solves both complaints at once:
+one element means one background computed once (no seam possible), and
+because the header is now inside the card, it inherits the card's own
+`transform: translateX(...)` during a swipe, so it moves with it.
+`.twd-sb-card` itself split into `.twd-sb-card-header` (non-scrolling,
+`flex-shrink: 0`, a hairline `border-bottom` marking it off) and
+`.twd-sb-card-body` (the part that actually scrolls, carrying the
+`safe center` fix from the overflow-bug entry below).
+
+The `swipebook_export_branding` toggle got simpler as a side effect:
+previously "branding on" meant composing an offscreen clone of header +
+card into a throwaway wrapper (since a card alone, captured directly,
+would have no header to include). Now the header is already part of the
+card, so "branding on" is just `html2canvas(card, ...)` with nothing
+extra; "branding off" is the one case that now needs a small live-DOM
+change (`.twd-sb-card-header` briefly `display: none`, restored right
+after the capture resolves) — the same pattern `captureAllCards()`
+already used to step through slides, not a new technique.
+
+Repeating the logo/heading markup once per slide (rather than once for
+the whole book) sounds like it should be more expensive than the old
+single shared element, but in practice it isn't: identical `<img>` `src`
+values across many DOM nodes are one browser cache entry, not N network
+requests, and the extra text nodes are trivial. Don't let that shape
+worry you into re-introducing a single shared element for "efficiency" —
+that's what caused both problems this entry describes.
+
 ## The overflowing-slide bug that looked like a scrolling bug (v1.29.0)
 
 A live screenshot showed a slide's heading cut off at the top of the

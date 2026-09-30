@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.29.0
+Stable tag: 1.30.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+FIX (1.30.0): the header's background showed a visible seam against the
+card below it (two separately-computed gradients meeting at an edge),
+and it stayed fixed in place while cards swiped past underneath it
+rather than moving with them. Moved the header to be part of each
+card's own single element (still built once and reused across slides,
+not hand-duplicated), so there's one continuous background with no
+seam, and logo/border/titles now slide together with the rest of the
+card as one physical page.
 
 FIX (1.29.0): a slide with a long section of text could overflow the
 card's fixed height with no way to scroll up to the part that had been

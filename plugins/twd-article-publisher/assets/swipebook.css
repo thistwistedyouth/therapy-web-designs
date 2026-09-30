@@ -111,30 +111,25 @@ body {
   border-color: var(--twd-sb-gold-soft) !important;
 }
 
-/* The header now reads as the top of the card itself, not a separate
-   block floating above it -- same border colour, flush against the
-   card with no gap, rounded only on top where the card is rounded only
-   on the bottom (see .twd-sb-card below). It stays outside
-   .twd-sb-slides, so it's a fixed "title bar" that never moves or
-   re-renders as slides change, while each card's own content scrolls
-   independently underneath it. Matched to the card's own max-width so
-   the two borders line up exactly. */
-.twd-sb-header {
+/* The header is the first child inside each .twd-sb-card now, not a
+   separate element above it -- one continuous background/border for the
+   whole card, no seam between a "header box" and a "card box", and it
+   moves with the card as a single unit on every swipe (logo, border and
+   titles included), rather than staying fixed while cards pass underneath
+   it. Non-scrolling within the card (.twd-sb-card-body, below, is the
+   part that scrolls), with a hairline rule marking it off from the
+   content beneath. */
+.twd-sb-card-header {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
+  flex-shrink: 0 !important;
   gap: 12px !important;
   width: 100% !important;
-  max-width: 480px !important;
-  margin: 0 auto !important;
-  padding: 14px 18px 12px !important;
-  box-sizing: border-box !important;
-  border: 1px solid var(--twd-sb-gold-faint) !important;
-  border-bottom: none !important;
-  border-radius: 18px 18px 0 0 !important;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.06) 0%, rgba(255, 209, 102, 0) 42%),
-    rgba(19, 17, 36, 0.55) !important;
+  padding: 0 0 12px !important;
+  margin: 0 0 14px !important;
+  border-bottom: 1px solid var(--twd-sb-gold-faint) !important;
+  text-align: left !important;
 }
 
 .twd-sb-header-text {
@@ -205,24 +200,6 @@ body {
   letter-spacing: 0.03em !important;
   color: var(--twd-sb-gold-soft) !important;
   text-shadow: 0 0 16px rgba(255, 209, 102, 0.18) !important;
-}
-
-/* Save as image / Download as PDF, when branding is included, compose an
-   offscreen clone of the header above the active card and capture that
-   instead of the card alone -- see captureNode() in swipebook.js. Header
-   and card already carry their own matching border/background/radius to
-   read as one continuous shape, so the wrapper itself needs no styling
-   of its own beyond stacking them with zero gap. */
-.twd-sb-export-compose {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  gap: 0 !important;
-  padding: 0 !important;
-  background: none !important;
-}
-.twd-sb-export-compose .twd-sb-header {
-  margin: 0 !important;
 }
 
 /* Compact, sitting directly under the page-number counter now rather than
@@ -315,21 +292,9 @@ body {
   margin: 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  /* "safe center" centers short content same as before, but falls back to
-     top-aligned the moment content overflows -- plain "center" on an
-     overflowing flex column clips whatever overflows ABOVE the centre
-     point, unreachable by scrolling since scrollTop can't go negative.
-     That's what was cutting off the top of a long slide's heading/text
-     with no way to scroll up to it. A browser that doesn't recognise
-     "safe" drops this whole declaration, which also lands on a safe
-     default (flex-start, i.e. always scrollable from the top). */
-  justify-content: safe center !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain !important;
-  padding: clamp(20px, 5vh, 36px) clamp(24px, 6vw, 34px) !important;
+  padding: clamp(18px, 4.5vh, 30px) clamp(24px, 6vw, 34px) !important;
   border: 1px solid var(--twd-sb-gold-faint) !important;
-  border-top: none !important;
-  border-radius: 0 0 18px 18px !important;
+  border-radius: 18px !important;
   text-align: center !important;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.05) 0%, rgba(255, 209, 102, 0) 40%),
@@ -345,6 +310,24 @@ body {
     -13px 0 0 -6px rgba(255, 209, 102, 0.05),
     0 22px 60px rgba(0, 0, 0, 0.55),
     inset 0 0 30px rgba(255, 209, 102, 0.03) !important;
+}
+
+.twd-sb-card-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  /* "safe center" centers short content same as before, but falls back to
+     top-aligned the moment content overflows -- plain "center" on an
+     overflowing flex column clips whatever overflows ABOVE the centre
+     point, unreachable by scrolling since scrollTop can't go negative.
+     That's what was cutting off the top of a long slide's heading/text
+     with no way to scroll up to it. A browser that doesn't recognise
+     "safe" drops this whole declaration, which also lands on a safe
+     default (flex-start, i.e. always scrollable from the top). */
+  justify-content: safe center !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
 }
 
 .twd-sb-heading {
