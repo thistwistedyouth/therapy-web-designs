@@ -49,7 +49,7 @@ class TWD_AP_Starter_Content {
 			. '<p>Look for the <strong>New Article</strong> button, floating bottom right on the resources page while you are logged in. An <strong>Edit This Article</strong> button appears too if you are on an article.</p>'
 
 			. '<h2>The fastest way: Article Assist</h2>'
-			. '<p>Take a rough idea, or something you have already written, to <a href="' . esc_url( $assist_url ) . '" target="_blank" rel="noopener">Article Assist</a> on Therapy Resource Directory. It drafts a title, full SEO details, a suggested category and tags, and the article body, then hands you a block of JSON. Paste that into the <strong>Paste JSON</strong> tab here and click Fill fields from JSON, and it fills in a categorised, fully editable article in one go, ready to review and publish. Once published, it becomes a shareable swipe book automatically too, no extra step. Needs a Therapy Resource Directory account (Resource Creator plan or above), and a confidentiality reminder in the tool itself repeats what should never be pasted in.</p>'
+			. '<p>Take a rough idea, or something you have already written, to <a href="' . esc_url( $assist_url ) . '" target="_blank" rel="noopener">Article Assist</a> on Therapy Resource Directory. It drafts a title, full SEO details, a suggested category and tags, and the article body, then hands you a block of JSON. Paste that into the <strong>Paste JSON</strong> tab here and click Fill fields from JSON, and it fills in a categorised, fully editable article in one go, ready to review and publish. Once published, it becomes a shareable Summary Book automatically too, no extra step. Needs a Therapy Resource Directory account (Resource Creator plan or above), and a confidentiality reminder in the tool itself repeats what should never be pasted in.</p>'
 
 			. '<h2>Or write directly</h2>'
 			. '<ul>'
@@ -63,8 +63,8 @@ class TWD_AP_Starter_Content {
 			. '<h2>Your resources page</h2>'
 			. '<p>This shows the top categories as their own titled sections, so visitors see the range of what you cover at a glance. A search box and a category dropdown are built in. For anyone who can publish articles, a small gear icon opens a settings popup right on the page: how many categories show, how many articles each, their order, and whether thumbnails show at all.</p>'
 
-			. '<h2>Sharing an article as a swipe book</h2>'
-			. '<p>Every published article can also be viewed as a swipeable, shareable slide version, split automatically by heading. Look for the <strong>View as a swipe book</strong> link under any article, or the <strong>Swipe book link</strong> in the popup while editing a published one.</p>'
+			. '<h2>Sharing an article as a Summary Book</h2>'
+			. '<p>Every published article can also be viewed as a swipeable, shareable slide version, split automatically by heading. Look for the <strong>View summary book</strong> link under any article, or the <strong>Summary book link</strong> in the popup while editing a published one.</p>'
 
 			. '<h2>Need a reminder later</h2>'
 			. '<p>The small circular <strong>?</strong> icon in the popup&#8217;s header opens a built-in help screen covering the toolbar, the shortcode, and a ready-to-copy prompt for drafting articles elsewhere.</p>';

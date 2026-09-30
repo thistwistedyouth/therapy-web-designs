@@ -148,7 +148,7 @@ class TWD_AP_REST {
 	}
 
 	/**
-	 * Feeds the in-page swipe book overlay (assets/swipebook-inline.js),
+	 * Feeds the in-page Summary Book overlay (assets/swipebook-inline.js),
 	 * same payload shape the standalone ?twd_ap_swipebook=1 page embeds
 	 * inline for its own copy of the same JS, built by TWD_AP_Swipebook
 	 * itself so both paths share one slide-splitting implementation.
@@ -389,12 +389,26 @@ class TWD_AP_REST {
 			}
 		}
 
-		// Include bio page at end (swipe book's closing slide).
+		// Include bio page at end (Summary Book's closing slide).
 		if ( isset( $request['include_bio'] ) ) {
 			if ( $request['include_bio'] ) {
 				update_post_meta( $post_id, '_twd_ap_include_bio', 1 );
 			} else {
 				delete_post_meta( $post_id, '_twd_ap_include_bio' );
+			}
+		}
+
+		// "More articles" closing slide: up to 6 manually chosen articles.
+		// Empty/absent means the Summary Book falls back to the 6 most
+		// recent other articles automatically -- see build_related_slide()
+		// in TWD_AP_Swipebook, which is where that fallback actually lives,
+		// not here. This only stores the manual override, when one exists.
+		if ( isset( $request['related_ids'] ) && is_array( $request['related_ids'] ) ) {
+			$related_ids = array_slice( array_values( array_filter( array_map( 'absint', $request['related_ids'] ) ) ), 0, 6 );
+			if ( ! empty( $related_ids ) ) {
+				update_post_meta( $post_id, '_twd_ap_related_ids', $related_ids );
+			} else {
+				delete_post_meta( $post_id, '_twd_ap_related_ids' );
 			}
 		}
 
@@ -484,6 +498,8 @@ class TWD_AP_REST {
 			$data['tags']         = implode( ', ', $post_tags );
 			$data['featured']     = (bool) get_post_meta( $post_id, '_twd_ap_featured', true );
 			$data['include_bio']  = (bool) get_post_meta( $post_id, '_twd_ap_include_bio', true );
+			$related_ids          = get_post_meta( $post_id, '_twd_ap_related_ids', true );
+			$data['related_ids']  = is_array( $related_ids ) ? array_map( 'intval', $related_ids ) : array();
 			$primary               = (int) get_post_meta( $post_id, '_twd_ap_primary_category', true );
 			$data['primary_category'] = ( $primary && in_array( $primary, $data['category_ids'], true ) ) ? $primary : ( ! empty( $data['category_ids'] ) ? $data['category_ids'][0] : 0 );
 		}

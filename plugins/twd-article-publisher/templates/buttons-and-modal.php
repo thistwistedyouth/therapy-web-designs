@@ -35,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="twd-ap-modal-header-actions">
 				<button type="button" id="twd-ap-delete-btn" class="twd-ap-delete-btn" hidden><span aria-hidden="true">&#128465;</span> <?php esc_html_e( 'Delete this article', 'twd-article-publisher' ); ?></button>
 				<a href="#" id="twd-ap-admin-edit-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Edit in WordPress ↗', 'twd-article-publisher' ); ?></a>
-				<a href="#" id="twd-ap-swipebook-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Swipe book link ↗', 'twd-article-publisher' ); ?></a>
+				<a href="#" id="twd-ap-swipebook-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Summary book link ↗', 'twd-article-publisher' ); ?></a>
 				<a href="<?php echo esc_url( TWD_AP_ARTICLE_ASSIST_URL ); ?>" class="twd-ap-assist-btn" target="_blank" rel="noopener"><?php esc_html_e( 'Article Assist', 'twd-article-publisher' ); ?></a>
 				<button type="button" id="twd-ap-help-btn" class="twd-ap-help-icon-btn" aria-label="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>">?</button>
 			</div>
@@ -95,8 +95,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 					<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
 						<input type="checkbox" id="twd-ap-include-bio-toggle" />
-						<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup)', 'twd-article-publisher' ); ?>
+						<?php esc_html_e( 'Include bio page at end (Summary Book closing slide, from Profile page setup)', 'twd-article-publisher' ); ?>
 					</label>
+
+					<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'More articles slide (Summary Book closing section)', 'twd-article-publisher' ); ?></label>
+					<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Leave all unticked to show the 6 most recent other articles automatically. Tick up to 6 to choose exactly which ones show here instead.', 'twd-article-publisher' ); ?></p>
+					<ul id="twd-ap-related-picker" class="twd-ap-related-picker"></ul>
 
 					<div class="twd-ap-field-row">
 						<div class="twd-ap-field-col">

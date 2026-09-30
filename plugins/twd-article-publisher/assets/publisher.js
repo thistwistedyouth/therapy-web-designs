@@ -11,7 +11,10 @@
 		dirty: false,
 		categories: [],
 		primaryCategoryId: 0,
+		relatedIds: [],
+		relatedCandidatesLoaded: false,
 	};
+	var RELATED_MAX = 6;
 
 	var els = {};
 	var featuredFrame = null;
@@ -42,6 +45,7 @@
 		els.featuredRemove = document.getElementById('twd-ap-featured-remove');
 		els.featuredToggle = document.getElementById('twd-ap-featured-toggle');
 		els.includeBioToggle = document.getElementById('twd-ap-include-bio-toggle');
+		els.relatedPicker = document.getElementById('twd-ap-related-picker');
 		els.categories = document.getElementById('twd-ap-categories');
 		els.catAddInput = document.getElementById('twd-ap-cat-add-input');
 		els.catAddBtn = document.getElementById('twd-ap-cat-add-btn');
@@ -199,6 +203,14 @@
 
 		els.featuredToggle.addEventListener('change', markDirty);
 		els.includeBioToggle.addEventListener('change', markDirty);
+
+		if (els.relatedPicker) {
+			els.relatedPicker.addEventListener('change', function (e) {
+				if ('checkbox' !== e.target.type) { return; }
+				markDirty();
+				updateRelatedLimit();
+			});
+		}
 
 		els.categories.addEventListener('click', onCategoriesClick);
 		els.categories.addEventListener('change', onCategoriesChange);
@@ -412,6 +424,67 @@
 		if (checkedIds.indexOf(state.primaryCategoryId) === -1) {
 			renderCategories(checkedIds, checkedIds[0] || 0);
 		}
+	}
+
+	// -- "More articles" closing-slide picker: up to RELATED_MAX manually
+	// chosen articles, read/written as related_ids alongside the rest of the
+	// popup's fields. Leaving all unticked isn't stored at all (see
+	// after_save() in class-twd-ap-rest.php), so the Summary Book falls back
+	// to the 6 most recent other articles on its own -- this picker only
+	// exists for overriding that default.
+	function loadRelatedPicker(excludeId, checkedIds) {
+		if (!els.relatedPicker) { return; }
+		var excludeIdNum = parseInt(excludeId, 10) || 0;
+		els.relatedPicker.innerHTML = '<li class="twd-ap-related-empty">Loading…</li>';
+		fetch(TWD_AP.restUrl + '/articles?per_page=20', { cache: 'no-store' })
+			.then(function (r) { return r.json(); })
+			.then(function (data) {
+				var items = (data.items || [])
+					.filter(function (item) { return item.id !== excludeIdNum; })
+					.map(function (item) { return { id: item.id, title: item.title }; });
+				renderRelatedPicker(items, checkedIds || []);
+			})
+			.catch(function () {
+				els.relatedPicker.innerHTML = '<li class="twd-ap-related-empty">Could not load articles.</li>';
+			});
+	}
+
+	function renderRelatedPicker(items, checkedIds) {
+		if (!items.length) {
+			els.relatedPicker.innerHTML = '<li class="twd-ap-related-empty">No other published articles yet.</li>';
+			return;
+		}
+		els.relatedPicker.innerHTML = items
+			.map(function (item) {
+				var checked = checkedIds.indexOf(item.id) !== -1 ? 'checked' : '';
+				return '<li class="twd-ap-related-row"><label><input type="checkbox" value="' + item.id + '" ' + checked + ' /> ' + escapeHtml(item.title) + '</label></li>';
+			})
+			.join('');
+		updateRelatedLimit();
+	}
+
+	// Reverts (not just disables) any checkbox ticked past RELATED_MAX, then
+	// disables the rest so it's clear the limit's been reached -- disabling
+	// alone wouldn't stop a 7th box from getting checked in the same click
+	// that trips the limit.
+	function updateRelatedLimit() {
+		if (!els.relatedPicker) { return; }
+		var boxes = Array.prototype.slice.call(els.relatedPicker.querySelectorAll('input[type="checkbox"]'));
+		var checked = boxes.filter(function (b) { return b.checked; });
+		if (checked.length > RELATED_MAX) {
+			checked[checked.length - 1].checked = false;
+			checked = checked.slice(0, RELATED_MAX);
+		}
+		var atLimit = checked.length >= RELATED_MAX;
+		boxes.forEach(function (b) {
+			b.disabled = atLimit && !b.checked;
+		});
+	}
+
+	function getCheckedRelatedIds() {
+		if (!els.relatedPicker) { return []; }
+		var boxes = els.relatedPicker.querySelectorAll('input[type="checkbox"]:checked');
+		return Array.prototype.map.call(boxes, function (b) { return parseInt(b.value, 10); });
 	}
 
 	function ensureImgToolbar() {
@@ -696,6 +769,8 @@
 		els.catAddInput.value = '';
 		els.featuredToggle.checked = false;
 		els.includeBioToggle.checked = false;
+		state.relatedIds = [];
+		if (els.relatedPicker) { els.relatedPicker.innerHTML = ''; }
 		els.yoastTitle.value = '';
 		els.yoastDesc.value = '';
 		els.scheduleToggle.checked = false;
@@ -758,6 +833,7 @@
 			els.adminEditLink.hidden = true;
 			els.deleteBtn.hidden = true;
 			updateSwipebookLink('', '');
+			loadRelatedPicker(0, []);
 		}
 		els.overlay.hidden = false;
 		document.documentElement.style.overflow = 'hidden';
@@ -788,6 +864,7 @@
 				state.featuredMediaId = data.featured_media || 0;
 				renderFeaturedPreview(data.featured_media_url || '');
 				renderCategories(data.category_ids || [], data.primary_category || 0);
+				loadRelatedPicker(id, data.related_ids || []);
 				if (TWD_AP.yoastEnabled) {
 					els.yoastTitle.value = data.yoast_title || '';
 					els.yoastDesc.value = data.yoast_desc || '';
@@ -891,6 +968,7 @@
 			tags: els.tags.value,
 			featured: els.featuredToggle.checked,
 			include_bio: els.includeBioToggle.checked,
+			related_ids: getCheckedRelatedIds(),
 			category_ids: getCheckedCategoryIds(),
 			primary_category: state.primaryCategoryId,
 			featured_media: state.featuredMediaId,

@@ -21,6 +21,22 @@
 						? '<a class="twd-sb-bio-link" href="' + escapeAttr(slide.link_url) + '" target="_blank" rel="noopener">' + escapeHtml(slide.link_label) + '</a>'
 						: '') +
 					'</div>';
+			} else if ('related' === slide.type) {
+				// Plain <a> tags, not click handlers -- swipebook-inline.js's
+				// existing delegated click listener (the same one the main
+				// "View summary book" button uses) opens these in the overlay
+				// when it's loaded, closing the current book first. On the
+				// standalone page, where that script never loads, they just
+				// navigate to the linked article's own Summary Book normally.
+				body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
+					'<div class="twd-sb-related-list">' +
+					(slide.items || []).map(function (item) {
+						return '<a class="twd-sb-related-item" href="' + escapeAttr(item.shareUrl) + '" data-twd-ap-post-id="' + item.id + '">' +
+							'<span class="twd-sb-related-title">' + escapeHtml(item.title) + '</span>' +
+							'<span class="twd-sb-related-arrow" aria-hidden="true">&#8250;</span>' +
+						'</a>';
+					}).join('') +
+					'</div>';
 			} else {
 				body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
 					'<div class="twd-sb-body-text">' + slide.html + '</div>';
@@ -452,6 +468,14 @@
 					current = null;
 				},
 			});
+		},
+		/**
+		 * Closes the currently-open overlay, if any, synchronously -- used
+		 * before opening a related article's book from inside an already-open
+		 * one, since open() otherwise no-ops while current is still set.
+		 */
+		close: function () {
+			if (current) { current.close(); }
 		},
 	};
 

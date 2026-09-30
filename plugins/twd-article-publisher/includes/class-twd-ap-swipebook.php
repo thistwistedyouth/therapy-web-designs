@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * /articles/{id}/swipebook REST route) -- the button under an article uses
  * the overlay when JS runs, and falls back to the full page if it can't.
  * No new content is stored either way: slides are built from the live post
- * content every time, so a swipe book always matches the article. Splitting
+ * content every time, so a Summary Book always matches the article. Splitting
  * is done in plain PHP (DOMDocument, chunked by heading and length), not by
  * an AI call, since this plugin runs on many client sites and none of them
  * carry an Anthropic key of their own.
@@ -106,7 +106,7 @@ class TWD_AP_Swipebook {
 	}
 
 	/**
-	 * A "View as a swipe book" pill below every published article's content.
+	 * A "View summary book" pill below every published article's content.
 	 * Carries the post ID and the full-page URL so swipebook-inline.js can
 	 * open it as an in-page overlay when JS runs, and fall back to a normal
 	 * link (the full standalone page) if it doesn't. Back at the bottom on
@@ -133,7 +133,7 @@ class TWD_AP_Swipebook {
 		$color = TWD_AP_Grid_Settings::get()['swipebook_color'];
 		$style = 'style="' . esc_attr( self::color_custom_properties( $color ) ) . '"';
 		$button = '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" ' . $style . ' href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
-			. esc_html__( 'View as a swipe book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
+			. esc_html__( 'View summary book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
 
 		return $content . $button;
 	}
@@ -281,7 +281,67 @@ class TWD_AP_Swipebook {
 			);
 		}
 
+		$related_slide = $this->build_related_slide( $post );
+		if ( $related_slide ) {
+			$slides[] = $related_slide;
+		}
+
 		return $slides;
+	}
+
+	/**
+	 * A compact, no-thumbnail "more articles" closing slide -- on by
+	 * default (falls back to the 6 most recent other published articles),
+	 * or up to 6 specific articles ticked in the popup's Categories field
+	 * (_twd_ap_related_ids). Returns null (no slide at all) if there are no
+	 * other published articles on the site to show, rather than an empty
+	 * "more articles" slide.
+	 */
+	private function build_related_slide( $post ) {
+		$related_ids = get_post_meta( $post->ID, '_twd_ap_related_ids', true );
+		$related_ids = is_array( $related_ids ) ? array_map( 'absint', $related_ids ) : array();
+
+		if ( ! empty( $related_ids ) ) {
+			$posts = array();
+			foreach ( $related_ids as $id ) {
+				$candidate = get_post( $id );
+				if ( $candidate && 'publish' === $candidate->post_status && (int) $candidate->ID !== (int) $post->ID ) {
+					$posts[] = $candidate;
+				}
+			}
+			$posts = array_slice( $posts, 0, 6 );
+		} else {
+			$posts = get_posts(
+				array(
+					'post_type'      => 'post',
+					'post_status'    => 'publish',
+					'posts_per_page' => 6,
+					'orderby'        => 'date',
+					'order'          => 'DESC',
+					'post__not_in'   => array( $post->ID ),
+					'no_found_rows'  => true,
+				)
+			);
+		}
+
+		if ( empty( $posts ) ) {
+			return null;
+		}
+
+		$items = array();
+		foreach ( $posts as $related_post ) {
+			$items[] = array(
+				'id'       => $related_post->ID,
+				'title'    => html_entity_decode( get_the_title( $related_post ), ENT_QUOTES, 'UTF-8' ),
+				'shareUrl' => self::url_for( $related_post ),
+			);
+		}
+
+		return array(
+			'type'    => 'related',
+			'heading' => __( 'More Articles', 'twd-article-publisher' ),
+			'items'   => $items,
+		);
 	}
 
 	private function maybe_bio_slide( $post ) {
@@ -330,7 +390,7 @@ class TWD_AP_Swipebook {
 		$settings    = TWD_AP_Grid_Settings::get();
 
 		// swipebook_logo_id overrides the site's own Customizer logo when
-		// set, so a client can carry a different mark on their swipe books
+		// set, so a client can carry a different mark on their Summary Books
 		// (e.g. a wordmark suited to a dark background) without changing
 		// their site logo everywhere else.
 		$logo_url = '';

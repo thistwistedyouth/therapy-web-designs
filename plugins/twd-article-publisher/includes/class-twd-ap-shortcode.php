@@ -167,12 +167,12 @@ class TWD_AP_Shortcode {
 						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-accent-color"><?php esc_html_e( 'Accent colour (search focus, category links)', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-accent-color" class="twd-ap-gs-color-input" />
 
-						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-swipebook-color"><?php esc_html_e( '"View as a swipe book" button colour', 'twd-article-publisher' ); ?></label>
+						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-swipebook-color"><?php esc_html_e( '"View summary book" button colour', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-swipebook-color" class="twd-ap-gs-color-input" />
 
 						<div class="twd-ap-section twd-ap-spaced">
-							<p class="twd-ap-section-heading"><?php esc_html_e( 'Summary book (swipe book)', 'twd-article-publisher' ); ?></p>
-							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'The heading, label, and logo shown at the top of every article\'s swipe book.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-section-heading"><?php esc_html_e( 'Summary Book', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'The heading, label, and logo shown at the top of every article\'s Summary Book.', 'twd-article-publisher' ); ?></p>
 
 							<label class="twd-ap-label" for="twd-ap-gs-sb-heading"><?php esc_html_e( 'Heading (blank uses the site name)', 'twd-article-publisher' ); ?></label>
 							<input type="text" id="twd-ap-gs-sb-heading" class="twd-ap-input" placeholder="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" />
@@ -180,7 +180,7 @@ class TWD_AP_Shortcode {
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-label"><?php esc_html_e( '"Summary Book" label text', 'twd-article-publisher' ); ?></label>
 							<input type="text" id="twd-ap-gs-sb-label" class="twd-ap-input" placeholder="Summary Book" />
 
-							<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Logo (overrides the site logo on swipe books only)', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Logo (overrides the site logo on Summary Books only)', 'twd-article-publisher' ); ?></label>
 							<div id="twd-ap-gs-sb-logo-preview" class="twd-ap-featured-preview"></div>
 							<div class="twd-ap-btn-row">
 								<button type="button" id="twd-ap-gs-sb-logo-select" class="twd-ap-btn-secondary"><?php esc_html_e( 'Choose Image', 'twd-article-publisher' ); ?></button>
@@ -204,7 +204,7 @@ class TWD_AP_Shortcode {
 						<ul id="twd-ap-gs-cat-order" class="twd-ap-gs-cat-order"></ul>
 
 						<div class="twd-ap-section twd-ap-spaced">
-							<p class="twd-ap-section-heading"><?php esc_html_e( 'Profile page (for the swipe book bio slide)', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-section-heading"><?php esc_html_e( 'Profile page (for the Summary Book bio slide)', 'twd-article-publisher' ); ?></p>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Shown as the closing slide on any article with "Include bio page at end" ticked.', 'twd-article-publisher' ); ?></p>
 
 							<div class="twd-ap-field-col">

@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.27.0
+Stable tag: 1.28.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,20 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.28.0): renamed "swipe book" to "Summary Book" everywhere it's
+user-facing (the "View summary book" button, popup labels, help text) --
+the underlying feature, file and class names are unchanged, only the
+words a visitor or the person publishing actually sees.
+
+Every Summary Book now ends with a compact "More Articles" slide: the 6
+most recent other published articles by default, no thumbnails, just a
+neatly styled list with a hover animation. Clicking one closes the
+current book and opens that article's own Summary Book in its place,
+without leaving the page. Each article's editor popup gets a "More
+articles slide" picker (tick up to 6 specific articles to show instead
+of the automatic latest-6) -- leave it untouched for the default
+behaviour.
 
 NEW (1.27.0): the swipe book's header now shows the site's own name (or
 a custom "Summary book heading" override) above the "Summary Book" label,
