@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.26.0
+Stable tag: 1.27.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,18 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.27.0): the swipe book's header now shows the site's own name (or
+a custom "Summary book heading" override) above the "Summary Book" label,
+with a bigger logo below that, both linking out to the site in a new
+tab. New fields in "Customise this grid": a heading override, the
+"Summary Book" label text itself, a logo upload that overrides the site
+logo on swipe books only, a logo background choice (Light/Dark/None),
+and a toggle for whether that heading and logo are included in Save as
+image / Download as PDF exports (on by default). The export capture now
+composes the header above the card when that toggle is on, since the
+header is one shared element for the whole book, not part of any single
+slide's own card.
 
 NEW (1.26.0): the "View as a swipe book" button is softer now: a faint
 tinted background fill matching its border colour instead of plain

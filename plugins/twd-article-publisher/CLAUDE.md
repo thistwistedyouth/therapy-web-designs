@@ -70,7 +70,9 @@ something in that specific area or a similar decision has come up again.
 - Navigation is Pointer Events (`pointerdown`/`move`/`up`), not separate touch/mouse handlers.
 - Bio slide is opt-in per article (`_twd_ap_include_bio`) but reads one site-wide profile (`TWD_AP_Grid_Settings`), not per-article fields — falls back to a plain "Thanks for reading" slide if no profile name is set.
 - Titled "Summary Book" with a larger logo; progress bar sits under the page-number counter, compact, not across the top; slide cards are centred "quote cards" with `clamp()`-based text sizing.
+- Header order (top to bottom): site heading (`swipebook_heading` setting, blank = site name), the "Summary Book" label (`swipebook_label` setting), then the logo (`swipebook_logo_id` overrides the Customizer logo for swipe books only; `swipebook_logo_bg` is a fixed Light/Dark/None pill style, not a colour picker). Both heading and logo link out to `home_url('/')` in a new tab. All resolved server-side in `get_payload()`, not fetched separately by JS.
 - Save as image / Download as PDF both capture the DOM via html2canvas, never a separately-built layout. PDF has to step every slide to `is-active` in turn first (`captureAllCards()`, under `.twd-sb-exporting` to kill the transition) since `.twd-sb-slides` clips anything not at `translateX(0)` — see HISTORY.md, this shipped single-page-only once before being fixed. Both html2canvas and jsPDF are lazy-loaded from cdnjs on first use.
+- Both export buttons compose an offscreen clone of `.twd-sb-header` above the card being captured, when `swipebook_export_branding` is on (default) — the header is one shared element for the whole book, not part of any slide's own card, so it can't be captured by just pointing html2canvas at the card. `captureNode()` builds this clone fresh per capture and removes it immediately after, so the visible modal never changes.
 
 ## File map
 

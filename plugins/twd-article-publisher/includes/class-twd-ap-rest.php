@@ -791,6 +791,11 @@ class TWD_AP_REST {
 			$profile_photo_url = wp_get_attachment_image_url( (int) $settings['profile_photo_id'], 'medium' );
 		}
 
+		$swipebook_logo_url = '';
+		if ( ! empty( $settings['swipebook_logo_id'] ) ) {
+			$swipebook_logo_url = wp_get_attachment_image_url( (int) $settings['swipebook_logo_id'], 'medium' );
+		}
+
 		return rest_ensure_response(
 			array(
 				'categories_count'    => $settings['categories_count'],
@@ -799,6 +804,12 @@ class TWD_AP_REST {
 				'read_more_color'     => $settings['read_more_color'],
 				'accent_color'        => $settings['accent_color'],
 				'swipebook_color'     => $settings['swipebook_color'],
+				'swipebook_heading'   => $settings['swipebook_heading'],
+				'swipebook_label'     => $settings['swipebook_label'],
+				'swipebook_logo_id'   => (int) $settings['swipebook_logo_id'],
+				'swipebook_logo_url'  => $swipebook_logo_url ? $swipebook_logo_url : '',
+				'swipebook_logo_bg'   => $settings['swipebook_logo_bg'],
+				'swipebook_export_branding' => (bool) $settings['swipebook_export_branding'],
 				'categories'          => $order,
 				'profile_photo_id'    => (int) $settings['profile_photo_id'],
 				'profile_photo_url'   => $profile_photo_url ? $profile_photo_url : '',

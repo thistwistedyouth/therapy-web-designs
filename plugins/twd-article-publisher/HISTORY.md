@@ -62,6 +62,20 @@ properties on the button itself (`color_custom_properties()`/
 `hex_to_rgb()`). Precomputing the rgba values server-side avoids needing a
 hex-to-rgba parser in JS just for this one button.
 
+## Summary book header (site heading, logo, branded exports) — why it's split the way it is
+
+Requested as one feature (v1.27.0): a site heading above the "Summary
+Book" label, a bigger logo below that, both configurable and both
+linking to the site, plus including that header in exported images/PDFs
+with a toggle to turn it off. Implemented across several files because
+each piece has a different constraint:
+
+- **Why the colour/text/logo settings live in `TWD_AP_Grid_Settings`, read server-side, not fetched by `swipebook.js` the way `read_more_color`/`accent_color` are.** Those two apply via a CSS var set on the `[twd_articles]` grid's own root element — fine, since that only ever needs to be right on a page carrying the grid shortcode. The swipe book button (and now its header) renders on *every* published article, including ones with no grid on the page at all, so there's no client-side REST call it can piggyback on without adding one specifically for this. `TWD_AP_Swipebook::get_payload()` already runs server-side per request, so resolving the heading/label/logo/background there and baking them into the payload (which both the standalone page and the REST overlay route already share) was the natural place, not a new endpoint.
+- **Why the logo background is three fixed styles (Light/Dark/None), not a colour picker.** The person asking for this confirmed fixed styles over per-colour pickers when asked directly — fewer settings to manage, and a logo already carries its own colours, so the pill just needs to complement dark or light art, not be tuned precisely.
+- **Why the header isn't captured by simply widening the html2canvas target.** `.twd-sb-header` is one element shared by the whole book (title, label, logo — same for every slide), sitting as a sibling to `.twd-sb-slides`, not inside any individual `.twd-sb-card`. The existing capture functions target one card at a time (the whole reason `captureAllCards()` has to step through `is-active` states at all, see the PDF entry above). Rather than restructure the DOM so the header sits inside every slide (which would also mean recreating it 8+ times, in the actual visible modal, for something that only needs to appear once per export), `captureNode()` builds a throwaway offscreen clone — header once, card once, stacked in a wrapper (`.twd-sb-export-compose`) styled to look like a continuation of the card's own dark frame — captures that, and removes it immediately. The live modal is never touched, so there's no flicker.
+- **Why the export-inclusion toggle (`swipebook_export_branding`) defaults to true (included).** Asked directly, on this project's stated preference: branding on by default, with an explicit way to turn it off in grid settings, not the reverse.
+- **Why heading/logo links open in a new tab.** The swipe book is frequently opened as an in-page overlay on top of the article a visitor was already reading (`swipebook-inline.js`); a same-tab navigation away from that would lose the underlying page entirely for no good reason on what's meant to be a lightweight, glanceable header link.
+
 ## Zip-build gotcha (self-hosted updater)
 
 Building the release zip with `rsync` in the same shell invocation as the

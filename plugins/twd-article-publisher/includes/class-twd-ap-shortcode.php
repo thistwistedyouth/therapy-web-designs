@@ -170,6 +170,36 @@ class TWD_AP_Shortcode {
 						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-swipebook-color"><?php esc_html_e( '"View as a swipe book" button colour', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-swipebook-color" class="twd-ap-gs-color-input" />
 
+						<div class="twd-ap-section twd-ap-spaced">
+							<p class="twd-ap-section-heading"><?php esc_html_e( 'Summary book (swipe book)', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'The heading, label, and logo shown at the top of every article\'s swipe book.', 'twd-article-publisher' ); ?></p>
+
+							<label class="twd-ap-label" for="twd-ap-gs-sb-heading"><?php esc_html_e( 'Heading (blank uses the site name)', 'twd-article-publisher' ); ?></label>
+							<input type="text" id="twd-ap-gs-sb-heading" class="twd-ap-input" placeholder="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" />
+
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-label"><?php esc_html_e( '"Summary Book" label text', 'twd-article-publisher' ); ?></label>
+							<input type="text" id="twd-ap-gs-sb-label" class="twd-ap-input" placeholder="Summary Book" />
+
+							<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Logo (overrides the site logo on swipe books only)', 'twd-article-publisher' ); ?></label>
+							<div id="twd-ap-gs-sb-logo-preview" class="twd-ap-featured-preview"></div>
+							<div class="twd-ap-btn-row">
+								<button type="button" id="twd-ap-gs-sb-logo-select" class="twd-ap-btn-secondary"><?php esc_html_e( 'Choose Image', 'twd-article-publisher' ); ?></button>
+								<button type="button" id="twd-ap-gs-sb-logo-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
+							</div>
+
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-logo-bg"><?php esc_html_e( 'Logo background', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-sb-logo-bg" class="twd-ap-input">
+								<option value="light"><?php esc_html_e( 'Light', 'twd-article-publisher' ); ?></option>
+								<option value="dark"><?php esc_html_e( 'Dark', 'twd-article-publisher' ); ?></option>
+								<option value="none"><?php esc_html_e( 'None', 'twd-article-publisher' ); ?></option>
+							</select>
+
+							<label class="twd-ap-checkbox-label twd-ap-spaced">
+								<input type="checkbox" id="twd-ap-gs-sb-export-branding" />
+								<?php esc_html_e( 'Include the heading and logo in Save as image / Download as PDF', 'twd-article-publisher' ); ?>
+							</label>
+						</div>
+
 						<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Category order (drag to reorder; only the top categories above show on the grid)', 'twd-article-publisher' ); ?></label>
 						<ul id="twd-ap-gs-cat-order" class="twd-ap-gs-cat-order"></ul>
 

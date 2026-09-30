@@ -362,6 +362,10 @@
 		// TWD_AP_Swipebook::append_button() instead. This picker only reads
 		// and saves the value.
 		var swipebookColorInput = overlay.querySelector('#twd-ap-gs-swipebook-color');
+		var sbHeadingInput = overlay.querySelector('#twd-ap-gs-sb-heading');
+		var sbLabelInput = overlay.querySelector('#twd-ap-gs-sb-label');
+		var sbLogoBgSelect = overlay.querySelector('#twd-ap-gs-sb-logo-bg');
+		var sbExportBrandingBox = overlay.querySelector('#twd-ap-gs-sb-export-branding');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var saveBtn    = overlay.querySelector('#twd-ap-gs-save');
 		var statusEl   = overlay.querySelector('#twd-ap-grid-settings-status');
@@ -402,6 +406,40 @@
 		photoRemove.addEventListener('click', function () {
 			profilePhotoId = 0;
 			renderPhotoPreview('');
+		});
+
+		var sbLogoPreview = overlay.querySelector('#twd-ap-gs-sb-logo-preview');
+		var sbLogoSelect  = overlay.querySelector('#twd-ap-gs-sb-logo-select');
+		var sbLogoRemove  = overlay.querySelector('#twd-ap-gs-sb-logo-remove');
+		var sbLogoId = 0;
+		var sbLogoFrame = null;
+
+		function renderSbLogoPreview(url) {
+			if (url) {
+				sbLogoPreview.style.backgroundImage = 'url(' + url + ')';
+				sbLogoRemove.hidden = false;
+			} else {
+				sbLogoPreview.style.backgroundImage = '';
+				sbLogoRemove.hidden = true;
+			}
+		}
+
+		sbLogoSelect.addEventListener('click', function () {
+			if (!window.wp || !wp.media) { return; }
+			if (!sbLogoFrame) {
+				sbLogoFrame = wp.media({ title: 'Choose Summary Book Logo', multiple: false, library: { type: 'image' } });
+				sbLogoFrame.on('select', function () {
+					var att = sbLogoFrame.state().get('selection').first().toJSON();
+					sbLogoId = att.id;
+					var url = (att.sizes && att.sizes.medium) ? att.sizes.medium.url : att.url;
+					renderSbLogoPreview(url);
+				});
+			}
+			sbLogoFrame.open();
+		});
+		sbLogoRemove.addEventListener('click', function () {
+			sbLogoId = 0;
+			renderSbLogoPreview('');
 		});
 
 		function close() {
@@ -474,6 +512,12 @@
 				colorInput.value = data.read_more_color || '#1d4ed8';
 				accentColorInput.value = data.accent_color || '#2563eb';
 				swipebookColorInput.value = data.swipebook_color || '#5b8a72';
+				sbHeadingInput.value = data.swipebook_heading || '';
+				sbLabelInput.value = data.swipebook_label || '';
+				sbLogoBgSelect.value = data.swipebook_logo_bg || 'light';
+				sbExportBrandingBox.checked = false !== data.swipebook_export_branding;
+				sbLogoId = data.swipebook_logo_id || 0;
+				renderSbLogoPreview(data.swipebook_logo_url || '');
 				renderOrderList(data.categories || []);
 				profilePhotoId = data.profile_photo_id || 0;
 				renderPhotoPreview(data.profile_photo_url || '');
@@ -498,6 +542,11 @@
 				read_more_color: colorInput.value,
 				accent_color: accentColorInput.value,
 				swipebook_color: swipebookColorInput.value,
+				swipebook_heading: sbHeadingInput.value,
+				swipebook_label: sbLabelInput.value,
+				swipebook_logo_id: sbLogoId,
+				swipebook_logo_bg: sbLogoBgSelect.value,
+				swipebook_export_branding: !!sbExportBrandingBox.checked,
 				category_order: order,
 				profile_photo_id: profilePhotoId,
 				profile_name: nameInput.value,

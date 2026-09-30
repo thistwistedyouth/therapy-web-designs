@@ -35,13 +35,24 @@
 		var mastHtml = data.logoUrl
 			? '<img class="twd-sb-mast-logo" src="' + escapeAttr(data.logoUrl) + '" alt="">'
 			: '<span class="twd-sb-mast-text">' + escapeHtml(data.siteName || '') + '</span>';
+		var siteUrl = data.siteUrl || '';
+		var mastOpen = siteUrl ? '<a class="twd-sb-mast-link" href="' + escapeAttr(siteUrl) + '" target="_blank" rel="noopener">' : '';
+		var mastClose = siteUrl ? '</a>' : '';
+		var headingText = data.siteHeading || data.siteName || '';
+		var headingOpen = siteUrl ? '<a class="twd-sb-sitename-link" href="' + escapeAttr(siteUrl) + '" target="_blank" rel="noopener">' : '';
+		var headingClose = siteUrl ? '</a>' : '';
+		var headingHtml = headingText
+			? '<div class="twd-sb-sitename">' + headingOpen + escapeHtml(headingText) + headingClose + '</div>'
+			: '';
+		var logoBgClass = 'twd-sb-mast-bg-' + (data.logoBg || 'light');
 
-		return '<div class="twd-sb-backdrop" data-article-url="' + escapeAttr(data.articleUrl) + '" data-share-url="' + escapeAttr(data.shareUrl) + '" data-title="' + escapeAttr(data.title) + '">' +
+		return '<div class="twd-sb-backdrop" data-article-url="' + escapeAttr(data.articleUrl) + '" data-share-url="' + escapeAttr(data.shareUrl) + '" data-title="' + escapeAttr(data.title) + '" data-include-branding="' + (false === data.includeBranding ? '0' : '1') + '">' +
 			'<div class="twd-sb-frame">' +
 				'<button type="button" class="twd-sb-close" aria-label="Close">&times;</button>' +
 				'<div class="twd-sb-header">' +
-					'<div class="twd-sb-title">Summary Book</div>' +
-					'<div class="twd-sb-mast">' + mastHtml + '</div>' +
+					headingHtml +
+					'<div class="twd-sb-title">' + escapeHtml(data.label || 'Summary Book') + '</div>' +
+					'<div class="twd-sb-mast ' + logoBgClass + '">' + mastOpen + mastHtml + mastClose + '</div>' +
 				'</div>' +
 				'<div class="twd-sb-slides">' + slidesHtml + '</div>' +
 				'<div class="twd-sb-controls">' +
@@ -236,11 +247,44 @@
 		// both libraries are only fetched the first time either button is
 		// used, same lazy-load pattern as the pledge postcard's own
 		// save-as-image in 04 Page Shell.php.
+		var includeBranding = '0' !== backdrop.getAttribute('data-include-branding');
+
+		// When branding is on, the export needs the header (site heading,
+		// "Summary Book" label, logo) above the card, but the header is one
+		// shared element for the whole book, not per-slide, and lives outside
+		// .twd-sb-slides entirely -- so a card alone can't be captured with it
+		// in shot. Builds an offscreen clone of {header, card} stacked in the
+		// card's own frame styling, captures that instead, then removes it.
+		// Cloning (not moving the live nodes) means the visible modal never
+		// flickers during an export.
+		function captureNode(cardEl, onCanvas) {
+			if (!includeBranding) {
+				window.html2canvas(cardEl, { backgroundColor: '#13112e', scale: 2, useCORS: true }).then(onCanvas);
+				return;
+			}
+			var headerEl = backdrop.querySelector('.twd-sb-header');
+			var wrap = document.createElement('div');
+			wrap.className = 'twd-sb-export-compose';
+			wrap.style.position = 'fixed';
+			wrap.style.left = '-9999px';
+			wrap.style.top = '0';
+			wrap.style.width = cardEl.getBoundingClientRect().width + 'px';
+			if (headerEl) {
+				wrap.appendChild(headerEl.cloneNode(true));
+			}
+			wrap.appendChild(cardEl.cloneNode(true));
+			document.body.appendChild(wrap);
+			window.html2canvas(wrap, { backgroundColor: '#13112e', scale: 2, useCORS: true }).then(function (canvas) {
+				document.body.removeChild(wrap);
+				onCanvas(canvas);
+			});
+		}
+
 		function captureActiveCard(onCanvas) {
 			loadHtml2Canvas(function () {
 				var card = backdrop.querySelector('.twd-sb-slide.is-active .twd-sb-card');
 				if (!card || !window.html2canvas) { return; }
-				window.html2canvas(card, { backgroundColor: '#13112e', scale: 2, useCORS: true }).then(onCanvas);
+				captureNode(card, onCanvas);
 			});
 		}
 
@@ -272,12 +316,11 @@
 					});
 					if (onProgress) { onProgress(i + 1, total); }
 					requestAnimationFrame(function () {
-						window.html2canvas(slides[i].querySelector('.twd-sb-card'), { backgroundColor: '#13112e', scale: 2, useCORS: true })
-							.then(function (canvas) {
-								canvases.push(canvas);
-								i++;
-								step();
-							});
+						captureNode(slides[i].querySelector('.twd-sb-card'), function (canvas) {
+							canvases.push(canvas);
+							i++;
+							step();
+						});
 					});
 				}
 				step();

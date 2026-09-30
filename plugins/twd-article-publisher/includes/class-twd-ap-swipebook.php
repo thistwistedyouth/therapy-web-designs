@@ -327,14 +327,34 @@ class TWD_AP_Swipebook {
 		$site_name   = get_bloginfo( 'name' );
 		$article_url = get_permalink( $post );
 		$logo_id     = get_theme_mod( 'custom_logo' );
+		$settings    = TWD_AP_Grid_Settings::get();
+
+		// swipebook_logo_id overrides the site's own Customizer logo when
+		// set, so a client can carry a different mark on their swipe books
+		// (e.g. a wordmark suited to a dark background) without changing
+		// their site logo everywhere else.
+		$logo_url = '';
+		if ( ! empty( $settings['swipebook_logo_id'] ) ) {
+			$logo_url = wp_get_attachment_image_url( (int) $settings['swipebook_logo_id'], 'medium' );
+		} elseif ( $logo_id ) {
+			$logo_url = wp_get_attachment_image_url( $logo_id, 'medium' );
+		}
 
 		return array(
-			'title'      => $title,
-			'siteName'   => $site_name,
-			'articleUrl' => $article_url,
-			'shareUrl'   => self::url_for( $post ),
-			'logoUrl'    => $logo_id ? wp_get_attachment_image_url( $logo_id, 'medium' ) : '',
-			'slides'     => $this->build_slides( $post ),
+			'title'            => $title,
+			'siteName'         => $site_name,
+			// Blank swipebook_heading falls back to the site's own name --
+			// the "site heading above Summary Book" line is on by default,
+			// not something a site has to opt into.
+			'siteHeading'      => '' !== $settings['swipebook_heading'] ? $settings['swipebook_heading'] : $site_name,
+			'siteUrl'          => home_url( '/' ),
+			'label'            => $settings['swipebook_label'],
+			'articleUrl'       => $article_url,
+			'shareUrl'         => self::url_for( $post ),
+			'logoUrl'          => $logo_url ? $logo_url : '',
+			'logoBg'           => $settings['swipebook_logo_bg'],
+			'includeBranding'  => (bool) $settings['swipebook_export_branding'],
+			'slides'           => $this->build_slides( $post ),
 		);
 	}
 
