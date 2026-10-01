@@ -669,6 +669,41 @@
   border-radius: 8px;
 }
 
+/* On-site AI generate box -- only rendered at all when this site has its
+   own Anthropic key configured (Settings > Article Publisher). Sits above
+   the always-available Paste JSON box in the same tab, not a replacement
+   for it. */
+.twd-ap-ai-generate-box {
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid var(--twd-ap-input-border);
+  border-radius: 8px;
+  background: rgba(91, 138, 114, 0.05);
+}
+.twd-ap-modes {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.twd-ap-mode-btn {
+  border: 1px solid var(--twd-ap-input-border);
+  background: #fff;
+  color: var(--twd-ap-muted);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.twd-ap-mode-btn.twd-ap-mode-btn-active {
+  background: var(--twd-ap-primary);
+  border-color: var(--twd-ap-primary);
+  color: #fff;
+}
+.twd-ap-ai-generate-box .twd-ap-html-editor {
+  border-radius: 8px;
+}
+
 .twd-ap-html-editor {
   width: 100%;
   min-height: 260px;

@@ -37,7 +37,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<a href="#" id="twd-ap-admin-edit-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Edit in WordPress ↗', 'twd-article-publisher' ); ?></a>
 				<a href="#" id="twd-ap-swipebook-link" class="twd-ap-admin-edit-link" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Swipe book link ↗', 'twd-article-publisher' ); ?></a>
 				<button type="button" id="twd-ap-summary-book-btn" class="twd-ap-admin-edit-link" hidden><?php esc_html_e( 'Summary Book', 'twd-article-publisher' ); ?></button>
-				<a href="<?php echo esc_url( TWD_AP_ARTICLE_ASSIST_URL ); ?>" class="twd-ap-assist-btn" target="_blank" rel="noopener"><?php esc_html_e( 'Article Assist', 'twd-article-publisher' ); ?></a>
+				<?php if ( ! ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) ) : ?>
+					<a href="<?php echo esc_url( TWD_AP_ARTICLE_ASSIST_URL ); ?>" class="twd-ap-assist-btn" target="_blank" rel="noopener"><?php esc_html_e( 'Article Assist', 'twd-article-publisher' ); ?></a>
+				<?php endif; ?>
 				<button type="button" id="twd-ap-help-btn" class="twd-ap-help-icon-btn" aria-label="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>">?</button>
 			</div>
 			<button type="button" id="twd-ap-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
@@ -55,7 +57,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="twd-ap-editor-tabs">
 				<button type="button" id="twd-ap-tab-visual" class="twd-ap-tab twd-ap-tab-active" data-tab="visual"><?php esc_html_e( 'Visual', 'twd-article-publisher' ); ?></button>
 				<button type="button" id="twd-ap-tab-html" class="twd-ap-tab" data-tab="html"><?php esc_html_e( 'HTML', 'twd-article-publisher' ); ?></button>
-				<button type="button" id="twd-ap-tab-json" class="twd-ap-tab" data-tab="json"><?php esc_html_e( 'Paste JSON', 'twd-article-publisher' ); ?></button>
+				<button type="button" id="twd-ap-tab-json" class="twd-ap-tab" data-tab="json"><?php echo ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) ? esc_html__( 'Generate / Paste JSON', 'twd-article-publisher' ) : esc_html__( 'Paste JSON', 'twd-article-publisher' ); ?></button>
 			</div>
 
 			<div id="twd-ap-toolbar" class="twd-ap-toolbar">
@@ -75,7 +77,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div id="twd-ap-visual-editor" class="twd-ap-visual-editor" contenteditable="true" data-placeholder="<?php esc_attr_e( 'Write, or paste AI-formatted HTML using the HTML tab above', 'twd-article-publisher' ); ?>"></div>
 			<textarea id="twd-ap-html-editor" class="twd-ap-html-editor" hidden placeholder="<?php esc_attr_e( 'Paste formatted HTML here', 'twd-article-publisher' ); ?>"></textarea>
 			<div id="twd-ap-json-panel" class="twd-ap-json-panel" hidden>
-				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (the button above, or anywhere producing the same shape). Fill fields from it below to bring in the title, excerpt, SEO fields, category, tags and content in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
+				<?php if ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) : ?>
+					<div id="twd-ap-ai-generate-box" class="twd-ap-ai-generate-box">
+						<div class="twd-ap-modes" role="tablist">
+							<button type="button" class="twd-ap-mode-btn twd-ap-mode-btn-active" id="twd-ap-ai-mode-idea" data-mode="idea"><?php esc_html_e( 'Write from an idea', 'twd-article-publisher' ); ?></button>
+							<button type="button" class="twd-ap-mode-btn" id="twd-ap-ai-mode-format" data-mode="format"><?php esc_html_e( 'Format existing text', 'twd-article-publisher' ); ?></button>
+						</div>
+						<textarea id="twd-ap-ai-input" class="twd-ap-html-editor" rows="6" placeholder="<?php esc_attr_e( 'e.g. Why rest can feel unproductive', 'twd-article-publisher' ); ?>"></textarea>
+						<div class="twd-ap-btn-row twd-ap-spaced">
+							<button type="button" id="twd-ap-ai-generate-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Generate', 'twd-article-publisher' ); ?></button>
+						</div>
+					</div>
+					<p class="twd-ap-muted twd-ap-spaced"><?php esc_html_e( 'Or paste a JSON block below, for example from Article Assist, if you already have one.', 'twd-article-publisher' ); ?></p>
+				<?php else : ?>
+					<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (the button above, or anywhere producing the same shape). Fill fields from it below to bring in the title, excerpt, SEO fields, category, tags and content in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
+				<?php endif; ?>
 				<textarea id="twd-ap-json-input" class="twd-ap-html-editor" rows="8" placeholder='{"title": "...", "seo_title": "...", "meta_description": "...", "category": "...", "tags": "...", "html": "..."}'></textarea>
 				<div class="twd-ap-btn-row twd-ap-spaced">
 					<button type="button" id="twd-ap-json-fill-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Fill fields from JSON', 'twd-article-publisher' ); ?></button>

@@ -187,6 +187,50 @@ class TWD_AP_REST {
 				'permission_callback' => '__return_true',
 			)
 		);
+
+		// Generates an article directly on this site with the client's own
+		// Anthropic key (Settings > Article Publisher) -- gated the same
+		// way category creation is (any allowed editor, no specific post
+		// to own yet), not edit_post, since nothing has been created yet.
+		register_rest_route(
+			self::NAMESPACE,
+			'/generate',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'generate_article' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			)
+		);
+	}
+
+	public function generate_article( $request ) {
+		if ( ! TWD_AP_AI_Generate::is_configured() ) {
+			return new WP_Error( 'twd_ap_ai_not_configured', __( 'No API key is set up for this site yet. Add one under Settings > Article Publisher, or use Article Assist instead.', 'twd-article-publisher' ), array( 'status' => 400 ) );
+		}
+		if ( TWD_AP_AI_Generate::count() >= TWD_AP_AI_Generate::RATE_LIMIT ) {
+			return new WP_Error( 'twd_ap_ai_rate_limited', __( 'You have reached today\'s generation limit on this site. Try again tomorrow.', 'twd-article-publisher' ), array( 'status' => 429 ) );
+		}
+
+		$mode  = ( isset( $request['mode'] ) && 'format' === $request['mode'] ) ? 'format' : 'idea';
+		$input = isset( $request['input'] ) ? trim( sanitize_textarea_field( wp_unslash( $request['input'] ) ) ) : '';
+		$input = function_exists( 'mb_substr' ) ? mb_substr( $input, 0, 20000 ) : substr( $input, 0, 20000 );
+
+		if ( '' === $input ) {
+			return new WP_Error(
+				'twd_ap_ai_empty_input',
+				'format' === $mode ? __( 'Please paste your article text first.', 'twd-article-publisher' ) : __( 'Please add an idea or topic first.', 'twd-article-publisher' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$result = TWD_AP_AI_Generate::generate( $mode, $input );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		TWD_AP_AI_Generate::increment();
+
+		return rest_ensure_response( $result );
 	}
 
 	public function get_summary_book( $request ) {

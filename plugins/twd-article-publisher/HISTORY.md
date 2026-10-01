@@ -278,6 +278,70 @@ v1.31.0 for the review screen -- a public visitor reading a shared
 Summary Book link has no `edit_post` capability and was never meant to
 need one.
 
+## On-site AI generation: one plugin with a key-gated branch, not a fork (v1.33.0)
+
+The idea that started this: a client site generating its own articles
+directly, without the therapist ever leaving their own site to visit
+Article Assist on Therapy Resource Directory. The first framing floated
+was a separate plugin for sites with their own API key. Rejected in
+favour of one plugin with a branch, for a concrete reason: the only real
+difference is where the generation call happens (this site's own
+`wp_remote_post`, vs. a copy/paste round trip through a different site),
+not what the result looks like or how it's reviewed. A fork would mean
+every future fix to the popup, the sanitiser, or the Summary Book flow
+needing to land in two codebases, forever, for a difference that's really
+one `if`.
+
+Two gates that look similar but aren't, worth keeping straight: TRD
+membership (the Resource Creator tier) gates access to Article Assist
+itself, a product on a different site entirely. Whether this specific
+site has its own Anthropic key gates whether `class-twd-ap-ai-generate.php`
+can generate inline. A site can have either, both, or neither
+independently; nothing here checks TRD membership at all.
+
+Why the prompt is duplicated rather than shared: `TWD_AP_AI_Generate`'s
+system prompt is close to a line-for-line copy of Article Assist's own
+(`trd_aa_shared_rules()`, `trd_aa_system_prompt_idea()`/`_format()` in
+`therapy-resource-directory`'s `15 TRD Article Assist.php`) — same
+category-matching instruction, same allowed-tags list, same summary_book
+card rules (type/quote/question, open on text, close on question, at
+least one quote). These are two separate WordPress installs with no
+shared package manager or build step between them (consistent with this
+plugin never having a build step of its own), so there's no clean way to
+share the actual PHP. Accepted as a known, documented duplication rather
+than building a shared-prompt mechanism across two repos for one feature
+— CLAUDE.md flags it explicitly so a future prompt change in one place
+prompts a check of the other, rather than the two silently drifting
+apart (the summary_book card rules in particular, since those feed
+`TWD_AP_Summary_Book::sanitize_cards()` directly and a mismatched shape
+would just mean dropped cards, not an error).
+
+Why the key field in Settings is always rendered blank rather than
+showing the saved value (even masked): simplest correct behaviour for a
+field only the site owner (or, by design, the client) ever sees, used
+rarely (set once, maybe rotated occasionally). The real decision this
+forces is in `TWD_AP_Settings::sanitize()`: since the field can never
+carry the real value back for comparison, a blank submit has to mean
+"nothing changed here," not "clear the key" — otherwise every unrelated
+resave of the settings screen (ticking a different role, say) would
+silently wipe a working key. An explicit "Remove the saved key" checkbox
+is the only path that actually clears it.
+
+Why the rate limit is a backstop (30/day) rather than a real limit like
+Article Assist's 15/day: that number exists on the TRD side because TRD
+itself pays the Anthropic bill for every member's usage, so it's a real
+cost control. Here, the key is the client's own, billed to them directly
+— there's no cost reason for this plugin to ration it. The limit exists
+purely so a bug in the popup, or a logged-in editor with bad intentions,
+can't loop the `/generate` endpoint into a runaway bill on someone else's
+card by accident.
+
+Why the model is fixed (`claude-sonnet-5-5`, effort `medium`) rather than
+a per-site setting: every site behaves predictably, a future model swap
+is a one-line change here instead of a silent per-site drift, and
+there's no real reason a therapist would want a different model for this
+specific task.
+
 ## Zip-build gotcha (self-hosted updater)
 
 Building the release zip with `rsync` in the same shell invocation as the

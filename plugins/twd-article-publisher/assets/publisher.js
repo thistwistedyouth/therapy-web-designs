@@ -17,6 +17,8 @@
 		summaryBookHasDraft: false,
 		summaryBookIsPublished: false,
 		articleStatus: '',
+		aiMode: 'idea',
+		aiGenerating: false,
 	};
 	var RELATED_MAX = 6;
 	var SUMMARY_BOOK_TYPES = ['text', 'quote', 'question'];
@@ -63,6 +65,10 @@
 		els.jsonPanel = document.getElementById('twd-ap-json-panel');
 		els.jsonInput = document.getElementById('twd-ap-json-input');
 		els.jsonFillBtn = document.getElementById('twd-ap-json-fill-btn');
+		els.aiModeIdea = document.getElementById('twd-ap-ai-mode-idea');
+		els.aiModeFormat = document.getElementById('twd-ap-ai-mode-format');
+		els.aiInput = document.getElementById('twd-ap-ai-input');
+		els.aiGenerateBtn = document.getElementById('twd-ap-ai-generate-btn');
 		els.toolbar = document.getElementById('twd-ap-toolbar');
 		els.visualEditor = document.getElementById('twd-ap-visual-editor');
 		els.htmlEditor = document.getElementById('twd-ap-html-editor');
@@ -178,6 +184,16 @@
 			switchTab('json');
 		});
 		els.jsonFillBtn.addEventListener('click', fillFromJson);
+
+		if (els.aiGenerateBtn) {
+			els.aiModeIdea.addEventListener('click', function () {
+				setAiMode('idea');
+			});
+			els.aiModeFormat.addEventListener('click', function () {
+				setAiMode('format');
+			});
+			els.aiGenerateBtn.addEventListener('click', generateOnSite);
+		}
 
 		els.toolbar.addEventListener('click', function (e) {
 			var btn = e.target.closest('button');
@@ -843,7 +859,17 @@
 			showStatus('That is not valid JSON.', false);
 			return;
 		}
+		applyGeneratedData(data, 'Fields filled from JSON. Review them below before saving.');
+	}
 
+	/**
+	 * The one place article fields actually get filled from a generated/
+	 * pasted result, shared by fillFromJson() (paste path) and
+	 * generateOnSite() (on-site AI path) -- same shape either way
+	 * (title/seo_title/meta_description/category/tags/html/summary_book),
+	 * so this never needs to know which one produced it.
+	 */
+	function applyGeneratedData(data, successMessage) {
 		if (data.title) {
 			els.title.value = data.title;
 		}
@@ -870,22 +896,80 @@
 			els.htmlEditor.value = html;
 		}
 
-		// Summary Book draft, if Article Assist baked one in -- held here,
-		// not written anywhere yet. It rides along in the next save's
-		// payload (see submitPost()) so it's stored atomically with the
-		// rest of the article, but nothing about it is shown or published
-		// until "Summary Book" is opened after saving.
+		// Summary Book draft, if Article Assist (or the on-site generator)
+		// baked one in -- held here, not written anywhere yet. It rides
+		// along in the next save's payload (see submitPost()) so it's
+		// stored atomically with the rest of the article, but nothing
+		// about it is shown or published until "Summary Book" is opened
+		// after saving.
 		if (data.summary_book && Array.isArray(data.summary_book.slides)) {
 			state.summaryBookDraft = data.summary_book.slides;
 		}
 
 		markDirty();
-		showStatus('Fields filled from JSON. Review them below before saving.', true);
+		showStatus(successMessage, true);
 		switchTabImmediate('visual');
 
 		if (data.category) {
 			addOrCheckCategoryByName(data.category);
 		}
+	}
+
+	function setAiMode(mode) {
+		state.aiMode = mode;
+		els.aiModeIdea.classList.toggle('twd-ap-mode-btn-active', 'idea' === mode);
+		els.aiModeFormat.classList.toggle('twd-ap-mode-btn-active', 'format' === mode);
+		els.aiInput.placeholder = 'format' === mode
+			? 'Paste the article you have already written...'
+			: 'e.g. Why rest can feel unproductive';
+	}
+
+	function generateOnSite() {
+		if (state.aiGenerating) {
+			return;
+		}
+		var text = els.aiInput.value.trim();
+		if (!text) {
+			showStatus('format' === state.aiMode ? 'Please paste your article text first.' : 'Please add an idea or topic first.', false);
+			return;
+		}
+
+		state.aiGenerating = true;
+		els.aiGenerateBtn.disabled = true;
+		var original = els.aiGenerateBtn.textContent;
+		els.aiGenerateBtn.textContent = 'Generating… this can take up to a minute';
+		hideStatus();
+
+		fetch(TWD_AP.restUrl + '/generate', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': TWD_AP.nonce,
+			},
+			body: JSON.stringify({ mode: state.aiMode, input: text }),
+		})
+			.then(function (r) {
+				return r.json().then(function (d) {
+					return { ok: r.ok, data: d };
+				});
+			})
+			.then(function (result) {
+				state.aiGenerating = false;
+				els.aiGenerateBtn.disabled = false;
+				els.aiGenerateBtn.textContent = original;
+				if (!result.ok) {
+					showStatus((result.data && result.data.message) ? result.data.message : 'Something went wrong. Please try again.', false);
+					return;
+				}
+				applyGeneratedData(result.data, 'Article generated. Review it below before saving.');
+				els.aiInput.value = '';
+			})
+			.catch(function () {
+				state.aiGenerating = false;
+				els.aiGenerateBtn.disabled = false;
+				els.aiGenerateBtn.textContent = original;
+				showStatus('Something went wrong. Please try again.', false);
+			});
 	}
 
 	function addOrCheckCategoryByName(name) {

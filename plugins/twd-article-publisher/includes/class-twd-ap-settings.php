@@ -22,9 +22,10 @@ class TWD_AP_Settings {
 
 	public static function get_settings() {
 		$defaults = array(
-			'allowed_roles'    => array( 'administrator', 'editor', 'author' ),
-			'default_category' => (int) get_option( 'default_category' ),
-			'show_everywhere'  => 'everywhere',
+			'allowed_roles'     => array( 'administrator', 'editor', 'author' ),
+			'default_category'  => (int) get_option( 'default_category' ),
+			'show_everywhere'   => 'everywhere',
+			'anthropic_api_key' => '',
 		);
 		$saved = get_option( self::OPTION_KEY, array() );
 		if ( ! is_array( $saved ) ) {
@@ -77,6 +78,20 @@ class TWD_AP_Settings {
 		$valid_scopes = array( 'everywhere', 'shortcode_page', 'nowhere' );
 		$scope        = isset( $input['show_everywhere'] ) ? sanitize_key( $input['show_everywhere'] ) : 'everywhere';
 		$output['show_everywhere'] = in_array( $scope, $valid_scopes, true ) ? $scope : 'everywhere';
+
+		// The key field always posts blank (render_page() never echoes the
+		// saved value back into it, see there for why) -- so blank means
+		// "left alone," not "clear it." Clearing only ever happens via the
+		// explicit checkbox, never by submitting the form with nothing
+		// typed into a field that was never meant to show the real value.
+		$existing = self::get_settings();
+		if ( ! empty( $input['anthropic_api_key_clear'] ) ) {
+			$output['anthropic_api_key'] = '';
+		} elseif ( ! empty( $input['anthropic_api_key'] ) ) {
+			$output['anthropic_api_key'] = sanitize_text_field( wp_unslash( $input['anthropic_api_key'] ) );
+		} else {
+			$output['anthropic_api_key'] = $existing['anthropic_api_key'];
+		}
 
 		return $output;
 	}
@@ -145,6 +160,26 @@ class TWD_AP_Settings {
 								<?php esc_html_e( 'Do not show it (rely on "Edit This Article" only)', 'twd-article-publisher' ); ?>
 							</label>
 							<p class="description"><?php esc_html_e( 'The "Edit This Article" button always shows only on the article being viewed, to people allowed to edit it, regardless of this setting.', 'twd-article-publisher' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'AI article generation', 'twd-article-publisher' ); ?></th>
+						<td>
+							<?php if ( '' !== $settings['anthropic_api_key'] ) : ?>
+								<p class="description" style="margin:0 0 8px;">
+									<?php esc_html_e( 'A key is already saved for this site.', 'twd-article-publisher' ); ?>
+								</p>
+							<?php endif; ?>
+							<input type="password" name="twd_ap_settings[anthropic_api_key]" class="regular-text" autocomplete="off" placeholder="<?php echo '' !== $settings['anthropic_api_key'] ? esc_attr__( 'Enter a new key to replace it', 'twd-article-publisher' ) : esc_attr__( 'sk-ant-...', 'twd-article-publisher' ); ?>" />
+							<?php if ( '' !== $settings['anthropic_api_key'] ) : ?>
+								<label style="display:block;margin-top:8px;">
+									<input type="checkbox" name="twd_ap_settings[anthropic_api_key_clear]" value="1" />
+									<?php esc_html_e( 'Remove the saved key', 'twd-article-publisher' ); ?>
+								</label>
+							<?php endif; ?>
+							<p class="description">
+								<?php esc_html_e( 'Add your own Anthropic API key to generate articles directly on this site (idea or topic in, a drafted article out), instead of copying JSON in from Article Assist on Therapy Resource Directory. Leave blank to keep the article popup exactly as it is now. The key is never shown back in this field once saved, and is only ever used server-side, never sent to the browser.', 'twd-article-publisher' ); ?>
+							</p>
 						</td>
 					</tr>
 				</table>

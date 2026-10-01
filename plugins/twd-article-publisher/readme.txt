@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.32.0
+Stable tag: 1.33.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,20 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.33.0): articles can now be generated directly on a client's own
+site, without visiting Therapy Resource Directory at all. Add an
+Anthropic API key under Settings > Article Publisher and the "Draft with
+Article Assist" link is replaced by an inline generator in the same
+popup: write from an idea or paste existing text, same as Article Assist
+itself, landing in the same editable fields either way. No key means no
+change at all, the popup works exactly as it always has. This runs on
+the site's own key and its own bill, with a 30-per-day backstop against
+runaway use (not a real limit), a fixed model for predictable results,
+and the same review-before-publish behaviour as every other way content
+reaches this popup: nothing saves or publishes without the fields being
+reviewed and Publish or Save Draft being clicked, same as typing or
+pasting content in by hand.
 
 NEW (1.32.0): the Summary Book is now publicly viewable. A published
 Summary Book gets its own standalone page (?twd_ap_summary_book=1 on
