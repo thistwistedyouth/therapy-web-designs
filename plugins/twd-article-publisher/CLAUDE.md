@@ -4,6 +4,8 @@ A WordPress plugin, generic and reusable across every Therapy Web Designs client
 
 Not tied to any one client's design. Header, footer, page CSS, per-site palettes and the "single HTML widget per page" Elementor build method (documented separately in Therapy Web Designs' own build notes) are unrelated to this plugin and live in each client site's own theme/Elementor content, not here.
 
+**At the start of every session read this file and BUILD-LOG.md. At the end of every piece of work, without being asked, update BUILD-LOG.md in the same commit. Complex changes are discussed first. Other repos are read only; changes there go as written briefs.**
+
 This file is the short version: rules, not stories. **HISTORY.md** has the full incident write-ups (what broke, what was tried, why the fix looks the way it does) for anything below that has one — only worth opening if you're debugging something in that specific area.
 
 ## What it does
@@ -95,6 +97,18 @@ something in that specific area or a similar decision has come up again.
 - The key field in Settings never echoes the saved value back into the input (a masked `sk-ant-••••`-style display isn't worth the extra code for a field only the site owner sees) — it's always rendered blank, so `TWD_AP_Settings::sanitize()` treats a blank submit as "leave the existing key alone," and only an explicit "Remove the saved key" checkbox actually clears it. Don't change this to "blank clears it" without also changing the field to actually show the current value first — otherwise the form's own blank-until-touched default would make every resave silently wipe the key.
 - `generate_article()` in `class-twd-ap-rest.php` is gated by `check_permission()` (same as category creation), not `check_edit_permission()` — there's no post to own yet at generation time, same reasoning as every other pre-creation endpoint.
 
+## Filters offered to other plugins
+
+Two server-side WordPress filters, registered by `TWD_AP_AI_Generate::init()` (called from the plugin constructor). Used by **TWD Site Kit** (`thistwistedyouth/twd-site-kit`, 0.5.0 onwards) for its "Ask the AI" feature, so Site Kit can use this site's saved Anthropic key without ever seeing or storing it. No REST route, no JavaScript. The key is read inside `TWD_AP_AI_Generate` and is never passed to, returned from, logged or sent to the browser by either filter.
+
+- `apply_filters( 'twd_ai_is_configured', false )` returns `true` only when `anthropic_api_key` in `TWD_AP_Settings` is non-empty, otherwise the value it was given.
+- `apply_filters( 'twd_ai_complete', null, $system, $message, $max_tokens )` returns the reply text (string), a `WP_Error` (same codes and plain-English messages as `generate()`), or `null` when no key is set (nothing answered). It calls `TWD_AP_AI_Generate::complete()`, which reuses `call_anthropic()`, so endpoint, model, headers, 120 second timeout and refusal/max_tokens handling are identical to `generate()`.
+- `$max_tokens` is clamped by `clamp_max_tokens()`: below 256 becomes 256, above 8000 becomes 8000, non-numeric becomes 5000.
+- These calls do not count against the 30 per day article limit (that count lives in the REST layer, `class-twd-ap-rest.php`). Site Kit has its own rate limit (10 requests per 10 minutes per user) and its own permission checks.
+- If another handler has already answered (non-null first argument), `twd_ai_complete` returns that untouched rather than making a second call.
+- Do not change the argument order, the null-means-nothing-answered contract or the clamp range without a written brief to Site Kit, because it depends on all three.
+- Not touched by this: `generate()`, the article popup, the prompts and the JSON handling.
+
 ## File map
 
 ```
@@ -184,7 +198,7 @@ To ship a new version to every client site running the plugin:
 #    version's content. This happened once; cp -r has no such dependency.
 rm -rf /tmp/twd-build && mkdir -p /tmp/twd-build
 cp -r plugins/twd-article-publisher /tmp/twd-build/twd-article-publisher
-rm -f /tmp/twd-build/twd-article-publisher/CLAUDE.md /tmp/twd-build/twd-article-publisher/HISTORY.md
+rm -f /tmp/twd-build/twd-article-publisher/CLAUDE.md /tmp/twd-build/twd-article-publisher/HISTORY.md /tmp/twd-build/twd-article-publisher/BUILD-LOG.md
 find /tmp/twd-build/twd-article-publisher -name '.git*' -exec rm -rf {} + 2>/dev/null || true
 rm -f dist/twd-article-publisher-latest.zip
 ( cd /tmp/twd-build && zip -r -q "$OLDPWD/dist/twd-article-publisher-latest.zip" twd-article-publisher )
@@ -195,7 +209,7 @@ rm -rf /tmp/twd-verify && mkdir /tmp/twd-verify
 ( cd /tmp/twd-verify && unzip -q "$OLDPWD/dist/twd-article-publisher-latest.zip" )
 diff -q /tmp/twd-verify/twd-article-publisher/<a file you edited> \
         plugins/twd-article-publisher/<same file>   # must print nothing
-ls /tmp/twd-verify/twd-article-publisher | grep -i claude   # must print nothing
+ls /tmp/twd-verify/twd-article-publisher | grep -i -E 'claude|build-log|history'   # must print nothing
 
 # 3. Update dist/twd-article-publisher-update.json:
 #    bump "version" to match step 1, update "changelog", leave

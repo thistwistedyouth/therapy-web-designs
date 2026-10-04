@@ -15,19 +15,95 @@ if ( ! defined( 'ABSPATH' ) ) {
  * this prompt in sync with that file if either one changes; there is no
  * shared code between the two repos to do that automatically.
  *
- * No hooks, no instance() -- a pure static helper, same shape as
- * TWD_AP_Sanitizer.
+ * No instance(); a pure static helper, same shape as TWD_AP_Sanitizer.
+ * The one exception is init(), which registers the two filters this
+ * plugin offers to other plugins (twd_ai_is_configured, twd_ai_complete).
+ * They let TWD Site Kit use this site's saved key without ever seeing it.
  */
 class TWD_AP_AI_Generate {
 
 	const MODEL      = 'claude-sonnet-5-5';
 	const MAX_TOKENS = 5000;
 
+	// Bounds for the twd_ai_complete filter only. generate() always uses
+	// MAX_TOKENS above.
+	const COMPLETE_MIN_TOKENS = 256;
+	const COMPLETE_MAX_TOKENS = 8000;
+
 	// A safety backstop, not a real constraint -- this runs on the client's
 	// own key and their own bill, so there is no cost reason to limit it
 	// the way Article Assist limits shared TRD usage. Only here in case a
 	// bug or a bad actor with edit access loops the endpoint.
 	const RATE_LIMIT = 30;
+
+	/**
+	 * Registers the filters offered to other plugins. Server-side only:
+	 * no REST route, no JavaScript. The key is read inside this class and
+	 * is never passed to, or returned from, either filter.
+	 */
+	public static function init() {
+		add_filter( 'twd_ai_is_configured', array( __CLASS__, 'filter_is_configured' ), 10, 1 );
+		add_filter( 'twd_ai_complete', array( __CLASS__, 'filter_complete' ), 10, 4 );
+	}
+
+	/**
+	 * apply_filters( 'twd_ai_is_configured', false ): true only when a key
+	 * is saved, otherwise the value it was given.
+	 */
+	public static function filter_is_configured( $value ) {
+		return self::is_configured() ? true : $value;
+	}
+
+	/**
+	 * apply_filters( 'twd_ai_complete', null, $system, $message, $max_tokens ):
+	 * returns null when no key is saved (nothing answered), otherwise the
+	 * reply text or a WP_Error from complete().
+	 */
+	public static function filter_complete( $result, $system = '', $message = '', $max_tokens = self::MAX_TOKENS ) {
+		if ( null !== $result || ! self::is_configured() ) {
+			return $result;
+		}
+		return self::complete( $system, $message, $max_tokens );
+	}
+
+	/**
+	 * One plain system + user message round trip using this site's own
+	 * key. Reuses call_anthropic() unchanged apart from max_tokens, so the
+	 * endpoint, model, headers, timeout and error messages are identical to
+	 * generate(). Not counted against the daily article limit: that count
+	 * lives in the REST layer, and callers (TWD Site Kit) have their own
+	 * rate limit and permission checks.
+	 *
+	 * Returns the reply text, a WP_Error, or null when no key is saved.
+	 */
+	public static function complete( $system, $message, $max_tokens = self::MAX_TOKENS ) {
+		$key = self::get_key();
+		if ( '' === $key ) {
+			return null;
+		}
+
+		if ( ! is_string( $system ) || ! is_string( $message ) || '' === trim( $message ) ) {
+			return new WP_Error( 'twd_ap_ai_bad_request', __( 'The AI request was empty or in the wrong form.', 'twd-article-publisher' ) );
+		}
+
+		$reply = self::call_anthropic( $key, $system, $message, self::clamp_max_tokens( $max_tokens ) );
+		if ( is_wp_error( $reply ) ) {
+			return $reply;
+		}
+
+		return $reply;
+	}
+
+	/**
+	 * Below 256 becomes 256, above 8000 becomes 8000, non-numeric becomes
+	 * the default of 5000.
+	 */
+	public static function clamp_max_tokens( $value ) {
+		if ( ! is_numeric( $value ) ) {
+			return self::MAX_TOKENS;
+		}
+		return (int) max( self::COMPLETE_MIN_TOKENS, min( self::COMPLETE_MAX_TOKENS, (int) $value ) );
+	}
 
 	public static function is_configured() {
 		return '' !== self::get_key();
@@ -218,10 +294,10 @@ PROMPT . self::shared_rules( $category_names );
 		);
 	}
 
-	private static function call_anthropic( $key, $system, $message ) {
+	private static function call_anthropic( $key, $system, $message, $max_tokens = self::MAX_TOKENS ) {
 		$body = array(
 			'model'         => self::MODEL,
-			'max_tokens'    => self::MAX_TOKENS,
+			'max_tokens'    => (int) $max_tokens,
 			'system'        => $system,
 			'fallbacks'     => 'default',
 			'messages'      => array( array( 'role' => 'user', 'content' => $message ) ),

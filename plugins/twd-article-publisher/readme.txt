@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.33.0
+Stable tag: 1.34.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.34.0): two WordPress filters so another plugin (TWD Site
+Kit) can use this site's saved Anthropic key without ever seeing it:
+twd_ai_is_configured (true only when a key is saved) and twd_ai_complete
+(runs a request with the saved key and returns the reply text, an error,
+or null when no key is set). Server-side only, nothing new in the popup,
+and the article generator itself is unchanged. These calls do not count
+against the 30 per day article limit. Nothing to do on a site except
+update.
 
 NEW (1.33.0): articles can now be generated directly on a client's own
 site, without visiting Therapy Resource Directory at all. Add an
