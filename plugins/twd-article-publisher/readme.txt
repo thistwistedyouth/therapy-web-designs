@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.34.0
+Stable tag: 1.35.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,16 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.35.0): an Elementor converter for administrators, off unless
+ticked in Settings > Article Publisher. Tools > Convert Elementor
+posts converts old posts built in an Elementor HTML widget into normal
+posts the popup can edit, one at a time, in place (same address, title,
+categories, tags, featured image and SEO details). Shows a preview
+first, saves a backup before changing anything, and every conversion
+can be undone. A rules box turns each site's old class names into real
+headings and quotes. Nothing changes on a site that leaves the
+tick-box off.
 
 NEW (1.34.0): two WordPress filters so another plugin (TWD Site
 Kit) can use this site's saved Anthropic key without ever seeing it:

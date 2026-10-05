@@ -109,6 +109,20 @@ Two server-side WordPress filters, registered by `TWD_AP_AI_Generate::init()` (c
 - Do not change the argument order, the null-means-nothing-answered contract or the clamp range without a written brief to Site Kit, because it depends on all three.
 - Not touched by this: `generate()`, the article popup, the prompts and the JSON handling.
 
+## Elementor converter (v1.35.0)
+
+`includes/class-twd-ap-converter.php`, admin only, **off unless the "Elementor converter" tick-box in Settings > Article Publisher is ticked** (`converter_enabled`). Adds Tools > Convert Elementor posts. Built for sites whose old posts live in an Elementor HTML widget, which the popup cannot edit because it only reads and saves `post_content`, never `_elementor_data`.
+
+- **One post at a time.** The list page shows every post with Elementor data; "Check and preview" analyses one, shows the result, and "Convert this post" does it. No bulk button, deliberately.
+- **Same post, converted in place**, so URL, title, date, categories, tags, featured image, excerpt and SEO meta (Yoast, Rank Math) are never touched. Only `post_content` and the `_elementor_*` meta change (plus `_wp_page_template` if it was an `elementor_*` template such as Canvas, reset to `default`).
+- **Safe / Warning / Blocked.** Blocked: any widget other than `html`, `text-editor` or `spacer`, no content found, unreadable data, or already converted. Warning: custom CSS, scripts or styles dropped, odd tags (table, iframe and so on) dropped, inline styles dropped, em or en dashes changed to commas, a rule that could not apply, an Elementor page template, or cleaned text noticeably shorter than the source. Anything else is Safe.
+- **Tidy step before the cleaner.** `TWD_AP_Sanitizer::clean()` drops every `div` and `class`, which on its own would turn paragraph-styled sub-headings into plain paragraphs. So `tidy()` first applies the per-site rules, unwraps wrapper divs, drops comments, scripts and styles, maps h1/h5/h6 to levels the cleaner keeps, and (optional tick in the preview) promotes h3 to h2, and h4 to h3, when the post has no h2, because the swipe book splits on h2.
+- **Per-site rules** live in the same Settings row (`converter_rules`, one per line: `part-of-old-class = h2|h3|h4|p|blockquote|strong|em|unwrap|remove`, `#` for notes, longest class part wins). The Kingfisher `kcc-*` rules are the pre-filled default. Old class names that were dropped are listed in the preview so a missing rule is obvious.
+- **Backup and Undo.** Before anything changes, the original `post_content`, every `_elementor_*` meta value and the page template are saved in post meta `_twd_ap_conv_backup`. If the backup cannot be saved, nothing else happens; if the content save fails, the backup is removed again and the post is untouched. "Undo conversion" restores all of it; if the article was edited since converting, undo needs an extra tick to discard those edits. "Keep it converted, delete the backup" removes the backup.
+- **Server-side checks on every action**: setting on, `manage_options`, `edit_post`, and a per-post nonce. The preview is never trusted; `convert()` re-runs the analysis.
+- Converted posts take the plugin's own article typography, so the old site CSS (`kcc-*` and so on) stops applying. Per-site "article look" controls are planned for v1.36.0, not built yet.
+- Not done: no guard in the popup yet for Elementor-built posts that have not been converted (the popup would show them empty or stale). No bulk convert.
+
 ## File map
 
 ```
@@ -124,6 +138,7 @@ includes/class-twd-ap-article-style.php  Public article typography — the_conte
 includes/class-twd-ap-swipebook.php      ?twd_ap_swipebook=1 -- renders any published article as a shareable swipe deck; get_payload() also feeds the overlay REST route
 includes/class-twd-ap-summary-book.php   TWD_AP_Summary_Book: storage/sanitising for the curated Summary Book (draft + published post meta) plus its own ?twd_ap_summary_book=1 standalone page and get_payload() for the overlay REST route
 includes/class-twd-ap-starter-content.php  Publishes a one-time "Getting Started" article on activation
+includes/class-twd-ap-converter.php      TWD_AP_Converter: admin-only Elementor to normal post converter (tick-box in Settings), one post at a time, backup and Undo
 includes/class-twd-ap-updater.php        Self-hosted update checker (admin-only); see Releases section below
 templates/buttons-and-modal.php          The popup's HTML skeleton + the help modal (PHP-rendered once per page load)
 assets/publisher.css                     Popup, button and image-toolbar styling (neutral, not client-branded)
@@ -167,6 +182,15 @@ for f in includes/*.php templates/*.php; do php -l "$f"; done
 # JS syntax
 node --check assets/publisher.js
 ```
+
+Converter tests live OUTSIDE the plugin folder, in `tests/twd-article-publisher/converter-test.php` at the repo root (so they never ship to client sites). They use real WordPress core code for `wp_kses` and only fake the database:
+
+```bash
+composer require johnpbloch/wordpress-core --working-dir=/tmp/wpc
+TWD_WP_CORE=/tmp/wpc/vendor/johnpbloch/wordpress-core php tests/twd-article-publisher/converter-test.php
+```
+
+Run it after any change to `class-twd-ap-converter.php` or `class-twd-ap-sanitizer.php`. It uses short made-up articles, never client text.
 
 For sanitiser logic without a live WordPress install, stub `wp_kses` and `apply_filters`, then assert against known-bad input (script tags, `onclick`, inline `style`, an `<h1>`, a `target="_blank"` link). This was the method used during the original build; there's no committed test file for it yet, it was written and discarded as a one-off `/tmp` script — worth turning into a real `tests/` directory with a proper WP test stub if this plugin gets ongoing development.
 

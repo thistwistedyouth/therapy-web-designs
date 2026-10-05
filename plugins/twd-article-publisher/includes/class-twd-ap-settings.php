@@ -26,6 +26,8 @@ class TWD_AP_Settings {
 			'default_category'  => (int) get_option( 'default_category' ),
 			'show_everywhere'   => 'everywhere',
 			'anthropic_api_key' => '',
+			'converter_enabled' => 0,
+			'converter_rules'   => class_exists( 'TWD_AP_Converter' ) ? TWD_AP_Converter::default_rules() : '',
 		);
 		$saved = get_option( self::OPTION_KEY, array() );
 		if ( ! is_array( $saved ) ) {
@@ -91,6 +93,16 @@ class TWD_AP_Settings {
 			$output['anthropic_api_key'] = sanitize_text_field( wp_unslash( $input['anthropic_api_key'] ) );
 		} else {
 			$output['anthropic_api_key'] = $existing['anthropic_api_key'];
+		}
+
+		// Elementor converter: off unless ticked. The rules box is only
+		// replaced when it was actually posted, so saving the screen from
+		// a page that never showed it cannot wipe the rules.
+		$output['converter_enabled'] = ! empty( $input['converter_enabled'] ) ? 1 : 0;
+		if ( isset( $input['converter_rules'] ) ) {
+			$output['converter_rules'] = sanitize_textarea_field( wp_unslash( $input['converter_rules'] ) );
+		} else {
+			$output['converter_rules'] = $existing['converter_rules'];
 		}
 
 		return $output;
@@ -180,6 +192,25 @@ class TWD_AP_Settings {
 							<p class="description">
 								<?php esc_html_e( 'Add your own Anthropic API key to generate articles directly on this site (idea or topic in, a drafted article out), instead of copying JSON in from Article Assist on Therapy Resource Directory. Leave blank to keep the article popup exactly as it is now. The key is never shown back in this field once saved, and is only ever used server-side, never sent to the browser.', 'twd-article-publisher' ); ?>
 							</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Elementor converter', 'twd-article-publisher' ); ?></th>
+						<td>
+							<label style="display:block;margin-bottom:8px;">
+								<input type="checkbox" name="twd_ap_settings[converter_enabled]" value="1" <?php checked( ! empty( $settings['converter_enabled'] ) ); ?> />
+								<?php esc_html_e( 'Turn on the tool that converts old Elementor posts (advanced, off by default)', 'twd-article-publisher' ); ?>
+							</label>
+							<p class="description" style="margin-bottom:8px;">
+								<?php esc_html_e( 'Adds Tools > Convert Elementor posts, for administrators only. It converts one post at a time, saves a backup first, and every conversion can be undone. Take a full site backup before using it.', 'twd-article-publisher' ); ?>
+								<?php if ( ! empty( $settings['converter_enabled'] ) && class_exists( 'TWD_AP_Converter' ) ) : ?>
+									<a href="<?php echo esc_url( TWD_AP_Converter::tool_url() ); ?>"><?php esc_html_e( 'Open the converter', 'twd-article-publisher' ); ?></a>
+								<?php endif; ?>
+							</p>
+							<?php if ( ! empty( $settings['converter_enabled'] ) ) : ?>
+								<textarea name="twd_ap_settings[converter_rules]" rows="8" class="large-text code"><?php echo esc_textarea( (string) $settings['converter_rules'] ); ?></textarea>
+								<p class="description"><?php esc_html_e( 'Rules for turning this site\'s old class names into real headings, quotes and paragraphs when converting. One per line: part of an old class name = h2, h3, h4, p, blockquote, strong, em, unwrap or remove. Lines starting with # are notes.', 'twd-article-publisher' ); ?></p>
+							<?php endif; ?>
 						</td>
 					</tr>
 				</table>
