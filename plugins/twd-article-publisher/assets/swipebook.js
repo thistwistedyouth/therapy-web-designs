@@ -81,6 +81,14 @@
 				body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
 					'<div class="twd-sb-body-text">' + slide.html + '</div>';
 			}
+			// The last page of a swipe book gets a proper "View Summary Book"
+			// button when this article has one published (the small link in
+			// the footer is easy to miss). Same classes and data attributes
+			// as that footer link, so swipebook-inline.js opens it the same
+			// way. Left out of Save as image and Download as PDF.
+			if (i === data.slides.length - 1 && data.companionUrl && 'summary-book' === data.companionBookVariant) {
+				body += '<p class="twd-sb-last-cta"><a class="twd-sb-companion-link twd-sb-companion-cta" href="' + escapeAttr(data.companionUrl) + '" data-twd-ap-post-id="' + data.companionPostId + '" data-twd-ap-book-variant="summary-book">' + escapeHtml(data.companionLabel || 'View Summary Book') + ' &#8250;</a></p>';
+			}
 			return '<section class="twd-sb-slide' + active + '" data-index="' + i + '"><div class="twd-sb-card">' +
 				cardHeaderHtml +
 				'<div class="twd-sb-card-body">' + body + '</div>' +
@@ -233,7 +241,12 @@
 			dragActive = true;
 			dragIsHorizontal = null;
 			backdrop.classList.add('is-dragging');
-			try { slidesWrap.setPointerCapture(e.pointerId); } catch (err) {}
+			// The pointer is deliberately NOT captured here. Capturing on
+			// every press made the browser send the click to the slides
+			// container instead of the thing pressed, so no link on a page
+			// (More Articles, the bio link, View Summary Book) could be
+			// clicked. It is captured below, only once a sideways swipe is
+			// actually under way.
 		});
 
 		slidesWrap.addEventListener('pointermove', function (e) {
@@ -242,6 +255,12 @@
 			var dy = e.clientY - dragStartY;
 			if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
 				dragIsHorizontal = Math.abs(dx) > Math.abs(dy);
+				if (dragIsHorizontal) {
+					// A real swipe: keep receiving it even if the pointer
+					// slides off the page, and stop the end of the swipe
+					// counting as a click on whatever is under it.
+					try { slidesWrap.setPointerCapture(e.pointerId); } catch (err) {}
+				}
 			}
 		});
 
@@ -309,8 +328,12 @@
 		function captureNode(cardEl, onCanvas) {
 			var headerEl = includeBranding ? null : cardEl.querySelector('.twd-sb-card-header');
 			if (headerEl) { headerEl.style.display = 'none'; }
+			// A link button means nothing in a saved image or PDF page.
+			var ctaEl = cardEl.querySelector('.twd-sb-last-cta');
+			if (ctaEl) { ctaEl.style.display = 'none'; }
 			window.html2canvas(cardEl, { backgroundColor: '#13112e', scale: 2, useCORS: true }).then(function (canvas) {
 				if (headerEl) { headerEl.style.display = ''; }
+				if (ctaEl) { ctaEl.style.display = ''; }
 				onCanvas(canvas);
 			});
 		}
@@ -471,7 +494,7 @@
 		 * the same data shape the standalone page embeds. Locks background
 		 * scroll and removes itself entirely on close.
 		 */
-		open: function (data) {
+		open: function (data, openOpts) {
 			if (current) { return; }
 			var wrap = document.createElement('div');
 			wrap.innerHTML = buildMarkup(data);
@@ -485,6 +508,11 @@
 					document.body.style.overflow = '';
 					backdrop.parentNode.removeChild(backdrop);
 					current = null;
+					// Optional: lets the caller do something once the book is
+					// closed, such as refreshing the page behind it.
+					if (openOpts && typeof openOpts.onClose === 'function') {
+						openOpts.onClose();
+					}
 				},
 			});
 		},

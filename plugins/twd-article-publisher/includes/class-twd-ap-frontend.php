@@ -75,6 +75,10 @@ class TWD_AP_Frontend {
 
 		wp_enqueue_media();
 
+		// So a Summary Book can be shown over this page the moment it is
+		// published, even when the page is the resources grid.
+		TWD_AP_Swipebook::enqueue_viewer();
+
 		wp_enqueue_style(
 			'twd-ap-publisher',
 			TWD_AP_URL . 'assets/publisher.css',

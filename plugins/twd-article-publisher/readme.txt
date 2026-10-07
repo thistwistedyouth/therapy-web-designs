@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.37.1
+Stable tag: 1.38.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,16 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.38.0): Summary Book improvements. (1) Publishing a Summary Book
+now closes the review window and the popup and shows the finished book
+straight away. If swipe books are switched off for that article it
+tells you why instead. (2) The pink remove crosses on the review screen
+are now tidy circles. (3) A "View Summary Book" button now appears on
+the last page of the swipe book when the article has a published Summary
+Book. (4) FIXED: links inside a swipe book (More Articles, the bio link)
+did not respond to a click, and the book's close cross was partly covered
+by the page. Both now work.
 
 NEW (1.37.1): the small edit pencil now also shows on the cards in the
 articles grid, for logged-in people who can edit that article. Click it

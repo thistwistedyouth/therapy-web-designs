@@ -585,18 +585,45 @@ body.admin-bar .twd-ap-edit-pencil {
   background: var(--twd-ap-bg);
   color: inherit;
 }
-.twd-ap-sb-card-remove {
-  border: none;
-  background: none;
-  box-shadow: none;
-  color: var(--twd-ap-muted);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 6px;
+.twd-ap-overlay .twd-ap-modal .twd-ap-sb-card-remove,
+#twd-ap-summary-book-modal .twd-ap-sb-card-remove {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  box-sizing: border-box !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid var(--twd-ap-input-border) !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  color: var(--twd-ap-muted) !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
 }
-.twd-ap-sb-card-remove:hover {
-  color: #b42318;
+.twd-ap-overlay .twd-ap-modal .twd-ap-sb-card-remove svg,
+#twd-ap-summary-book-modal .twd-ap-sb-card-remove svg {
+  width: 14px !important;
+  height: 14px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2.4 !important;
+  stroke-linecap: round !important;
+}
+.twd-ap-overlay .twd-ap-modal .twd-ap-sb-card-remove:hover,
+.twd-ap-overlay .twd-ap-modal .twd-ap-sb-card-remove:focus-visible,
+#twd-ap-summary-book-modal .twd-ap-sb-card-remove:hover,
+#twd-ap-summary-book-modal .twd-ap-sb-card-remove:focus-visible {
+  border-color: var(--twd-ap-danger) !important;
+  background: rgba(179, 69, 46, 0.1) !important;
+  color: var(--twd-ap-danger) !important;
+  outline: none !important;
 }
 .twd-ap-sb-card-heading,
 .twd-ap-sb-card-attribution {

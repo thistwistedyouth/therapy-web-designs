@@ -112,6 +112,14 @@ Two server-side WordPress filters, registered by `TWD_AP_AI_Generate::init()` (c
 - Do not change the argument order, the null-means-nothing-answered contract or the clamp range without a written brief to Site Kit, because it depends on all three.
 - Not touched by this: `generate()`, the article popup, the prompts and the JSON handling.
 
+## Summary Book publishing and the book viewer (v1.38.0)
+
+- **Publishing a Summary Book closes the review screen AND the main popup, then shows the finished book over the page** (`showPublishedSummaryBook()` in `publisher.js`). It fetches the same public feed visitors use (`/articles/{id}/summary-book`), so it also proves the book is really visible. If that feed answers 404 (the article's swipe book tick is off) nothing closes and the review screen says why. If the shared viewer is missing it falls back to the standalone `?twd_ap_summary_book=1` page. When the popup was opened from the article's own page, the page reloads once the book is closed so the "View Summary Book" button under the article appears; from a grid page nothing reloads.
+- **The book viewer is loaded for editors on every page**, not just article pages: `TWD_AP_Swipebook::enqueue_viewer()` (guarded, safe to call twice) is called by `maybe_enqueue_inline()` on article pages and by `TWD_AP_Frontend::maybe_enqueue()` for people who can publish. `TWD_AP_SwipeBook.open( data, { onClose } )` takes an optional close callback.
+- **"View Summary Book" on the last page of a swipe book**: a proper gold button under the last slide (`.twd-sb-companion-cta`, added in `buildMarkup()`), only when this article has a published Summary Book and the swipe book is on. It reuses the footer link's classes and data attributes so `swipebook-inline.js` opens it the same way, and it is hidden during Save as image and Download as PDF (`captureNode()`). The Summary Book's own last page gets no such button. The pill under the article already existed (`TWD_AP_Summary_Book::append_button`); it needs a published book, the swipe tick on, and a theme that runs `the_content` for the main article inside the loop. Not verified on an Elementor Theme Builder single template, where `in_the_loop()` can be false.
+- **Two long-standing viewer bugs fixed.** (1) The book's close cross sat at the same stacking level as the active page, which paints over it, so most of the cross was unclickable (`.twd-sb-close` is now `z-index: 5`). (2) `pointerdown` captured the pointer on every press, so the browser sent every click to the slides container and NO link on a page worked (More Articles, the bio link, the new button). The pointer is now captured only once a sideways swipe is under way (`pointermove`), so taps reach links and swiping still turns pages.
+- The review screen's remove buttons are 34px neutral circles with an SVG cross that turns red on hover, with selectors strong enough (`.twd-ap-overlay .twd-ap-modal ...` and an ID twin) that a theme restyling every button (the pink border) cannot win.
+
 ## Edit pencil on grid cards (v1.37.1)
 
 - Each `[twd_articles]` card shows a small round pencil (top left over the thumbnail, top right when thumbnails are switched off) to a logged-in person who can edit THAT article. It opens the normal edit popup via `window.TWD_AP_OpenEditor(id)` (defined in `publisher.js`), so Update, Delete, the swipe book tick and the Summary Book button all work from the grid.
@@ -214,13 +222,14 @@ TWD_WP_CORE=/tmp/wpc/vendor/johnpbloch/wordpress-core php tests/twd-article-publ
 
 Run it after any change to `class-twd-ap-converter.php` or `class-twd-ap-sanitizer.php`. It uses short made-up articles, never client text.
 
-Four more, also outside the plugin folder:
+Five more, also outside the plugin folder:
 
 ```bash
 php tests/twd-article-publisher/ai-test.php                                          # modes, reply sizes, input limit, daily count, twd_ai_* filters (no WordPress needed)
 NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/browser-test.js   # the popup (start screen, pencil, refresh after save, swipe book tick) in real Chromium via Playwright
 php tests/twd-article-publisher/swipe-switch-test.php                               # the swipe book switch, where it is enforced, the New Article default, and the grid card edit permission
 NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/grid-test.js      # the edit pencil on grid cards, in real Chromium
+NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/summary-book-test.js  # Summary Book review screen, publish then show the book, the swipe book last-page button, link clicks in the viewer
 ```
 
 The browser test renders the real `templates/buttons-and-modal.php` with `render.php`, loads the real `publisher.css` and `publisher.js`, and fakes only the server replies. Run both after touching the popup, `publisher.js`, `publisher.css` or `class-twd-ap-ai-generate.php`.

@@ -629,7 +629,7 @@
 
 		li.innerHTML =
 			'<div class="twd-ap-sb-card-row-top">' + typeSelect +
-				'<button type="button" class="twd-ap-sb-card-remove" aria-label="Remove card">&times;</button>' +
+				'<button type="button" class="twd-ap-sb-card-remove" aria-label="Remove this card" title="Remove this card"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button>' +
 			'</div>' +
 			'<input type="text" class="twd-ap-input twd-ap-sb-card-heading" placeholder="Heading (optional)" value="' + escapeHtml(card.heading || '') + '" />' +
 			'<textarea class="twd-ap-textarea-small twd-ap-sb-card-text" placeholder="Card text" rows="3">' + escapeHtml(card.text || '') + '</textarea>' +
@@ -754,6 +754,56 @@
 			});
 	}
 
+	// After publishing: close the review screen and the popup, and show the
+	// finished book over the page, so the result is seen straight away. The
+	// public feed is used (the same one visitors get), which also proves it
+	// is really visible. If swipe books are switched off for this article it
+	// answers 404, and the review screen stays open with the reason.
+	function showPublishedSummaryBook(postId) {
+		setSummaryBookStatus('Published. Opening the book…', true);
+		fetch(TWD_AP.restUrl + '/articles/' + postId + '/summary-book', { cache: 'no-store' })
+			.then(function (r) {
+				if (!r.ok) {
+					var err = new Error('not-visible');
+					err.status = r.status;
+					throw err;
+				}
+				return r.json();
+			})
+			.then(function (data) {
+				var viewingThis = TWD_AP.currentPostId && parseInt(TWD_AP.currentPostId, 10) === postId;
+				if (!window.TWD_AP_SwipeBook) {
+					// The shared viewer did not load: use the full page instead.
+					if (state.lastLink) {
+						window.location.href = state.lastLink + (state.lastLink.indexOf('?') === -1 ? '?' : '&') + 'twd_ap_summary_book=1';
+					} else {
+						setSummaryBookStatus('Summary Book published. Use "View Summary Book" under the article to see it.', true);
+					}
+					return;
+				}
+				state.dirty = false;
+				state.reloadOnClose = false;
+				closeSummaryBookEditor();
+				closeModal();
+				window.TWD_AP_SwipeBook.open(data, {
+					// On the article's own page, refresh once the book is closed
+					// so the "View Summary Book" button under the article shows.
+					onClose: function () {
+						if (viewingThis) {
+							window.location.reload();
+						}
+					},
+				});
+			})
+			.catch(function (err) {
+				if (err && err.status === 404) {
+					setSummaryBookStatus('Summary Book published, but swipe books are switched off for this article, so visitors cannot see it. Tick "Offer a swipe book for this article" and click Update.', false);
+				} else {
+					setSummaryBookStatus('Summary Book published, but it could not be opened here. Use "View Summary Book" under the article.', true);
+				}
+			});
+	}
+
 	function publishSummaryBook() {
 		var cards = collectSummaryBookCards();
 		if (!cards.length) {
@@ -776,7 +826,7 @@
 				state.summaryBookIsPublished = true;
 				updateSummaryBookButton();
 				els.summaryBookPublishedNote.hidden = false;
-				setSummaryBookStatus('Summary Book published.', true);
+				showPublishedSummaryBook(state.editingId);
 			})
 			.catch(function () {
 				setSummaryBookStatus('Could not publish. Please try again.', false);

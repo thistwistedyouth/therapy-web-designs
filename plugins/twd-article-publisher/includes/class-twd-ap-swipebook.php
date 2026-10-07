@@ -93,6 +93,23 @@ class TWD_AP_Swipebook {
 			return;
 		}
 
+		self::enqueue_viewer();
+	}
+
+	/**
+	 * Loads the in-page book viewer (styles, the shared viewer script, and
+	 * the click handler that opens a book over the page). Used on single
+	 * article pages, and also for people who can publish, on every page,
+	 * so a freshly published Summary Book can be shown straight away even
+	 * from the resources grid. Safe to call more than once.
+	 */
+	public static function enqueue_viewer() {
+		static $done = false;
+		if ( $done ) {
+			return;
+		}
+		$done = true;
+
 		wp_enqueue_style(
 			'twd-ap-swipebook',
 			TWD_AP_URL . 'assets/swipebook.css',
