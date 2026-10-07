@@ -149,6 +149,9 @@
   cursor: pointer !important;
   transition: opacity 0.2s ease, color 0.2s ease !important;
 }
+.twd-ap-delete-btn[hidden] {
+  display: none !important;
+}
 .twd-ap-delete-btn:hover {
   opacity: 1 !important;
   color: #8a2f1e !important;
@@ -669,39 +672,172 @@
   border-radius: 8px;
 }
 
-/* On-site AI generate box -- only rendered at all when this site has its
-   own Anthropic key configured (Settings > Article Publisher). Sits above
-   the always-available Paste JSON box in the same tab, not a replacement
-   for it. */
-.twd-ap-ai-generate-box {
-  margin: 0 0 16px;
-  padding: 14px;
-  border: 1px solid var(--twd-ap-input-border);
-  border-radius: 8px;
-  background: rgba(91, 138, 114, 0.05);
+/* Start screen -- only rendered at all when this site has its own
+   Anthropic key (Settings > Article Publisher). Shown instead of the
+   editor when a NEW article is opened; the .twd-ap-start-active class on
+   the overlay is what swaps the two, so none of the editor's own hidden
+   states are touched. Every visual property carries !important for the
+   same reason as the rest of this file (page builder styles win
+   otherwise). */
+.twd-ap-start {
+  display: none !important;
 }
-.twd-ap-modes {
-  display: flex;
-  gap: 8px;
-  margin: 0 0 12px;
+.twd-ap-start-active .twd-ap-start {
+  display: block !important;
 }
-.twd-ap-mode-btn {
-  border: 1px solid var(--twd-ap-input-border);
-  background: #fff;
-  color: var(--twd-ap-muted);
-  padding: 7px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+.twd-ap-start-active .twd-ap-modal-body > *:not(.twd-ap-start):not(.twd-ap-status) {
+  display: none !important;
 }
-.twd-ap-mode-btn.twd-ap-mode-btn-active {
-  background: var(--twd-ap-primary);
-  border-color: var(--twd-ap-primary);
-  color: #fff;
+.twd-ap-start-active .twd-ap-modal-footer {
+  display: none !important;
 }
-.twd-ap-ai-generate-box .twd-ap-html-editor {
-  border-radius: 8px;
+.twd-ap-start-heading {
+  display: block !important;
+  margin: 0 0 10px !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  color: var(--twd-ap-text) !important;
+}
+.twd-ap-start-input {
+  display: block !important;
+  width: 100% !important;
+  min-height: 220px !important;
+  padding: 14px !important;
+  border: 1px solid var(--twd-ap-input-border) !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: var(--twd-ap-text) !important;
+  font-family: inherit !important;
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
+  resize: vertical !important;
+}
+.twd-ap-start-input:focus {
+  outline: none !important;
+  border-color: var(--twd-ap-primary) !important;
+  box-shadow: none !important;
+}
+@media (max-width: 600px) {
+  .twd-ap-start-input {
+    min-height: 150px !important;
+    height: 150px !important;
+  }
+}
+.twd-ap-start-count {
+  margin: 6px 0 0 !important;
+  min-height: 16px !important;
+  font-size: 12px !important;
+  color: var(--twd-ap-muted) !important;
+}
+.twd-ap-start-count.twd-ap-start-count-over {
+  color: var(--twd-ap-danger) !important;
+  font-weight: 600 !important;
+}
+.twd-ap-start-modes {
+  margin: 14px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  min-width: 0 !important;
+}
+.twd-ap-start-legend {
+  padding: 0 !important;
+  margin: 0 0 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--twd-ap-text) !important;
+}
+.twd-ap-start-mode {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  margin: 0 0 8px !important;
+  padding: 10px 12px !important;
+  border: 1px solid var(--twd-ap-border) !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  cursor: pointer !important;
+}
+.twd-ap-start-mode:has(input:checked) {
+  border-color: var(--twd-ap-primary) !important;
+  background: rgba(91, 138, 114, 0.07) !important;
+}
+.twd-ap-start-mode input {
+  margin: 3px 0 0 !important;
+  accent-color: var(--twd-ap-primary);
+  flex: 0 0 auto !important;
+}
+.twd-ap-start-mode-text strong {
+  display: block !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--twd-ap-text) !important;
+}
+.twd-ap-start-mode-text em {
+  display: block !important;
+  font-size: 12px !important;
+  font-style: normal !important;
+  color: var(--twd-ap-muted) !important;
+}
+.twd-ap-start-note {
+  margin: 12px 0 !important;
+  font-size: 12px !important;
+  color: var(--twd-ap-muted) !important;
+}
+.twd-ap-start-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.twd-ap-start-left {
+  font-size: 12px !important;
+  color: var(--twd-ap-muted) !important;
+}
+.twd-ap-start-skip {
+  margin-left: auto !important;
+  padding: 4px !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: var(--twd-ap-primary-dark) !important;
+  font-size: 13px !important;
+  text-decoration: underline !important;
+  text-transform: none !important;
+  cursor: pointer !important;
+}
+.twd-ap-start-skip:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+.twd-ap-original-bar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 0 14px !important;
+  padding: 10px 14px !important;
+  border-radius: 8px !important;
+  background: #eef4ee !important;
+  color: var(--twd-ap-primary-dark) !important;
+  font-size: 14px !important;
+}
+.twd-ap-original-bar[hidden] {
+  display: none !important;
+}
+.twd-ap-original-toggle {
+  padding: 6px 14px !important;
+  border: 1px solid var(--twd-ap-primary) !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  color: var(--twd-ap-primary-dark) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  cursor: pointer !important;
 }
 
 .twd-ap-html-editor {

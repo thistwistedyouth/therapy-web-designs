@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.35.0
+Stable tag: 1.36.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,18 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.36.0): on sites with their own Anthropic key, a new article
+now starts with one box: write, dictate or paste an idea, a rough draft
+or a finished article, choose which it is (Article idea, Draft article
+improve, Finished article only format) and click Generate. The editor
+then opens with everything filled in. After a draft or finished
+article, a button swaps between your own text and the AI version, both
+ways. Shows how many generations are left today, warns before a very
+long text instead of silently cutting it, and gives long articles more
+room in the reply. "Write it myself instead" skips the box. Also fixes
+the "Delete this article" button showing on brand-new articles. Sites
+without a key are unchanged.
 
 NEW (1.35.0): an Elementor converter for administrators, off unless
 ticked in Settings > Article Publisher. Tools > Convert Elementor

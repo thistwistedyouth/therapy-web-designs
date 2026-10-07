@@ -17,8 +17,12 @@
 		summaryBookHasDraft: false,
 		summaryBookIsPublished: false,
 		articleStatus: '',
-		aiMode: 'idea',
 		aiGenerating: false,
+		aiRemaining: parseInt(TWD_AP.aiRemaining, 10) || 0,
+		// Set after an 'improve' or 'format' run so the body can be swapped
+		// between the AI version and the therapist's own text, both ways,
+		// without losing either.
+		swap: null,
 	};
 	var RELATED_MAX = 6;
 	var SUMMARY_BOOK_TYPES = ['text', 'quote', 'question'];
@@ -65,10 +69,15 @@
 		els.jsonPanel = document.getElementById('twd-ap-json-panel');
 		els.jsonInput = document.getElementById('twd-ap-json-input');
 		els.jsonFillBtn = document.getElementById('twd-ap-json-fill-btn');
-		els.aiModeIdea = document.getElementById('twd-ap-ai-mode-idea');
-		els.aiModeFormat = document.getElementById('twd-ap-ai-mode-format');
-		els.aiInput = document.getElementById('twd-ap-ai-input');
-		els.aiGenerateBtn = document.getElementById('twd-ap-ai-generate-btn');
+		els.start = document.getElementById('twd-ap-start');
+		els.startInput = document.getElementById('twd-ap-start-input');
+		els.startCount = document.getElementById('twd-ap-start-count');
+		els.startGenerate = document.getElementById('twd-ap-start-generate');
+		els.startLeft = document.getElementById('twd-ap-start-left');
+		els.startSkip = document.getElementById('twd-ap-start-skip');
+		els.originalBar = document.getElementById('twd-ap-original-bar');
+		els.originalText = document.getElementById('twd-ap-original-text');
+		els.originalToggle = document.getElementById('twd-ap-original-toggle');
 		els.toolbar = document.getElementById('twd-ap-toolbar');
 		els.visualEditor = document.getElementById('twd-ap-visual-editor');
 		els.htmlEditor = document.getElementById('twd-ap-html-editor');
@@ -185,14 +194,20 @@
 		});
 		els.jsonFillBtn.addEventListener('click', fillFromJson);
 
-		if (els.aiGenerateBtn) {
-			els.aiModeIdea.addEventListener('click', function () {
-				setAiMode('idea');
+		if (els.start) {
+			els.startGenerate.addEventListener('click', generateOnSite);
+			els.startSkip.addEventListener('click', skipStart);
+			els.originalToggle.addEventListener('click', toggleOriginal);
+			els.startInput.addEventListener('input', function () {
+				state.dirty = els.startInput.value.trim() !== '';
+				updateStartCount();
 			});
-			els.aiModeFormat.addEventListener('click', function () {
-				setAiMode('format');
+			els.startInput.addEventListener('keydown', function (e) {
+				if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+					e.preventDefault();
+					generateOnSite();
+				}
 			});
-			els.aiGenerateBtn.addEventListener('click', generateOnSite);
 		}
 
 		els.toolbar.addEventListener('click', function (e) {
@@ -915,30 +930,168 @@
 		}
 	}
 
-	function setAiMode(mode) {
-		state.aiMode = mode;
-		els.aiModeIdea.classList.toggle('twd-ap-mode-btn-active', 'idea' === mode);
-		els.aiModeFormat.classList.toggle('twd-ap-mode-btn-active', 'format' === mode);
-		els.aiInput.placeholder = 'format' === mode
-			? 'Paste the article you have already written...'
-			: 'e.g. Why rest can feel unproductive';
+	// ---- Start screen (only when this site has its own AI key) ----------
+
+	function getStartMode() {
+		var checked = els.start ? els.start.querySelector('input[name="twd-ap-start-mode"]:checked') : null;
+		return checked ? checked.value : 'idea';
+	}
+
+	function setStartMode(mode) {
+		var radios = els.start.querySelectorAll('input[name="twd-ap-start-mode"]');
+		for (var i = 0; i < radios.length; i++) {
+			radios[i].checked = radios[i].value === mode;
+		}
+	}
+
+	function formatNumber(n) {
+		return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+	}
+
+	function updateStartCount() {
+		var max = parseInt(TWD_AP.aiMaxChars, 10) || 20000;
+		var len = els.startInput.value.length;
+		var over = len > max;
+		els.startCount.textContent = 0 === len ? '' : formatNumber(len) + ' of ' + formatNumber(max) + ' characters' + (over ? '. Too long: please shorten it or split it into two articles.' : '');
+		els.startCount.classList.toggle('twd-ap-start-count-over', over);
+		refreshStartGenerate();
+	}
+
+	function updateStartRemaining() {
+		var limit = parseInt(TWD_AP.aiLimit, 10) || 0;
+		if (limit > 0) {
+			els.startLeft.textContent = state.aiRemaining > 0
+				? state.aiRemaining + ' of ' + limit + ' left today'
+				: 'You have used today\'s ' + limit + '. You can still write it yourself.';
+		}
+		refreshStartGenerate();
+	}
+
+	function refreshStartGenerate() {
+		var max = parseInt(TWD_AP.aiMaxChars, 10) || 20000;
+		var tooLong = els.startInput.value.length > max;
+		els.startGenerate.disabled = state.aiGenerating || tooLong || state.aiRemaining <= 0;
+	}
+
+	function showStart(on) {
+		if (!els.start) {
+			return;
+		}
+		els.overlay.classList.toggle('twd-ap-start-active', !!on);
+		if (on) {
+			els.startInput.value = '';
+			setStartMode('idea');
+			updateStartCount();
+			updateStartRemaining();
+		}
+	}
+
+	function clearOriginalBar() {
+		state.swap = null;
+		if (els.originalBar) {
+			els.originalBar.hidden = true;
+		}
+	}
+
+	function looksLikeHtml(text) {
+		return /<\/?(p|h[1-6]|ul|ol|li|div|br|strong|em|a|blockquote)\b/i.test(text);
+	}
+
+	function textToHtml(text) {
+		if (looksLikeHtml(text)) {
+			return text;
+		}
+		var blocks = text.replace(/\r\n?/g, '\n').split(/\n{2,}/);
+		var out = [];
+		for (var i = 0; i < blocks.length; i++) {
+			var b = blocks[i].trim();
+			if (b) {
+				out.push('<p>' + escapeHtml(b).replace(/\n/g, '<br>') + '</p>');
+			}
+		}
+		return out.join('\n');
+	}
+
+	function currentBodyHtml() {
+		return state.activeTab === 'html' ? els.htmlEditor.value : els.visualEditor.innerHTML.trim();
+	}
+
+	function setBodyHtml(html) {
+		els.visualEditor.innerHTML = html;
+		els.htmlEditor.value = html;
+	}
+
+	function refreshOriginalBar() {
+		if (!state.swap) {
+			els.originalBar.hidden = true;
+			return;
+		}
+		var label = 'improve' === state.swap.mode ? 'improved version' : 'formatted version';
+		if ('ai' === state.swap.showing) {
+			els.originalText.textContent = 'Showing the ' + label + ' of your text. Title, summary and tags were also filled in.';
+			els.originalToggle.textContent = 'Use my original text instead';
+		} else {
+			els.originalText.textContent = 'Showing your original text.';
+			els.originalToggle.textContent = 'Use the ' + label;
+		}
+		els.originalBar.hidden = false;
+	}
+
+	function toggleOriginal() {
+		if (!state.swap) {
+			return;
+		}
+		// Whatever is in the editor now is saved first, so edits made to
+		// either version survive going back and forth.
+		state.swap[state.swap.showing] = currentBodyHtml();
+		state.swap.showing = 'ai' === state.swap.showing ? 'original' : 'ai';
+		setBodyHtml(state.swap[state.swap.showing]);
+		markDirty();
+		refreshOriginalBar();
+	}
+
+	// "Write it myself instead": whatever was already typed carries into
+	// the editor, so it is never silently thrown away.
+	function skipStart() {
+		var text = els.startInput.value.trim();
+		showStart(false);
+		switchTabImmediate('visual');
+		if (text) {
+			setBodyHtml(textToHtml(text));
+			markDirty();
+		}
+		els.title.focus();
 	}
 
 	function generateOnSite() {
-		if (state.aiGenerating) {
+		if (state.aiGenerating || !els.start) {
 			return;
 		}
-		var text = els.aiInput.value.trim();
+		var mode = getStartMode();
+		var text = els.startInput.value.trim();
+		var max = parseInt(TWD_AP.aiMaxChars, 10) || 20000;
 		if (!text) {
-			showStatus('format' === state.aiMode ? 'Please paste your article text first.' : 'Please add an idea or topic first.', false);
+			showStatus('idea' === mode ? 'Please add an idea or topic first.' : 'Please add your article text first.', false);
+			return;
+		}
+		if (text.length > max) {
+			showStatus('That is too long. Please shorten it or split it into two articles.', false);
 			return;
 		}
 
 		state.aiGenerating = true;
-		els.aiGenerateBtn.disabled = true;
-		var original = els.aiGenerateBtn.textContent;
-		els.aiGenerateBtn.textContent = 'Generating… this can take up to a minute';
+		var original = els.startGenerate.textContent;
+		els.startGenerate.textContent = 'Generating… this can take up to a minute';
+		els.startSkip.disabled = true;
+		refreshStartGenerate();
 		hideStatus();
+
+		function finish() {
+			state.aiGenerating = false;
+			els.startGenerate.textContent = original;
+			els.startSkip.disabled = false;
+			refreshStartGenerate();
+		}
 
 		fetch(TWD_AP.restUrl + '/generate', {
 			method: 'POST',
@@ -946,7 +1099,7 @@
 				'Content-Type': 'application/json',
 				'X-WP-Nonce': TWD_AP.nonce,
 			},
-			body: JSON.stringify({ mode: state.aiMode, input: text }),
+			body: JSON.stringify({ mode: mode, input: text }),
 		})
 			.then(function (r) {
 				return r.json().then(function (d) {
@@ -954,21 +1107,30 @@
 				});
 			})
 			.then(function (result) {
-				state.aiGenerating = false;
-				els.aiGenerateBtn.disabled = false;
-				els.aiGenerateBtn.textContent = original;
+				finish();
 				if (!result.ok) {
+					// The therapist's text stays exactly where it is.
 					showStatus((result.data && result.data.message) ? result.data.message : 'Something went wrong. Please try again.', false);
 					return;
 				}
+				if (typeof result.data.ai_remaining === 'number') {
+					state.aiRemaining = result.data.ai_remaining;
+				}
+				showStart(false);
 				applyGeneratedData(result.data, 'Article generated. Review it below before saving.');
-				els.aiInput.value = '';
+				if ('idea' !== mode) {
+					state.swap = {
+						mode: mode,
+						showing: 'ai',
+						ai: currentBodyHtml(),
+						original: textToHtml(text),
+					};
+					refreshOriginalBar();
+				}
 			})
 			.catch(function () {
-				state.aiGenerating = false;
-				els.aiGenerateBtn.disabled = false;
-				els.aiGenerateBtn.textContent = original;
-				showStatus('Something went wrong. Please try again.', false);
+				finish();
+				showStatus('Something went wrong. Please try again. Your text is still here.', false);
 			});
 	}
 
@@ -1089,6 +1251,7 @@
 		els.visualEditor.innerHTML = '';
 		els.htmlEditor.value = '';
 		els.jsonInput.value = '';
+		clearOriginalBar();
 		els.excerpt.value = '';
 		els.tags.value = '';
 		els.catAddInput.value = '';
@@ -1155,8 +1318,10 @@
 				els.adminEditLink.hidden = false;
 			}
 			els.deleteBtn.hidden = false;
+			showStart(false);
 		} else {
 			state.editingId = null;
+			showStart(true);
 			els.modalSubtitle.textContent = 'New article';
 			els.publishBtn.textContent = 'Publish';
 			els.draftBtn.textContent = 'Save Draft';
@@ -1169,7 +1334,11 @@
 		document.documentElement.style.overflow = 'hidden';
 		document.body.style.overflow = 'hidden';
 		setTimeout(function () {
-			els.title.focus();
+			if (els.start && mode !== 'edit') {
+				els.startInput.focus();
+			} else {
+				els.title.focus();
+			}
 		}, 50);
 	}
 

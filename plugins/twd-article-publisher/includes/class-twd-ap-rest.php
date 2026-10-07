@@ -211,14 +211,30 @@ class TWD_AP_REST {
 			return new WP_Error( 'twd_ap_ai_rate_limited', __( 'You have reached today\'s generation limit on this site. Try again tomorrow.', 'twd-article-publisher' ), array( 'status' => 429 ) );
 		}
 
-		$mode  = ( isset( $request['mode'] ) && 'format' === $request['mode'] ) ? 'format' : 'idea';
+		$mode  = ( isset( $request['mode'] ) && in_array( $request['mode'], array( 'idea', 'improve', 'format' ), true ) ) ? $request['mode'] : 'idea';
 		$input = isset( $request['input'] ) ? trim( sanitize_textarea_field( wp_unslash( $request['input'] ) ) ) : '';
-		$input = function_exists( 'mb_substr' ) ? mb_substr( $input, 0, 20000 ) : substr( $input, 0, 20000 );
 
 		if ( '' === $input ) {
 			return new WP_Error(
 				'twd_ap_ai_empty_input',
-				'format' === $mode ? __( 'Please paste your article text first.', 'twd-article-publisher' ) : __( 'Please add an idea or topic first.', 'twd-article-publisher' ),
+				'idea' === $mode ? __( 'Please add an idea or topic first.', 'twd-article-publisher' ) : __( 'Please add your article text first.', 'twd-article-publisher' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Too long is refused, never silently cut: cutting the end off a
+		// finished article would format only the first part and look like
+		// it had worked.
+		$length = function_exists( 'mb_strlen' ) ? mb_strlen( $input ) : strlen( $input );
+		if ( $length > TWD_AP_AI_Generate::MAX_INPUT_CHARS ) {
+			return new WP_Error(
+				'twd_ap_ai_too_long',
+				sprintf(
+					/* translators: 1: characters entered, 2: maximum characters allowed */
+					__( 'That is too long (%1$s characters). The limit is %2$s. Please shorten it or split it into two articles.', 'twd-article-publisher' ),
+					number_format_i18n( $length ),
+					number_format_i18n( TWD_AP_AI_Generate::MAX_INPUT_CHARS )
+				),
 				array( 'status' => 400 )
 			);
 		}
@@ -229,6 +245,7 @@ class TWD_AP_REST {
 		}
 
 		TWD_AP_AI_Generate::increment();
+		$result['ai_remaining'] = TWD_AP_AI_Generate::remaining();
 
 		return rest_ensure_response( $result );
 	}

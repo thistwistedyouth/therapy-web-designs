@@ -102,6 +102,9 @@ class TWD_AP_Frontend {
 				'canEditThis'   => $this->should_show_edit_button() ? 1 : 0,
 				'adminEditUrl'  => $this->should_show_edit_button() ? get_edit_post_link( get_the_ID(), '' ) : '',
 				'aiKeyConfigured' => class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ? 1 : 0,
+				'aiLimit'         => class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::RATE_LIMIT : 0,
+				'aiRemaining'     => ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) ? TWD_AP_AI_Generate::remaining() : 0,
+				'aiMaxChars'      => class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::MAX_INPUT_CHARS : 0,
 				'i18n'          => array(
 					'saving'       => __( 'Saving…', 'twd-article-publisher' ),
 					'error'        => __( 'Something went wrong. Please try again.', 'twd-article-publisher' ),

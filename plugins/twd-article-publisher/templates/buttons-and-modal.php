@@ -48,6 +48,43 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="twd-ap-modal-body">
 			<p id="twd-ap-status" class="twd-ap-status" hidden></p>
 
+			<?php if ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) : ?>
+				<div id="twd-ap-start" class="twd-ap-start">
+					<label class="twd-ap-start-heading" for="twd-ap-start-input"><?php esc_html_e( 'Write, dictate or paste your article ideas or a full article', 'twd-article-publisher' ); ?></label>
+					<textarea id="twd-ap-start-input" class="twd-ap-start-input" rows="10" placeholder="<?php esc_attr_e( 'Type, use your device\'s dictation, or paste here...', 'twd-article-publisher' ); ?>"></textarea>
+					<p class="twd-ap-start-count" id="twd-ap-start-count" aria-live="polite"></p>
+
+					<fieldset class="twd-ap-start-modes">
+						<legend class="twd-ap-start-legend"><?php esc_html_e( 'What have you given me?', 'twd-article-publisher' ); ?></legend>
+						<label class="twd-ap-start-mode">
+							<input type="radio" name="twd-ap-start-mode" value="idea" checked />
+							<span class="twd-ap-start-mode-text"><strong><?php esc_html_e( 'Article idea', 'twd-article-publisher' ); ?></strong><em><?php esc_html_e( 'Write a full article from my idea', 'twd-article-publisher' ); ?></em></span>
+						</label>
+						<label class="twd-ap-start-mode">
+							<input type="radio" name="twd-ap-start-mode" value="improve" />
+							<span class="twd-ap-start-mode-text"><strong><?php esc_html_e( 'Draft article, improve', 'twd-article-publisher' ); ?></strong><em><?php esc_html_e( 'Keep my voice and meaning, tidy and improve it', 'twd-article-publisher' ); ?></em></span>
+						</label>
+						<label class="twd-ap-start-mode">
+							<input type="radio" name="twd-ap-start-mode" value="format" />
+							<span class="twd-ap-start-mode-text"><strong><?php esc_html_e( 'Finished article, only format', 'twd-article-publisher' ); ?></strong><em><?php esc_html_e( 'Keep my words exactly, only add structure and the details', 'twd-article-publisher' ); ?></em></span>
+						</label>
+					</fieldset>
+
+					<p class="twd-ap-start-note"><?php esc_html_e( 'Your text is sent to an AI service to do this. Leave out client names and details.', 'twd-article-publisher' ); ?></p>
+
+					<div class="twd-ap-start-actions">
+						<button type="button" id="twd-ap-start-generate" class="twd-ap-btn-primary"><?php esc_html_e( 'Generate', 'twd-article-publisher' ); ?></button>
+						<span id="twd-ap-start-left" class="twd-ap-start-left" aria-live="polite"></span>
+						<button type="button" id="twd-ap-start-skip" class="twd-ap-start-skip"><?php esc_html_e( 'Write it myself instead', 'twd-article-publisher' ); ?></button>
+					</div>
+				</div>
+
+				<div id="twd-ap-original-bar" class="twd-ap-original-bar" hidden>
+					<span id="twd-ap-original-text" class="twd-ap-original-text"></span>
+					<button type="button" id="twd-ap-original-toggle" class="twd-ap-original-toggle"></button>
+				</div>
+			<?php endif; ?>
+
 			<div id="twd-ap-title-wrap">
 				<label class="twd-ap-label" for="twd-ap-title"><?php esc_html_e( 'Title', 'twd-article-publisher' ); ?></label>
 				<input type="text" id="twd-ap-title" class="twd-ap-input" placeholder="<?php esc_attr_e( 'Article title', 'twd-article-publisher' ); ?>" />
@@ -57,7 +94,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="twd-ap-editor-tabs">
 				<button type="button" id="twd-ap-tab-visual" class="twd-ap-tab twd-ap-tab-active" data-tab="visual"><?php esc_html_e( 'Visual', 'twd-article-publisher' ); ?></button>
 				<button type="button" id="twd-ap-tab-html" class="twd-ap-tab" data-tab="html"><?php esc_html_e( 'HTML', 'twd-article-publisher' ); ?></button>
-				<button type="button" id="twd-ap-tab-json" class="twd-ap-tab" data-tab="json"><?php echo ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) ? esc_html__( 'Generate / Paste JSON', 'twd-article-publisher' ) : esc_html__( 'Paste JSON', 'twd-article-publisher' ); ?></button>
+				<button type="button" id="twd-ap-tab-json" class="twd-ap-tab" data-tab="json"><?php esc_html_e( 'Paste JSON', 'twd-article-publisher' ); ?></button>
 			</div>
 
 			<div id="twd-ap-toolbar" class="twd-ap-toolbar">
@@ -77,21 +114,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div id="twd-ap-visual-editor" class="twd-ap-visual-editor" contenteditable="true" data-placeholder="<?php esc_attr_e( 'Write, or paste AI-formatted HTML using the HTML tab above', 'twd-article-publisher' ); ?>"></div>
 			<textarea id="twd-ap-html-editor" class="twd-ap-html-editor" hidden placeholder="<?php esc_attr_e( 'Paste formatted HTML here', 'twd-article-publisher' ); ?>"></textarea>
 			<div id="twd-ap-json-panel" class="twd-ap-json-panel" hidden>
-				<?php if ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) : ?>
-					<div id="twd-ap-ai-generate-box" class="twd-ap-ai-generate-box">
-						<div class="twd-ap-modes" role="tablist">
-							<button type="button" class="twd-ap-mode-btn twd-ap-mode-btn-active" id="twd-ap-ai-mode-idea" data-mode="idea"><?php esc_html_e( 'Write from an idea', 'twd-article-publisher' ); ?></button>
-							<button type="button" class="twd-ap-mode-btn" id="twd-ap-ai-mode-format" data-mode="format"><?php esc_html_e( 'Format existing text', 'twd-article-publisher' ); ?></button>
-						</div>
-						<textarea id="twd-ap-ai-input" class="twd-ap-html-editor" rows="6" placeholder="<?php esc_attr_e( 'e.g. Why rest can feel unproductive', 'twd-article-publisher' ); ?>"></textarea>
-						<div class="twd-ap-btn-row twd-ap-spaced">
-							<button type="button" id="twd-ap-ai-generate-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Generate', 'twd-article-publisher' ); ?></button>
-						</div>
-					</div>
-					<p class="twd-ap-muted twd-ap-spaced"><?php esc_html_e( 'Or paste a JSON block below, for example from Article Assist, if you already have one.', 'twd-article-publisher' ); ?></p>
-				<?php else : ?>
-					<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (the button above, or anywhere producing the same shape). Fill fields from it below to bring in the title, excerpt, SEO fields, category, tags and content in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
-				<?php endif; ?>
+				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (the button above, or anywhere producing the same shape). Fill fields from it below to bring in the title, excerpt, SEO fields, category, tags and content in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
 				<textarea id="twd-ap-json-input" class="twd-ap-html-editor" rows="8" placeholder='{"title": "...", "seo_title": "...", "meta_description": "...", "category": "...", "tags": "...", "html": "..."}'></textarea>
 				<div class="twd-ap-btn-row twd-ap-spaced">
 					<button type="button" id="twd-ap-json-fill-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Fill fields from JSON', 'twd-article-publisher' ); ?></button>
@@ -184,6 +207,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<p class="twd-ap-section-heading"><?php esc_html_e( 'Writing an article', 'twd-article-publisher' ); ?></p>
 			<ul class="twd-ap-help-list">
+				<?php if ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) : ?>
+					<li><?php esc_html_e( 'A new article starts with one box: write, dictate or paste your idea, a rough draft or a finished article, choose which it is, and click Generate. The editor then opens with the title, summary, tags and article filled in. After a draft or finished article, a button lets you swap back to your own text and forward again. Click "Write it myself instead" to skip this.', 'twd-article-publisher' ); ?></li>
+				<?php endif; ?>
 				<li><?php esc_html_e( 'Write directly in the Visual tab, or write with an AI assistant and paste the HTML into the HTML tab (see the AI prompt below).', 'twd-article-publisher' ); ?></li>
 				<li><?php esc_html_e( 'Use the toolbar for headings, bold/italic, lists and quotes. Only H2/H3/H4 are available; any H1 you paste in is automatically changed to H2 so it never clashes with the page\'s own title.', 'twd-article-publisher' ); ?></li>
 				<li><?php esc_html_e( 'Click the Image button to insert a photo inline from your Media Library or by uploading a new one.', 'twd-article-publisher' ); ?></li>

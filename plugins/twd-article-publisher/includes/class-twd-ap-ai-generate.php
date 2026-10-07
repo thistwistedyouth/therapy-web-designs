@@ -25,10 +25,18 @@ class TWD_AP_AI_Generate {
 	const MODEL      = 'claude-sonnet-5-5';
 	const MAX_TOKENS = 5000;
 
-	// Bounds for the twd_ai_complete filter only. generate() always uses
-	// MAX_TOKENS above.
+	// Bounds for the twd_ai_complete filter only.
 	const COMPLETE_MIN_TOKENS = 256;
 	const COMPLETE_MAX_TOKENS = 8000;
+
+	// 'improve' and 'format' hand back a whole existing article (plus the
+	// SEO fields and summary book draft), so they get a larger reply
+	// allowance than 'idea', which writes 600 to 900 words.
+	const LONG_MODE_TOKENS = 8000;
+
+	// The most text accepted in the start screen box. Longer is refused
+	// with a clear message, never silently cut.
+	const MAX_INPUT_CHARS = 20000;
 
 	// A safety backstop, not a real constraint -- this runs on the client's
 	// own key and their own bill, so there is no cost reason to limit it
@@ -122,6 +130,10 @@ class TWD_AP_AI_Generate {
 		return (int) get_transient( self::rate_key() );
 	}
 
+	public static function remaining() {
+		return max( 0, self::RATE_LIMIT - self::count() );
+	}
+
 	public static function increment() {
 		$key = self::rate_key();
 		$n   = (int) get_transient( $key );
@@ -212,6 +224,29 @@ a session. Length: 600 to 900 words.
 PROMPT . self::shared_rules( $category_names );
 	}
 
+	/**
+	 * Draft article, improve. Has no counterpart in Article Assist (which
+	 * only writes from an idea or formats), so it is the one prompt in this
+	 * file that is not kept in step with that tool.
+	 */
+	private static function system_prompt_improve( $category_names ) {
+		return <<<PROMPT
+You are given a draft article a therapist has written themselves, in
+their own words and voice. Improve it without changing what they mean or
+who they sound like. Tighten and clarify sentences, fix grammar,
+spelling and punctuation, smooth the flow between paragraphs, remove
+repetition, and add clear subheadings and short paragraphs where the
+structure needs them. Keep their meaning, their examples, their warmth
+and their own spelling conventions. Do not add facts, claims,
+statistics, examples, advice or anecdotes of your own, and do not make
+the piece longer than it needs to be. If the draft is only rough notes,
+turn them into a clear article using only what the notes say. If a
+title isn't obviously present in the text, suggest one that reflects
+what is actually there.
+
+PROMPT . self::shared_rules( $category_names );
+	}
+
 	private static function system_prompt_format( $category_names ) {
 		return <<<PROMPT
 You are given an article a therapist has already written themselves, in
@@ -226,8 +261,8 @@ PROMPT . self::shared_rules( $category_names );
 	}
 
 	/**
-	 * $mode is 'idea' or 'format', $input is the therapist's own text
-	 * either way. Returns the same array shape the REST layer hands
+	 * $mode is 'idea', 'improve' or 'format' (anything else is treated as
+	 * 'idea'), $input is the therapist's own text in every case. Returns the same array shape the REST layer hands
 	 * straight back to the popup (title/seo_title/meta_description/
 	 * category/tags/html/summary_book), already sanitised through
 	 * TWD_AP_Sanitizer and TWD_AP_Summary_Book::sanitize_cards() -- or a
@@ -240,15 +275,20 @@ PROMPT . self::shared_rules( $category_names );
 		}
 
 		$categories = self::category_names();
+		$tokens     = self::LONG_MODE_TOKENS;
 		if ( 'format' === $mode ) {
 			$system  = self::system_prompt_format( $categories );
 			$message = "Here is the article text to restructure and tag:\n\n" . $input;
+		} elseif ( 'improve' === $mode ) {
+			$system  = self::system_prompt_improve( $categories );
+			$message = "Here is the draft article to improve and tag:\n\n" . $input;
 		} else {
 			$system  = self::system_prompt_idea( $categories );
 			$message = "The idea or topic to write about:\n\n" . $input;
+			$tokens  = self::MAX_TOKENS;
 		}
 
-		$reply = self::call_anthropic( $key, $system, $message );
+		$reply = self::call_anthropic( $key, $system, $message, $tokens );
 		if ( is_wp_error( $reply ) ) {
 			return $reply;
 		}
