@@ -42,7 +42,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<?php endif; ?>
 				<button type="button" id="twd-ap-help-btn" class="twd-ap-help-icon-btn" aria-label="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Instructions for use', 'twd-article-publisher' ); ?>">?</button>
 			</div>
-			<button type="button" id="twd-ap-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
+			<button type="button" id="twd-ap-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
 		</div>
 
 		<div class="twd-ap-modal-body">
@@ -50,25 +50,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<?php if ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) : ?>
 				<div id="twd-ap-start" class="twd-ap-start">
+					<div class="twd-ap-start-row" role="radiogroup" aria-labelledby="twd-ap-start-legend">
+						<span id="twd-ap-start-legend" class="twd-ap-start-legend"><?php esc_html_e( 'What have you given me?', 'twd-article-publisher' ); ?></span>
+						<label class="twd-ap-start-mode">
+							<input type="radio" name="twd-ap-start-mode" value="idea" checked data-hint="<?php esc_attr_e( 'Write a full article from my idea', 'twd-article-publisher' ); ?>" />
+							<span><?php esc_html_e( 'Article idea', 'twd-article-publisher' ); ?></span>
+						</label>
+						<label class="twd-ap-start-mode">
+							<input type="radio" name="twd-ap-start-mode" value="improve" data-hint="<?php esc_attr_e( 'Keep my voice and meaning, tidy and improve it', 'twd-article-publisher' ); ?>" />
+							<span><?php esc_html_e( 'Draft article, improve', 'twd-article-publisher' ); ?></span>
+						</label>
+						<label class="twd-ap-start-mode">
+							<input type="radio" name="twd-ap-start-mode" value="format" data-hint="<?php esc_attr_e( 'Keep my words exactly, only add structure and the details', 'twd-article-publisher' ); ?>" />
+							<span><?php esc_html_e( 'Finished article, only format', 'twd-article-publisher' ); ?></span>
+						</label>
+					</div>
+					<p id="twd-ap-start-hint" class="twd-ap-start-hint"><?php esc_html_e( 'Write a full article from my idea', 'twd-article-publisher' ); ?></p>
+
 					<label class="twd-ap-start-heading" for="twd-ap-start-input"><?php esc_html_e( 'Write, dictate or paste your article ideas or a full article', 'twd-article-publisher' ); ?></label>
-					<textarea id="twd-ap-start-input" class="twd-ap-start-input" rows="10" placeholder="<?php esc_attr_e( 'Type, use your device\'s dictation, or paste here...', 'twd-article-publisher' ); ?>"></textarea>
+					<textarea id="twd-ap-start-input" class="twd-ap-start-input" rows="8" placeholder="<?php esc_attr_e( 'Type, use your device\'s dictation, or paste here...', 'twd-article-publisher' ); ?>"></textarea>
 					<p class="twd-ap-start-count" id="twd-ap-start-count" aria-live="polite"></p>
 
-					<fieldset class="twd-ap-start-modes">
-						<legend class="twd-ap-start-legend"><?php esc_html_e( 'What have you given me?', 'twd-article-publisher' ); ?></legend>
-						<label class="twd-ap-start-mode">
-							<input type="radio" name="twd-ap-start-mode" value="idea" checked />
-							<span class="twd-ap-start-mode-text"><strong><?php esc_html_e( 'Article idea', 'twd-article-publisher' ); ?></strong><em><?php esc_html_e( 'Write a full article from my idea', 'twd-article-publisher' ); ?></em></span>
-						</label>
-						<label class="twd-ap-start-mode">
-							<input type="radio" name="twd-ap-start-mode" value="improve" />
-							<span class="twd-ap-start-mode-text"><strong><?php esc_html_e( 'Draft article, improve', 'twd-article-publisher' ); ?></strong><em><?php esc_html_e( 'Keep my voice and meaning, tidy and improve it', 'twd-article-publisher' ); ?></em></span>
-						</label>
-						<label class="twd-ap-start-mode">
-							<input type="radio" name="twd-ap-start-mode" value="format" />
-							<span class="twd-ap-start-mode-text"><strong><?php esc_html_e( 'Finished article, only format', 'twd-article-publisher' ); ?></strong><em><?php esc_html_e( 'Keep my words exactly, only add structure and the details', 'twd-article-publisher' ); ?></em></span>
-						</label>
-					</fieldset>
+					<label class="twd-ap-start-swipe">
+						<input type="checkbox" id="twd-ap-start-swipebook" checked />
+						<span><strong><?php esc_html_e( 'Also publish as a swipe book', 'twd-article-publisher' ); ?></strong> <em><?php esc_html_e( 'presents the full article, swipe by swipe', 'twd-article-publisher' ); ?></em></span>
+					</label>
 
 					<p class="twd-ap-start-note"><?php esc_html_e( 'Your text is sent to an AI service to do this. Leave out client names and details.', 'twd-article-publisher' ); ?></p>
 
@@ -199,6 +205,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<button type="button" id="twd-ap-draft-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Save Draft', 'twd-article-publisher' ); ?></button>
 			<button type="button" id="twd-ap-publish-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Publish', 'twd-article-publisher' ); ?></button>
 		</div>
+
+		<div id="twd-ap-working" class="twd-ap-working" hidden role="status" aria-live="polite">
+			<div class="twd-ap-working-inner">
+				<div class="twd-ap-working-art" aria-hidden="true">
+					<span class="twd-ap-working-line twd-ap-working-line-1"></span>
+					<span class="twd-ap-working-line twd-ap-working-line-2"></span>
+					<span class="twd-ap-working-line twd-ap-working-line-3"></span>
+					<span class="twd-ap-working-line twd-ap-working-line-4"></span>
+					<svg class="twd-ap-working-pen" viewBox="0 0 24 24" width="30" height="30" focusable="false"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+				</div>
+				<p id="twd-ap-working-title" class="twd-ap-working-title"></p>
+				<p id="twd-ap-working-sub" class="twd-ap-working-sub"></p>
+				<div class="twd-ap-working-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -206,7 +227,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div id="twd-ap-help-modal" class="twd-ap-modal" role="dialog" aria-modal="true" aria-labelledby="twd-ap-help-title">
 		<div class="twd-ap-modal-header">
 			<p id="twd-ap-help-title" class="twd-ap-modal-title"><?php esc_html_e( 'Instructions for use', 'twd-article-publisher' ); ?></p>
-			<button type="button" id="twd-ap-help-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
+			<button type="button" id="twd-ap-help-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
 		</div>
 		<div class="twd-ap-modal-body twd-ap-help-body">
 
@@ -256,7 +277,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<p class="twd-ap-section-heading twd-ap-spaced"><?php esc_html_e( 'Editing an existing article', 'twd-article-publisher' ); ?></p>
 			<ul class="twd-ap-help-list">
-				<li><?php esc_html_e( 'Open any article you can edit and click the small pencil at the top left of the page to change it in this same popup. When you publish or update, the page behind refreshes when the popup closes.', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Open any article you can edit and click the small pencil at the top left of the page to change it in this same popup. When you publish or update, the popup closes and the page behind refreshes by itself.', 'twd-article-publisher' ); ?></li>
 				<li><?php esc_html_e( 'The "Edit in WordPress" link opens the normal WordPress editor for advanced changes. Avoid using Elementor to edit articles published here -- once a post is edited in Elementor, further edits made in this popup may stop appearing on the page.', 'twd-article-publisher' ); ?></li>
 			</ul>
 
@@ -268,7 +289,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div id="twd-ap-summary-book-modal" class="twd-ap-modal" role="dialog" aria-modal="true" aria-labelledby="twd-ap-summary-book-title">
 		<div class="twd-ap-modal-header">
 			<p id="twd-ap-summary-book-title" class="twd-ap-modal-title"><?php esc_html_e( 'Summary Book', 'twd-article-publisher' ); ?></p>
-			<button type="button" id="twd-ap-summary-book-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
+			<button type="button" id="twd-ap-summary-book-close-btn" class="twd-ap-close-btn" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
 		</div>
 		<div class="twd-ap-modal-body">
 			<p id="twd-ap-summary-book-status" class="twd-ap-status" hidden></p>

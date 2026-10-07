@@ -34,12 +34,14 @@ async function open(browser, mode, cfg, viewport) {
 		const url = req.url().replace(REST, '');
 		if (url.startsWith('/generate')) {
 			calls.push({ url, body: JSON.parse(req.postData() || '{}') });
+			if (replies.delay) { await new Promise((r) => setTimeout(r, replies.delay)); }
 			const r = replies.generate || { status: 200, json: {} };
 			return route.fulfill({ status: r.status, contentType: 'application/json', body: JSON.stringify(r.json) });
 		}
 		if (req.method() === 'POST' && /^\/posts(\/\d+)?$/.test(url)) {
 			const body = JSON.parse(req.postData() || '{}');
 			saves.push({ url, body });
+			if (replies.delay) { await new Promise((r) => setTimeout(r, replies.delay)); }
 			if (replies.save) {
 				return route.fulfill({ status: replies.save.status, contentType: 'application/json', body: JSON.stringify(replies.save.json) });
 			}
@@ -73,7 +75,7 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	t('A: start screen shows on New Article', await vis(page, '#twd-ap-start'));
 	t('A: heading text exact', (await page.locator('.twd-ap-start-heading').innerText()).trim() === 'Write, dictate or paste your article ideas or a full article');
 	t('A: one big text box', await vis(page, '#twd-ap-start-input'));
-	t('A: three radios, in order', JSON.stringify(await page.locator('.twd-ap-start-mode strong').allInnerTexts()) === JSON.stringify(['Article idea', 'Draft article, improve', 'Finished article, only format']));
+	t('A: three radios, in order', JSON.stringify((await page.locator('.twd-ap-start-mode span').allInnerTexts()).map((x) => x.trim())) === JSON.stringify(['Article idea', 'Draft article, improve', 'Finished article, only format']));
 	t('A: Article idea is the default', await page.locator('input[value="idea"]').isChecked());
 	t('A: title field hidden', !(await vis(page, '#twd-ap-title')));
 	t('A: editor toolbar hidden', !(await vis(page, '#twd-ap-toolbar')));
@@ -245,50 +247,52 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	t('N: pencil opens the edit popup', await vis(page, '#twd-ap-title') && !(await vis(page, '#twd-ap-start')));
 	await s.ctx.close();
 
-	// ---------- O. page behind refreshes after a publish or update ----------
-	async function reloaded(page, ms) { await page.waitForTimeout(ms || 1300); return (await page.evaluate(() => window.__stay)) !== true; }
+	// ---------- O. publishing closes the popup and refreshes the page behind ----------
+	async function reloaded(page, ms) { await page.waitForTimeout(ms || 1500); return (await page.evaluate(() => window.__stay)) !== true; }
+	async function waitSaves(s, n) { for (let k = 0; k < 60 && s.saves.length < n; k++) { await new Promise((r) => setTimeout(r, 50)); } }
 	async function newThenSkip(page) {
 		await page.evaluate(() => { window.__stay = true; window.confirm = () => true; });
 		await page.click('#twd-ap-new-btn');
 		await page.click('#twd-ap-start-skip');
 		await page.fill('#twd-ap-title', 'My article');
 	}
-	// O1: brand-new Publish keeps the popup open, refreshes when it is closed
+	// O1: a brand-new Publish closes the popup and refreshes by itself
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	await newThenSkip(page);
 	await page.click('#twd-ap-publish-btn');
-	await page.waitForSelector('#twd-ap-status:visible');
+	await waitSaves(s, 1);
 	t('O1: new Publish saved with status publish', s.saves.length === 1 && s.saves[0].body.status === 'publish');
-	t('O1: popup stays open and page not reloaded yet', await vis(page, '#twd-ap-overlay') && !(await reloaded(page, 900)));
-	await page.click('#twd-ap-close-btn');
-	t('O1: closing the popup then refreshes the page behind', await reloaded(page, 1200));
+	t('O1: page behind refreshes without anyone clicking Close', await reloaded(page, 1800));
 	await s.ctx.close();
-	// O2: draft only never refreshes
+	// O2: draft keeps the popup open and never refreshes
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	await newThenSkip(page);
 	await page.click('#twd-ap-draft-btn');
 	await page.waitForSelector('#twd-ap-status:visible');
+	t('O2: draft: popup stays open with a saved message', await vis(page, '#twd-ap-overlay') && (await page.locator('#twd-ap-status').innerText()).includes('Draft saved'));
+	t('O2: draft: working layer is gone again', !(await vis(page, '#twd-ap-working')));
 	await page.click('#twd-ap-close-btn');
 	t('O2: a draft save does not refresh the page', !(await reloaded(page, 1200)));
 	await s.ctx.close();
-	// O3: publish, then save as draft: last save wins, no refresh
+	// O3: draft, then publish: the publish closes and refreshes
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	await newThenSkip(page);
-	await page.click('#twd-ap-publish-btn');
-	await page.waitForFunction(() => /published/i.test(document.getElementById('twd-ap-status').textContent));
 	await page.click('#twd-ap-draft-btn');
-	await page.waitForFunction(() => /Draft saved/i.test(document.getElementById('twd-ap-status').textContent));
-	await page.click('#twd-ap-close-btn');
-	t('O3: publish then draft: no refresh (the page would be unpublished)', !(await reloaded(page, 1200)));
+	await page.waitForSelector('#twd-ap-status:visible');
+	await page.click('#twd-ap-publish-btn');
+	await waitSaves(s, 2);
+	t('O3: draft then publish: second save is a publish to the same article', s.saves[1].body.status === 'publish' && s.saves[1].url === '/posts/9');
+	t('O3: and the page refreshes', await reloaded(page, 1800));
 	await s.ctx.close();
-	// O4: editing an existing article, Update closes the popup and refreshes
+	// O4: editing an existing article: Update closes and refreshes
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	await page.evaluate(() => { window.__stay = true; window.confirm = () => true; });
 	await page.click('#twd-ap-edit-btn');
 	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
 	await page.click('#twd-ap-publish-btn');
-	t('O4: Update sent to the existing article', await page.waitForFunction(() => /published/i.test(document.getElementById('twd-ap-status').textContent)).then(() => s.saves.length === 1 && s.saves[0].url === '/posts/5'));
-	t('O4: Update closes the popup and refreshes the page', await reloaded(page, 1500));
+	await waitSaves(s, 1);
+	t('O4: Update sent to the existing article', s.saves.length === 1 && s.saves[0].url === '/posts/5' && s.saves[0].body.status === 'publish');
+	t('O4: Update closes the popup and refreshes the page the first time', await reloaded(page, 1800));
 	await s.ctx.close();
 	// O5: opening and closing without saving never refreshes
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
@@ -298,32 +302,71 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	await page.click('#twd-ap-close-btn');
 	t('O5: closing without saving does not refresh', !(await reloaded(page, 1000)));
 	await s.ctx.close();
-	// O6: a failed save never refreshes
+	// O6: a failed save keeps the popup open, shows the reason, never refreshes
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	await newThenSkip(page);
 	s.replies.save = { status: 500, json: { message: 'Could not save.' } };
 	await page.click('#twd-ap-publish-btn');
 	await page.waitForFunction(() => /Could not save/.test(document.getElementById('twd-ap-status').textContent));
+	t('O6: failed save: message shown, popup still open, working layer gone', await vis(page, '#twd-ap-overlay') && !(await vis(page, '#twd-ap-working')));
 	await page.click('#twd-ap-close-btn');
 	t('O6: failed save then close: no refresh', !(await reloaded(page, 1000)));
 	await s.ctx.close();
-
-	// ---------- P. swipe book switch ----------
+	// O7: scheduling closes the popup but does not refresh (the article is not public yet)
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	await newThenSkip(page);
-	t('P: new article: swipe book tick is there and ticked by default', await vis(page, '#twd-ap-swipebook-toggle') && await page.locator('#twd-ap-swipebook-toggle').isChecked());
+	await page.check('#twd-ap-schedule-toggle');
+	await page.fill('#twd-ap-schedule-date', '2030-01-01T09:00');
+	await page.click('#twd-ap-publish-btn');
+	await waitSaves(s, 1);
+	await page.waitForTimeout(1500);
+	t('O7: schedule saved as future', s.saves[0].body.status === 'future');
+	t('O7: scheduling closes the popup but does not refresh', !(await vis(page, '#twd-ap-overlay')) && (await page.evaluate(() => window.__stay)) === true);
+	await s.ctx.close();
+
+	// ---------- P. swipe book tick ----------
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await newThenSkip(page);
+	t('P: after skipping, the Details swipe book tick is there and ticked', await vis(page, '#twd-ap-swipebook-toggle') && await page.locator('#twd-ap-swipebook-toggle').isChecked());
 	t('P: label explains it covers the Summary Book too', (await page.locator('label:has(#twd-ap-swipebook-toggle)').innerText()).includes('Summary Book'));
 	await page.click('#twd-ap-publish-btn');
-	await page.waitForSelector('#twd-ap-status:visible');
+	await waitSaves(s, 1);
 	t('P: new article saved with swipebook_enabled true', s.saves[0].body.swipebook_enabled === true);
 	await s.ctx.close();
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	await newThenSkip(page);
 	await page.uncheck('#twd-ap-swipebook-toggle');
 	await page.click('#twd-ap-publish-btn');
-	await page.waitForSelector('#twd-ap-status:visible');
-	t('P: unticked on creation: saved with swipebook_enabled false', s.saves[0].body.swipebook_enabled === false);
+	await waitSaves(s, 1);
+	t('P: unticked in Details: saved with swipebook_enabled false', s.saves[0].body.swipebook_enabled === false);
 	await s.ctx.close();
+	// the start screen's own tick carries through
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-new-btn');
+	await page.uncheck('#twd-ap-start-swipebook');
+	await page.click('#twd-ap-start-skip');
+	t('P: unticked on the start screen, skip: Details tick is unticked too', !(await page.locator('#twd-ap-swipebook-toggle').isChecked()));
+	await s.ctx.close();
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-new-btn');
+	await page.uncheck('#twd-ap-start-swipebook');
+	await page.fill('#twd-ap-start-input', 'An idea');
+	s.replies.generate = GEN();
+	await page.click('#twd-ap-start-generate');
+	await page.waitForSelector('#twd-ap-title:visible');
+	t('P: unticked on the start screen, Generate: Details tick is unticked too', !(await page.locator('#twd-ap-swipebook-toggle').isChecked()));
+	await page.click('#twd-ap-publish-btn');
+	await waitSaves(s, 1);
+	t('P: and the article is saved with swipebook_enabled false', s.saves[0].body.swipebook_enabled === false);
+	await s.ctx.close();
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-new-btn');
+	t('P: start screen tick is ticked by default and says what it does', await page.locator('#twd-ap-start-swipebook').isChecked() && (await page.locator('.twd-ap-start-swipe').innerText()).includes('Also publish as a swipe book') && (await page.locator('.twd-ap-start-swipe').innerText()).includes('presents the full article'));
+	await s.ctx.close();
+	// edit page
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	s.replies.post = { swipebook_enabled: false };
 	await page.evaluate(() => { window.confirm = () => true; });
@@ -337,7 +380,7 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	t('P: unticking hides it again', !(await vis(page, '#twd-ap-swipebook-link')));
 	await page.check('#twd-ap-swipebook-toggle');
 	await page.click('#twd-ap-publish-btn');
-	await page.waitForFunction(() => /published/i.test(document.getElementById('twd-ap-status').textContent));
+	await waitSaves(s, 1);
 	t('P: Update after ticking sends swipebook_enabled true', s.saves[0].body.swipebook_enabled === true);
 	await s.ctx.close();
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
@@ -347,24 +390,142 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	t('P: an article from before the switch existed (no value sent) loads as ON', await page.locator('#twd-ap-swipebook-toggle').isChecked() && await vis(page, '#twd-ap-swipebook-link'));
 	await page.uncheck('#twd-ap-swipebook-toggle');
 	await page.click('#twd-ap-publish-btn');
-	await page.waitForFunction(() => /published/i.test(document.getElementById('twd-ap-status').textContent));
+	await waitSaves(s, 1);
 	t('P: unticking and updating sends swipebook_enabled false', s.saves[0].body.swipebook_enabled === false);
 	await s.ctx.close();
-	s = await open(browser, 'key-on', cfgOn); page = s.page;
-	s.replies.post = { swipebook_enabled: false };
-	await page.evaluate(() => { window.confirm = () => true; });
-	await page.click('#twd-ap-edit-btn');
-	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
-	await page.click('#twd-ap-close-btn');
-	await page.click('#twd-ap-new-btn');
-	await page.click('#twd-ap-start-skip');
-	t('P: a new article after an OFF one starts ticked again', await page.locator('#twd-ap-swipebook-toggle').isChecked());
-	await s.ctx.close();
-	// key-off sites get the same tick
 	s = await open(browser, 'key-off', { aiKeyConfigured: 0 }); page = s.page;
 	await page.click('#twd-ap-new-btn');
 	t('P: sites with no AI key also get the swipe book tick', await vis(page, '#twd-ap-swipebook-toggle') && await page.locator('#twd-ap-swipebook-toggle').isChecked());
 	await s.ctx.close();
+
+	// ---------- Q. layout: order, one row, no scrolling, buttons ----------
+	for (const vp of [{ width: 1280, height: 800 }, { width: 1366, height: 768 }, { width: 1100, height: 820 }]) {
+		s = await open(browser, 'key-on', cfgOn, vp); page = s.page;
+		await page.click('#twd-ap-new-btn');
+		const m = await page.evaluate(() => {
+			const r = (sel) => document.querySelector(sel).getBoundingClientRect();
+			const ov = document.getElementById('twd-ap-overlay');
+			const body = document.querySelector('#twd-ap-modal .twd-ap-modal-body');
+			return {
+				modes: r('.twd-ap-start-row').top, heading: r('.twd-ap-start-heading').top, box: r('#twd-ap-start-input').top,
+				swipe: r('.twd-ap-start-swipe').top, gen: r('#twd-ap-start-generate').top, genBottom: r('#twd-ap-start-generate').bottom,
+				modalBottom: r('#twd-ap-modal').bottom, vh: window.innerHeight,
+				overlayScrolls: ov.scrollHeight > ov.clientHeight + 1, bodyScrolls: body.scrollHeight > body.clientHeight + 1,
+				bodyOverflow: getComputedStyle(body).overflowY,
+			};
+		});
+		const tag = vp.width + 'x' + vp.height;
+		t('Q ' + tag + ': order is options, then heading, box, swipe book tick, Generate', m.modes < m.heading && m.heading < m.box && m.box < m.swipe && m.swipe < m.gen);
+		t('Q ' + tag + ': Generate fully visible, nothing cropped', m.genBottom <= m.vh && m.modalBottom <= m.vh, JSON.stringify(m));
+		t('Q ' + tag + ': no scrollbar anywhere on the start screen', !m.overlayScrolls && !m.bodyScrolls, JSON.stringify(m));
+		if (vp.width === 1280) { await page.screenshot({ path: path.join(tmp, 'start-laptop.png') }); }
+		await s.ctx.close();
+	}
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await page.click('#twd-ap-new-btn');
+	const tops = await page.locator('.twd-ap-start-mode').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+	t('Q: the three options sit in ONE row on desktop', tops.length === 3 && tops[0] === tops[1] && tops[1] === tops[2], JSON.stringify(tops));
+	t('Q: hint under the options follows the choice', (await page.locator('#twd-ap-start-hint').innerText()) === 'Write a full article from my idea');
+	await page.check('input[value="improve"]');
+	t('Q: choosing Draft improve changes the hint', (await page.locator('#twd-ap-start-hint').innerText()).includes('Keep my voice'));
+	await page.check('input[value="format"]');
+	t('Q: choosing Finished article changes the hint', (await page.locator('#twd-ap-start-hint').innerText()).includes('Keep my words exactly'));
+	const cb = await page.locator('#twd-ap-close-btn').boundingBox();
+	t('Q: close button is a clean 36px circle (not squashed)', Math.round(cb.width) === 36 && Math.round(cb.height) === 36 && (await page.locator('#twd-ap-close-btn').evaluate((e) => getComputedStyle(e).borderRadius)) === '50%');
+	t('Q: close button is an icon, not a text cross', (await page.locator('#twd-ap-close-btn svg').count()) === 1 && (await page.locator('#twd-ap-close-btn').innerText()).trim() === '');
+	const hb = await page.locator('#twd-ap-help-btn').boundingBox();
+	t('Q: help ? button is a 32px circle, not squashed', Math.round(hb.width) === 32 && Math.round(hb.height) === 32 && (await page.locator('#twd-ap-help-btn').evaluate((e) => getComputedStyle(e).borderRadius)) === '50%');
+	t('Q: help and close do not overlap', hb.x + hb.width <= cb.x);
+	await page.evaluate(() => { window.confirm = () => true; });
+	await s.ctx.close();
+	// a page builder styling every button must not un-hide hidden header buttons
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await page.addStyleTag({ content: '#twd-ap-modal button, #twd-ap-modal a, .twd-ap-modal button { display: inline-block !important; border: 2px solid hotpink !important; min-width: 120px !important; }' });
+	await page.click('#twd-ap-new-btn');
+	t('Q: Summary Book button NOT showing on a new article, even against a theme that restyles buttons', !(await vis(page, '#twd-ap-summary-book-btn')));
+	t('Q: Delete, edit-in-WordPress and swipe book links also hidden on a new article', !(await vis(page, '#twd-ap-delete-btn')) && !(await vis(page, '#twd-ap-admin-edit-link')) && !(await vis(page, '#twd-ap-swipebook-link')));
+	await s.ctx.close();
+	// ... but the Summary Book button does show when editing a published article
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.post = { summary_book_has_draft: true, summary_book_is_published: false };
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	t('Q: Summary Book button shows on the edit page', await vis(page, '#twd-ap-summary-book-btn'));
+	await s.ctx.close();
+
+	// ---------- R. animations ----------
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.delay = 1800;
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-new-btn');
+	await page.fill('#twd-ap-start-input', 'Idea for the animation');
+	s.replies.generate = GEN();
+	await page.click('#twd-ap-start-generate');
+	await page.waitForSelector('#twd-ap-working:visible');
+	t('R: generating shows the working layer with a title', (await page.locator('#twd-ap-working-title').innerText()) === 'Writing your article' && (await page.locator('#twd-ap-working-sub').innerText()).includes('Reading your idea'));
+	t('R: the lines are animating', (await page.locator('.twd-ap-working-line-1').evaluate((e) => getComputedStyle(e).animationName)) === 'twd-ap-write' && (await page.locator('.twd-ap-working-pen').evaluate((e) => getComputedStyle(e).animationName)) === 'twd-ap-pen');
+	const wk = await page.locator('#twd-ap-working').boundingBox();
+	const hd = await page.locator('#twd-ap-modal .twd-ap-modal-header').boundingBox();
+	t('R: the layer starts below the header, so Close stays clickable', wk.y >= hd.y + hd.height - 1);
+	t('R: the layer covers the form (nothing underneath can be clicked)', await page.evaluate(() => { const r = document.getElementById('twd-ap-start-input').getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!el.closest('#twd-ap-working'); }));
+	await page.screenshot({ path: path.join(tmp, 'generating.png') });
+	await page.waitForSelector('#twd-ap-title:visible');
+	t('R: the layer is gone once the article is ready', !(await vis(page, '#twd-ap-working')));
+	await s.ctx.close();
+	// generate failure: layer gone, text kept
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.delay = 400;
+	await page.click('#twd-ap-new-btn');
+	await page.fill('#twd-ap-start-input', 'Will fail');
+	s.replies.generate = { status: 500, json: { message: 'The AI service returned an error (500, boom).' } };
+	await page.click('#twd-ap-start-generate');
+	await page.waitForSelector('#twd-ap-working:visible');
+	await page.waitForSelector('#twd-ap-status:visible');
+	t('R: failed generation: layer gone, error shown, text kept', !(await vis(page, '#twd-ap-working')) && (await page.inputValue('#twd-ap-start-input')) === 'Will fail');
+	await s.ctx.close();
+	// publishing animation
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.delay = 1500;
+	await newThenSkip(page);
+	await page.click('#twd-ap-publish-btn');
+	await page.waitForSelector('#twd-ap-working:visible');
+	t('R: publishing shows "Publishing your article"', (await page.locator('#twd-ap-working-title').innerText()) === 'Publishing your article');
+	t('R: buttons cannot be pressed twice while publishing', await page.locator('#twd-ap-publish-btn').isDisabled());
+	await page.screenshot({ path: path.join(tmp, 'publishing.png') });
+	await waitSaves(s, 1);
+	await page.waitForFunction(() => document.getElementById('twd-ap-working-title').textContent === 'Published');
+	t('R: then says Published and that the page is refreshing', (await page.locator('#twd-ap-working-sub').innerText()).includes('Refreshing the page'));
+	t('R: and then the page really refreshes', await reloaded(page, 1800));
+	await s.ctx.close();
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.delay = 600;
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	await page.click('#twd-ap-publish-btn');
+	await page.waitForSelector('#twd-ap-working:visible');
+	t('R: updating shows "Updating your article"', (await page.locator('#twd-ap-working-title').innerText()) === 'Updating your article');
+	await page.waitForFunction(() => document.getElementById('twd-ap-working-title').textContent === 'Updated');
+	t('R: then says Updated', true);
+	await s.ctx.close();
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.delay = 600;
+	await newThenSkip(page);
+	await page.click('#twd-ap-draft-btn');
+	await page.waitForSelector('#twd-ap-working:visible');
+	t('R: saving a draft shows "Saving your draft"', (await page.locator('#twd-ap-working-title').innerText()) === 'Saving your draft');
+	await s.ctx.close();
+	// reduced motion respected
+	const ctxRM = await browser.newContext({ viewport: { width: 1100, height: 900 }, reducedMotion: 'reduce' });
+	const pageRM = await ctxRM.newPage();
+	await pageRM.route(REST + '/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+	await pageRM.goto('file://' + render('key-on'));
+	await pageRM.evaluate(() => { window.TWD_AP = { restUrl: 'https://example.test/wp-json/twd-publisher/v1', nonce: 'n', currentPostId: 5, aiKeyConfigured: 1, aiLimit: 30, aiRemaining: 30, aiMaxChars: 20000, i18n: { confirmClose: 'x' } }; });
+	await pageRM.addScriptTag({ path: path.join(plugin, 'assets/publisher.js') });
+	await pageRM.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
+	await pageRM.evaluate(() => { document.getElementById('twd-ap-working').hidden = false; });
+	t('R: people who ask for reduced motion get no animation', (await pageRM.locator('.twd-ap-working-line-1').evaluate((e) => getComputedStyle(e).animationName)) === 'none');
+	await ctxRM.close();
 
 	await browser.close();
 	console.log('\nScreenshots: ' + tmp);

@@ -56,19 +56,26 @@ for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
 
-NEW (1.37.0): four changes to the popup. (1) After you publish or
-update, the page behind the popup refreshes when the popup closes, so
-the change shows without reloading by hand. (2) The big "Edit This
-Article" button is replaced by a small round pencil at the top left of
-an article, for people who can edit it. (3) A new tick, "Offer a swipe
-book for this article", on the new and edit popups. Unticked, it hides
-the swipe book button and the Summary Book button on that article, the
-direct links to both, and the article's place in other articles' "More
-Articles" slide. Every article that already exists stays on, and the
-Summary Book is still published only after you review it. (4) "New
-Article" now shows only on pages with the [twd_articles] shortcode on
-any site that has not saved that setting yet. Sites that already saved
-it keep their choice; change it under Settings > Article Publisher.
+NEW (1.37.0): changes to the popup. (1) Publish, Update and Schedule
+now close the popup by themselves after a short animated "Publishing /
+Updating / Scheduling" message, and Publish and Update refresh the page
+behind it so the change shows straight away. Only a draft keeps the
+popup open. (2) The big "Edit This Article" button is replaced by a
+small round pencil at the top left of an article, for people who can
+edit it. (3) A swipe book tick: "Also publish as a swipe book" on the
+new article screen and "Offer a swipe book for this article" on the
+edit popup. Unticked, it hides the swipe book button and the Summary
+Book button on that article, the direct links to both, and the
+article's place in other articles' "More Articles" slide. Every article
+that already exists stays on, and the Summary Book is still created and
+approved from the edit page. (4) The new article screen is compact and
+fits a laptop screen without scrolling, with the three options in one
+row, and shows an animation while the article is being written. (5)
+Tidier close and help buttons, and the Summary Book button no longer
+shows on a brand-new article. (6) "New Article" now shows only on pages
+with the [twd_articles] shortcode on any site that has not saved that
+setting yet. Sites that already saved it keep their choice; change it
+under Settings > Article Publisher.
 
 NEW (1.36.0): on sites with their own Anthropic key, a new article
 now starts with one box: write, dictate or paste an idea, a rough draft

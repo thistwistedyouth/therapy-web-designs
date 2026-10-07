@@ -115,6 +115,15 @@ body.admin-bar .twd-ap-edit-pencil {
 .twd-ap-overlay[hidden] {
   display: none;
 }
+/* Anything inside the popup (or the floating buttons) with the hidden
+   attribute stays hidden, whatever display a page builder gives buttons.
+   This is what stops the Summary Book button showing on a NEW article. */
+#twd-ap-overlay [hidden],
+#twd-ap-help-overlay [hidden],
+.twd-ap-overlay [hidden],
+.twd-ap-buttons [hidden] {
+  display: none !important;
+}
 
 .twd-ap-modal {
   position: relative;
@@ -206,6 +215,16 @@ body.admin-bar .twd-ap-edit-pencil {
 }
 
 .twd-ap-admin-edit-link {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  font-family: inherit !important;
+  line-height: normal !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  cursor: pointer !important;
   font-size: 12px !important;
   color: var(--twd-ap-muted) !important;
   text-decoration: underline !important;
@@ -234,21 +253,28 @@ body.admin-bar .twd-ap-edit-pencil {
 }
 
 .twd-ap-help-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  box-sizing: border-box !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  margin: 0 !important;
+  padding: 0 !important;
   border: 1px solid var(--twd-ap-input-border) !important;
   border-radius: 50% !important;
   background: #fff !important;
   color: var(--twd-ap-muted) !important;
-  font-size: 13px !important;
+  font-family: inherit !important;
+  font-size: 15px !important;
   font-weight: 700 !important;
   line-height: 1 !important;
+  text-transform: none !important;
   box-shadow: none !important;
-  cursor: pointer;
-  padding: 0 !important;
+  cursor: pointer !important;
 }
 .twd-ap-help-icon-btn:hover {
   color: var(--twd-ap-text) !important;
@@ -260,28 +286,42 @@ body.admin-bar .twd-ap-edit-pencil {
    buttons/links are showing (Delete, Edit in WordPress, Swipe book link,
    Article Assist, help). */
 .twd-ap-close-btn {
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none !important;
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  z-index: 6 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
   border-radius: 50% !important;
-  background: rgba(0, 0, 0, 0.04) !important;
-  box-shadow: none !important;
-  font-size: 22px !important;
-  line-height: 1 !important;
-  cursor: pointer;
-  color: var(--twd-ap-muted) !important;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-.twd-ap-close-btn:hover {
-  background: rgba(0, 0, 0, 0.08) !important;
+  background: rgba(17, 24, 39, 0.07) !important;
   color: var(--twd-ap-text) !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
+}
+.twd-ap-close-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2.4 !important;
+  stroke-linecap: round !important;
+}
+.twd-ap-close-btn:hover,
+.twd-ap-close-btn:focus-visible {
+  background: rgba(179, 69, 46, 0.14) !important;
+  color: var(--twd-ap-danger) !important;
+  transform: rotate(90deg) !important;
 }
 
 .twd-ap-modal-body {
@@ -721,7 +761,8 @@ body.admin-bar .twd-ap-edit-pencil {
    the overlay is what swaps the two, so none of the editor's own hidden
    states are touched. Every visual property carries !important for the
    same reason as the rest of this file (page builder styles win
-   otherwise). */
+   otherwise). Laid out to fit a normal laptop screen with no scrolling:
+   the options sit in one row, and the box height follows the window. */
 .twd-ap-start {
   display: none !important;
 }
@@ -734,9 +775,60 @@ body.admin-bar .twd-ap-edit-pencil {
 .twd-ap-start-active .twd-ap-modal-footer {
   display: none !important;
 }
+.twd-ap-start-active .twd-ap-modal-body {
+  max-height: none !important;
+  overflow: visible !important;
+}
+.twd-ap-start-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.twd-ap-start-legend {
+  margin: 0 4px 0 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--twd-ap-text) !important;
+}
+.twd-ap-start-mode {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  margin: 0 !important;
+  padding: 7px 14px !important;
+  border: 1px solid var(--twd-ap-input-border) !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: var(--twd-ap-text) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+.twd-ap-start-mode input {
+  margin: 0 !important;
+  accent-color: var(--twd-ap-primary);
+  flex: 0 0 auto !important;
+}
+.twd-ap-start-mode:hover {
+  border-color: var(--twd-ap-primary) !important;
+}
+.twd-ap-start-mode:has(input:checked) {
+  border-color: var(--twd-ap-primary) !important;
+  background: rgba(91, 138, 114, 0.12) !important;
+  color: var(--twd-ap-primary-dark) !important;
+}
+.twd-ap-start-hint {
+  margin: 8px 0 14px !important;
+  min-height: 16px !important;
+  font-size: 12px !important;
+  color: var(--twd-ap-muted) !important;
+}
 .twd-ap-start-heading {
   display: block !important;
-  margin: 0 0 10px !important;
+  margin: 0 0 8px !important;
   font-size: 18px !important;
   font-weight: 700 !important;
   line-height: 1.35 !important;
@@ -745,7 +837,8 @@ body.admin-bar .twd-ap-edit-pencil {
 .twd-ap-start-input {
   display: block !important;
   width: 100% !important;
-  min-height: 220px !important;
+  height: clamp(170px, 30vh, 320px) !important;
+  min-height: 150px !important;
   padding: 14px !important;
   border: 1px solid var(--twd-ap-input-border) !important;
   border-radius: 8px !important;
@@ -763,12 +856,6 @@ body.admin-bar .twd-ap-edit-pencil {
   border-color: var(--twd-ap-primary) !important;
   box-shadow: none !important;
 }
-@media (max-width: 600px) {
-  .twd-ap-start-input {
-    min-height: 150px !important;
-    height: 150px !important;
-  }
-}
 .twd-ap-start-count {
   margin: 6px 0 0 !important;
   min-height: 16px !important;
@@ -779,53 +866,34 @@ body.admin-bar .twd-ap-edit-pencil {
   color: var(--twd-ap-danger) !important;
   font-weight: 600 !important;
 }
-.twd-ap-start-modes {
-  margin: 14px 0 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  min-width: 0 !important;
-}
-.twd-ap-start-legend {
-  padding: 0 !important;
-  margin: 0 0 8px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: var(--twd-ap-text) !important;
-}
-.twd-ap-start-mode {
+.twd-ap-start-swipe {
   display: flex !important;
   align-items: flex-start !important;
   gap: 10px !important;
-  margin: 0 0 8px !important;
+  margin: 10px 0 0 !important;
   padding: 10px 12px !important;
   border: 1px solid var(--twd-ap-border) !important;
   border-radius: 8px !important;
   background: #fff !important;
+  font-size: 14px !important;
+  color: var(--twd-ap-text) !important;
   cursor: pointer !important;
 }
-.twd-ap-start-mode:has(input:checked) {
-  border-color: var(--twd-ap-primary) !important;
-  background: rgba(91, 138, 114, 0.07) !important;
-}
-.twd-ap-start-mode input {
+.twd-ap-start-swipe input {
   margin: 3px 0 0 !important;
   accent-color: var(--twd-ap-primary);
   flex: 0 0 auto !important;
 }
-.twd-ap-start-mode-text strong {
-  display: block !important;
-  font-size: 14px !important;
+.twd-ap-start-swipe strong {
   font-weight: 700 !important;
-  color: var(--twd-ap-text) !important;
 }
-.twd-ap-start-mode-text em {
-  display: block !important;
-  font-size: 12px !important;
+.twd-ap-start-swipe em {
   font-style: normal !important;
+  font-size: 12px !important;
   color: var(--twd-ap-muted) !important;
 }
 .twd-ap-start-note {
-  margin: 12px 0 !important;
+  margin: 10px 0 12px !important;
   font-size: 12px !important;
   color: var(--twd-ap-muted) !important;
 }
@@ -855,6 +923,127 @@ body.admin-bar .twd-ap-edit-pencil {
   opacity: 0.5 !important;
   cursor: not-allowed !important;
 }
+@media (max-width: 600px) {
+  .twd-ap-start-input {
+    height: 150px !important;
+  }
+  .twd-ap-start-legend {
+    flex-basis: 100% !important;
+  }
+}
+
+/* "Working" layer: shown over the popup while an article is being
+   generated, published, updated or saved. Sits below the header (its top
+   is set from the header's height in JS) so Close stays reachable. */
+.twd-ap-working {
+  position: absolute !important;
+  top: 82px !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  z-index: 5 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--twd-ap-bg) !important;
+  text-align: center !important;
+}
+.twd-ap-working-inner {
+  max-width: 340px !important;
+  padding: 24px !important;
+}
+.twd-ap-working-art {
+  position: relative !important;
+  width: 128px !important;
+  height: 150px !important;
+  margin: 0 auto 18px !important;
+  padding: 22px 18px !important;
+  border: 2px solid var(--twd-ap-border) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 8px 22px rgba(91, 138, 114, 0.14) !important;
+  text-align: left !important;
+}
+.twd-ap-working-line {
+  display: block !important;
+  height: 7px !important;
+  margin: 0 0 13px !important;
+  border-radius: 4px !important;
+  background: var(--twd-ap-primary) !important;
+  opacity: 0.55 !important;
+  transform-origin: left center !important;
+  animation: twd-ap-write 3.2s ease-in-out infinite !important;
+}
+.twd-ap-working-line-2 { width: 88% !important; animation-delay: 0.35s !important; }
+.twd-ap-working-line-3 { width: 94% !important; animation-delay: 0.7s !important; }
+.twd-ap-working-line-4 { width: 56% !important; animation-delay: 1.05s !important; }
+.twd-ap-working-pen {
+  position: absolute !important;
+  right: -14px !important;
+  bottom: -12px !important;
+  padding: 6px !important;
+  border-radius: 50% !important;
+  background: var(--twd-ap-primary) !important;
+  fill: none !important;
+  stroke: #fff !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  box-sizing: content-box !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  animation: twd-ap-pen 3.2s ease-in-out infinite !important;
+}
+.twd-ap-working-title {
+  margin: 0 0 6px !important;
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  color: var(--twd-ap-text) !important;
+}
+.twd-ap-working-sub {
+  min-height: 20px !important;
+  margin: 0 0 14px !important;
+  font-size: 14px !important;
+  color: var(--twd-ap-muted) !important;
+}
+.twd-ap-working-dots span {
+  display: inline-block !important;
+  width: 8px !important;
+  height: 8px !important;
+  margin: 0 3px !important;
+  border-radius: 50% !important;
+  background: var(--twd-ap-primary) !important;
+  animation: twd-ap-dot 1.2s ease-in-out infinite !important;
+}
+.twd-ap-working-dots span:nth-child(2) { animation-delay: 0.2s !important; }
+.twd-ap-working-dots span:nth-child(3) { animation-delay: 0.4s !important; }
+@keyframes twd-ap-write {
+  0% { transform: scaleX(0); opacity: 0.2; }
+  35%, 80% { transform: scaleX(1); opacity: 0.6; }
+  100% { transform: scaleX(0); opacity: 0.2; }
+}
+@keyframes twd-ap-pen {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-34px, -62px) rotate(-8deg); }
+  50% { transform: translate(-8px, -40px) rotate(6deg); }
+  75% { transform: translate(-44px, -18px) rotate(-6deg); }
+}
+@keyframes twd-ap-dot {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .twd-ap-working-line,
+  .twd-ap-working-pen,
+  .twd-ap-working-dots span {
+    animation: none !important;
+  }
+  .twd-ap-working-line {
+    transform: none !important;
+    opacity: 0.6 !important;
+  }
+}
+
 .twd-ap-original-bar {
   display: flex !important;
   flex-wrap: wrap !important;
@@ -1013,7 +1202,7 @@ body.admin-bar .twd-ap-edit-pencil {
     padding: 6px 12px;
   }
   .twd-ap-close-btn {
-    top: 10px;
-    right: 10px;
+    top: 10px !important;
+    right: 10px !important;
   }
 }

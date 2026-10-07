@@ -82,6 +82,11 @@
 		els.startCount = document.getElementById('twd-ap-start-count');
 		els.startGenerate = document.getElementById('twd-ap-start-generate');
 		els.startLeft = document.getElementById('twd-ap-start-left');
+		els.startHint = document.getElementById('twd-ap-start-hint');
+		els.startSwipebook = document.getElementById('twd-ap-start-swipebook');
+		els.working = document.getElementById('twd-ap-working');
+		els.workingTitle = document.getElementById('twd-ap-working-title');
+		els.workingSub = document.getElementById('twd-ap-working-sub');
 		els.startSkip = document.getElementById('twd-ap-start-skip');
 		els.originalBar = document.getElementById('twd-ap-original-bar');
 		els.originalText = document.getElementById('twd-ap-original-text');
@@ -210,6 +215,11 @@
 		if (els.start) {
 			els.startGenerate.addEventListener('click', generateOnSite);
 			els.startSkip.addEventListener('click', skipStart);
+			els.start.addEventListener('change', function (e) {
+				if (e.target && e.target.name === 'twd-ap-start-mode') {
+					updateStartHint();
+				}
+			});
 			els.originalToggle.addEventListener('click', toggleOriginal);
 			els.startInput.addEventListener('input', function () {
 				state.dirty = els.startInput.value.trim() !== '';
@@ -943,6 +953,53 @@
 		}
 	}
 
+	// ---- "Working" layer: generating, publishing, updating, saving ------
+
+	var workingTimer = null;
+
+	function showWorking(title, messages) {
+		if (!els.working) {
+			return;
+		}
+		var header = els.overlay.querySelector('.twd-ap-modal-header');
+		els.working.style.top = (header ? header.offsetHeight : 82) + 'px';
+		els.workingTitle.textContent = title;
+		els.workingSub.textContent = messages[0] || '';
+		clearInterval(workingTimer);
+		workingTimer = null;
+		if (messages.length > 1) {
+			var i = 0;
+			// Walks through the messages once and rests on the last one.
+			workingTimer = setInterval(function () {
+				i = Math.min(i + 1, messages.length - 1);
+				els.workingSub.textContent = messages[i];
+				if (i === messages.length - 1) {
+					clearInterval(workingTimer);
+					workingTimer = null;
+				}
+			}, 4000);
+		}
+		els.working.hidden = false;
+	}
+
+	function workingDone(title, sub) {
+		if (!els.working) {
+			return;
+		}
+		clearInterval(workingTimer);
+		workingTimer = null;
+		els.workingTitle.textContent = title;
+		els.workingSub.textContent = sub;
+	}
+
+	function hideWorking() {
+		clearInterval(workingTimer);
+		workingTimer = null;
+		if (els.working) {
+			els.working.hidden = true;
+		}
+	}
+
 	// ---- Start screen (only when this site has its own AI key) ----------
 
 	function getStartMode() {
@@ -954,6 +1011,21 @@
 		var radios = els.start.querySelectorAll('input[name="twd-ap-start-mode"]');
 		for (var i = 0; i < radios.length; i++) {
 			radios[i].checked = radios[i].value === mode;
+		}
+		updateStartHint();
+	}
+
+	function updateStartHint() {
+		var checked = els.start.querySelector('input[name="twd-ap-start-mode"]:checked');
+		els.startHint.textContent = checked ? (checked.getAttribute('data-hint') || '') : '';
+	}
+
+	// The start screen's swipe book tick is only a convenience for the
+	// moment of creation: when the start screen is left, its value is copied
+	// to the one real switch in the Details section (the edit popup's tick).
+	function carryStartSwipebook() {
+		if (els.startSwipebook) {
+			els.swipebookToggle.checked = els.startSwipebook.checked;
 		}
 	}
 
@@ -993,6 +1065,7 @@
 		els.overlay.classList.toggle('twd-ap-start-active', !!on);
 		if (on) {
 			els.startInput.value = '';
+			els.startSwipebook.checked = true;
 			setStartMode('idea');
 			updateStartCount();
 			updateStartRemaining();
@@ -1067,6 +1140,7 @@
 	// the editor, so it is never silently thrown away.
 	function skipStart() {
 		var text = els.startInput.value.trim();
+		carryStartSwipebook();
 		showStart(false);
 		switchTabImmediate('visual');
 		if (text) {
@@ -1093,16 +1167,20 @@
 		}
 
 		state.aiGenerating = true;
-		var original = els.startGenerate.textContent;
-		els.startGenerate.textContent = 'Generating… this can take up to a minute';
 		els.startSkip.disabled = true;
 		refreshStartGenerate();
 		hideStatus();
+		showWorking(
+			'improve' === mode ? 'Improving your draft' : ('format' === mode ? 'Formatting your article' : 'Writing your article'),
+			'idea' === mode
+				? ['Reading your idea…', 'Shaping the article…', 'Writing the headings and summary…', 'Adding a title, tags and details…', 'Nearly there, this can take up to a minute…']
+				: ['Reading your text…', 'Tidying the structure…', 'Adding a title, summary and tags…', 'Nearly there, this can take up to a minute…']
+		);
 
 		function finish() {
 			state.aiGenerating = false;
-			els.startGenerate.textContent = original;
 			els.startSkip.disabled = false;
+			hideWorking();
 			refreshStartGenerate();
 		}
 
@@ -1129,6 +1207,7 @@
 				if (typeof result.data.ai_remaining === 'number') {
 					state.aiRemaining = result.data.ai_remaining;
 				}
+				carryStartSwipebook();
 				showStart(false);
 				applyGeneratedData(result.data, 'Article generated. Review it below before saving.');
 				if ('idea' !== mode) {
@@ -1323,6 +1402,7 @@
 
 	function openModal(mode, postId) {
 		resetForm();
+		hideWorking();
 		state.reloadOnClose = false;
 		if (mode === 'edit' && postId) {
 			state.editingId = postId;
@@ -1441,6 +1521,7 @@
 	}
 
 	function closeModal() {
+		hideWorking();
 		deselectImage();
 		els.overlay.hidden = true;
 		els.helpOverlay.hidden = true;
@@ -1529,7 +1610,16 @@
 		}
 
 		setBusy(true);
-		showStatus(TWD_AP.i18n.saving, false);
+		hideStatus();
+		if ('draft' === status) {
+			showWorking('Saving your draft', ['Saving…']);
+		} else if ('future' === status) {
+			showWorking('Scheduling your article', ['Saving…', 'Setting the date and time…']);
+		} else if (wasEditing) {
+			showWorking('Updating your article', ['Saving your changes…', 'Updating the page…']);
+		} else {
+			showWorking('Publishing your article', ['Saving your article…', 'Adding it to the site…', 'Nearly there…']);
+		}
 
 		fetch(url, {
 			method: 'POST',
@@ -1547,6 +1637,7 @@
 			.then(function (result) {
 				setBusy(false);
 				if (!result.ok) {
+					hideWorking();
 					showStatus(result.data && result.data.message ? result.data.message : TWD_AP.i18n.error, false);
 					return;
 				}
@@ -1564,19 +1655,24 @@
 				updateSummaryBookButton();
 				var label = status === 'draft' ? 'Draft saved.' : status === 'future' ? 'Article scheduled.' : 'Article published.';
 
-				// Updating (or rescheduling) an article that was already
-				// published/scheduled before this click closes the popup
-				// straight away, same as clicking Close after -- there's
-				// nothing left to review that wasn't already reviewed the
-				// first time it was published. A brand new Publish, or any
-				// Save as Draft, keeps the popup open so the swipe book
-				// link/further edits are still reachable.
-				if (wasEditing && 'draft' !== status) {
-					showStatus(label, true);
-					setTimeout(closeModal, 600);
+				// Publish, update or schedule: confirm on the working layer,
+				// then close the popup. closeModal() also refreshes the page
+				// behind it after a real publish or update, so the change
+				// shows without a manual reload. Only a draft keeps the popup
+				// open, because nothing public changed.
+				if ('draft' !== status) {
+					workingDone(
+						'publish' === status ? (wasEditing ? 'Updated' : 'Published') : 'Scheduled',
+						'publish' === status ? 'Refreshing the page…' : 'It will go live at the time you chose.'
+					);
+					setTimeout(function () {
+						hideWorking();
+						closeModal();
+					}, 900);
 					return;
 				}
 
+				hideWorking();
 				showStatus(label + ' You can keep editing or close this window.', true);
 				els.modalSubtitle.textContent = 'Editing article';
 				els.draftBtn.textContent = 'Save as Draft';
@@ -1585,6 +1681,7 @@
 			})
 			.catch(function () {
 				setBusy(false);
+				hideWorking();
 				showStatus(TWD_AP.i18n.error, false);
 			});
 	}
