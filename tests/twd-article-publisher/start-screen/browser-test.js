@@ -27,7 +27,8 @@ async function open(browser, mode, cfg, viewport) {
 	const ctx = await browser.newContext({ viewport: viewport || { width: 1100, height: 900 } });
 	const page = await ctx.newPage();
 	const calls = [];
-	const replies = { generate: null };
+	const saves = [];
+	const replies = { generate: null, post: {}, save: null };
 	await page.route(REST + '/**', async (route) => {
 		const req = route.request();
 		const url = req.url().replace(REST, '');
@@ -36,8 +37,17 @@ async function open(browser, mode, cfg, viewport) {
 			const r = replies.generate || { status: 200, json: {} };
 			return route.fulfill({ status: r.status, contentType: 'application/json', body: JSON.stringify(r.json) });
 		}
+		if (req.method() === 'POST' && /^\/posts(\/\d+)?$/.test(url)) {
+			const body = JSON.parse(req.postData() || '{}');
+			saves.push({ url, body });
+			if (replies.save) {
+				return route.fulfill({ status: replies.save.status, contentType: 'application/json', body: JSON.stringify(replies.save.json) });
+			}
+			const id = url === '/posts' ? 9 : 5;
+			return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id, status: body.status, link: 'https://example.test/article-' + id + '/' }) });
+		}
 		if (url.startsWith('/posts/')) {
-			return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 5, title: 'Existing article', status: 'publish', content_html: '<p>Existing body</p>', category_ids: [], tags: '', excerpt: 'x', featured_media: 0, featured_media_url: '' }) });
+			return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(Object.assign({ id: 5, title: 'Existing article', status: 'publish', link: 'https://example.test/article-5/', content_html: '<p>Existing body</p>', category_ids: [], tags: '', excerpt: 'x', featured_media: 0, featured_media_url: '' }, replies.post)) });
 		}
 		return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
 	});
@@ -45,7 +55,7 @@ async function open(browser, mode, cfg, viewport) {
 	await page.evaluate((c) => { window.TWD_AP = Object.assign({ restUrl: 'https://example.test/wp-json/twd-publisher/v1', nonce: 'n', uncategorizedId: 1, yoastEnabled: 0, currentPostId: 5, canEditThis: 1, adminEditUrl: '', i18n: { saving: 'Saving', error: 'Error', confirmClose: 'Discard?', confirmDelete: 'Delete?' } }, c); }, cfg);
 	await page.addScriptTag({ path: path.join(plugin, 'assets/publisher.js') });
 	await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
-	return { ctx, page, calls, replies };
+	return { ctx, page, calls, replies, saves };
 }
 
 const vis = (page, sel) => page.locator(sel).isVisible();
@@ -209,6 +219,151 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	await page.click('#twd-ap-tab-json');
 	t('M: JSON tab present with paste box, no generator', await vis(page, '#twd-ap-json-input') && (await page.locator('#twd-ap-ai-generate-box').count()) === 0);
 	t('M: JSON tab labelled Paste JSON', (await page.locator('#twd-ap-tab-json').innerText()) === 'Paste JSON');
+	await s.ctx.close();
+
+
+	// ---------- N. the small edit pencil, top left ----------
+	s = await open(browser, 'key-on', cfgOn);
+	page = s.page;
+	let box = await page.locator('#twd-ap-edit-btn').boundingBox();
+	t('N: pencil is top left, 16px in', Math.round(box.x) === 16 && Math.round(box.y) === 16);
+	t('N: pencil is a 40px circle', Math.round(box.width) === 40 && Math.round(box.height) === 40 && (await page.locator('#twd-ap-edit-btn').evaluate((e) => getComputedStyle(e).borderRadius)) === '50%');
+	t('N: pencil is an icon, not a text button', (await page.locator('#twd-ap-edit-btn svg').count()) === 1 && (await page.locator('#twd-ap-edit-btn').innerText()).trim() === '');
+	t('N: pencil is labelled for screen readers', (await page.locator('#twd-ap-edit-btn').getAttribute('aria-label')) === 'Edit this article' && (await page.locator('#twd-ap-edit-btn').getAttribute('title')) === 'Edit this article');
+	t('N: the old big "Edit This Article" button is gone', !(await page.content()).includes('Edit This Article</button>') && (await page.locator('.twd-ap-float-btn', { hasText: 'Edit This Article' }).count()) === 0);
+	box = await page.locator('#twd-ap-new-btn').boundingBox();
+	t('N: New Article button unchanged, bottom right', Math.round(box.x + box.width) === 1100 - 20 && Math.round(box.y + box.height) > 900 - 60);
+	await page.evaluate(() => document.body.classList.add('admin-bar'));
+	box = await page.locator('#twd-ap-edit-btn').boundingBox();
+	t('N: pencil sits below the WordPress admin bar (48px)', Math.round(box.y) === 48);
+	await page.setViewportSize({ width: 390, height: 800 });
+	box = await page.locator('#twd-ap-edit-btn').boundingBox();
+	t('N: and below the taller phone admin bar (62px)', Math.round(box.y) === 62 && Math.round(box.x) === 16);
+	await page.screenshot({ path: path.join(tmp, 'pencil-phone.png') });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	t('N: pencil opens the edit popup', await vis(page, '#twd-ap-title') && !(await vis(page, '#twd-ap-start')));
+	await s.ctx.close();
+
+	// ---------- O. page behind refreshes after a publish or update ----------
+	async function reloaded(page, ms) { await page.waitForTimeout(ms || 1300); return (await page.evaluate(() => window.__stay)) !== true; }
+	async function newThenSkip(page) {
+		await page.evaluate(() => { window.__stay = true; window.confirm = () => true; });
+		await page.click('#twd-ap-new-btn');
+		await page.click('#twd-ap-start-skip');
+		await page.fill('#twd-ap-title', 'My article');
+	}
+	// O1: brand-new Publish keeps the popup open, refreshes when it is closed
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await newThenSkip(page);
+	await page.click('#twd-ap-publish-btn');
+	await page.waitForSelector('#twd-ap-status:visible');
+	t('O1: new Publish saved with status publish', s.saves.length === 1 && s.saves[0].body.status === 'publish');
+	t('O1: popup stays open and page not reloaded yet', await vis(page, '#twd-ap-overlay') && !(await reloaded(page, 900)));
+	await page.click('#twd-ap-close-btn');
+	t('O1: closing the popup then refreshes the page behind', await reloaded(page, 1200));
+	await s.ctx.close();
+	// O2: draft only never refreshes
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await newThenSkip(page);
+	await page.click('#twd-ap-draft-btn');
+	await page.waitForSelector('#twd-ap-status:visible');
+	await page.click('#twd-ap-close-btn');
+	t('O2: a draft save does not refresh the page', !(await reloaded(page, 1200)));
+	await s.ctx.close();
+	// O3: publish, then save as draft: last save wins, no refresh
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await newThenSkip(page);
+	await page.click('#twd-ap-publish-btn');
+	await page.waitForFunction(() => /published/i.test(document.getElementById('twd-ap-status').textContent));
+	await page.click('#twd-ap-draft-btn');
+	await page.waitForFunction(() => /Draft saved/i.test(document.getElementById('twd-ap-status').textContent));
+	await page.click('#twd-ap-close-btn');
+	t('O3: publish then draft: no refresh (the page would be unpublished)', !(await reloaded(page, 1200)));
+	await s.ctx.close();
+	// O4: editing an existing article, Update closes the popup and refreshes
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await page.evaluate(() => { window.__stay = true; window.confirm = () => true; });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	await page.click('#twd-ap-publish-btn');
+	t('O4: Update sent to the existing article', await page.waitForFunction(() => /published/i.test(document.getElementById('twd-ap-status').textContent)).then(() => s.saves.length === 1 && s.saves[0].url === '/posts/5'));
+	t('O4: Update closes the popup and refreshes the page', await reloaded(page, 1500));
+	await s.ctx.close();
+	// O5: opening and closing without saving never refreshes
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await page.evaluate(() => { window.__stay = true; window.confirm = () => true; });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	await page.click('#twd-ap-close-btn');
+	t('O5: closing without saving does not refresh', !(await reloaded(page, 1000)));
+	await s.ctx.close();
+	// O6: a failed save never refreshes
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await newThenSkip(page);
+	s.replies.save = { status: 500, json: { message: 'Could not save.' } };
+	await page.click('#twd-ap-publish-btn');
+	await page.waitForFunction(() => /Could not save/.test(document.getElementById('twd-ap-status').textContent));
+	await page.click('#twd-ap-close-btn');
+	t('O6: failed save then close: no refresh', !(await reloaded(page, 1000)));
+	await s.ctx.close();
+
+	// ---------- P. swipe book switch ----------
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await newThenSkip(page);
+	t('P: new article: swipe book tick is there and ticked by default', await vis(page, '#twd-ap-swipebook-toggle') && await page.locator('#twd-ap-swipebook-toggle').isChecked());
+	t('P: label explains it covers the Summary Book too', (await page.locator('label:has(#twd-ap-swipebook-toggle)').innerText()).includes('Summary Book'));
+	await page.click('#twd-ap-publish-btn');
+	await page.waitForSelector('#twd-ap-status:visible');
+	t('P: new article saved with swipebook_enabled true', s.saves[0].body.swipebook_enabled === true);
+	await s.ctx.close();
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await newThenSkip(page);
+	await page.uncheck('#twd-ap-swipebook-toggle');
+	await page.click('#twd-ap-publish-btn');
+	await page.waitForSelector('#twd-ap-status:visible');
+	t('P: unticked on creation: saved with swipebook_enabled false', s.saves[0].body.swipebook_enabled === false);
+	await s.ctx.close();
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.post = { swipebook_enabled: false };
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	t('P: edit page loads an OFF article unticked', !(await page.locator('#twd-ap-swipebook-toggle').isChecked()));
+	t('P: its swipe book link in the header is hidden', !(await vis(page, '#twd-ap-swipebook-link')));
+	await page.check('#twd-ap-swipebook-toggle');
+	t('P: ticking it shows the link straight away', await vis(page, '#twd-ap-swipebook-link') && (await page.locator('#twd-ap-swipebook-link').getAttribute('href')).includes('twd_ap_swipebook=1'));
+	await page.uncheck('#twd-ap-swipebook-toggle');
+	t('P: unticking hides it again', !(await vis(page, '#twd-ap-swipebook-link')));
+	await page.check('#twd-ap-swipebook-toggle');
+	await page.click('#twd-ap-publish-btn');
+	await page.waitForFunction(() => /published/i.test(document.getElementById('twd-ap-status').textContent));
+	t('P: Update after ticking sends swipebook_enabled true', s.saves[0].body.swipebook_enabled === true);
+	await s.ctx.close();
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	t('P: an article from before the switch existed (no value sent) loads as ON', await page.locator('#twd-ap-swipebook-toggle').isChecked() && await vis(page, '#twd-ap-swipebook-link'));
+	await page.uncheck('#twd-ap-swipebook-toggle');
+	await page.click('#twd-ap-publish-btn');
+	await page.waitForFunction(() => /published/i.test(document.getElementById('twd-ap-status').textContent));
+	t('P: unticking and updating sends swipebook_enabled false', s.saves[0].body.swipebook_enabled === false);
+	await s.ctx.close();
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.post = { swipebook_enabled: false };
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	await page.click('#twd-ap-close-btn');
+	await page.click('#twd-ap-new-btn');
+	await page.click('#twd-ap-start-skip');
+	t('P: a new article after an OFF one starts ticked again', await page.locator('#twd-ap-swipebook-toggle').isChecked());
+	await s.ctx.close();
+	// key-off sites get the same tick
+	s = await open(browser, 'key-off', { aiKeyConfigured: 0 }); page = s.page;
+	await page.click('#twd-ap-new-btn');
+	t('P: sites with no AI key also get the swipe book tick', await vis(page, '#twd-ap-swipebook-toggle') && await page.locator('#twd-ap-swipebook-toggle').isChecked());
 	await s.ctx.close();
 
 	await browser.close();

@@ -288,7 +288,7 @@ class TWD_AP_REST {
 	public function get_swipebook( $request ) {
 		$post_id = (int) $request['id'];
 		$post    = get_post( $post_id );
-		if ( ! $post || 'post' !== $post->post_type || 'publish' !== $post->post_status ) {
+		if ( ! $post || 'post' !== $post->post_type || 'publish' !== $post->post_status || ! TWD_AP_Swipebook::is_enabled( $post_id ) ) {
 			return new WP_Error( 'twd_ap_not_found', __( 'That article could not be found.', 'twd-article-publisher' ), array( 'status' => 404 ) );
 		}
 		return rest_ensure_response( TWD_AP_Swipebook::instance()->get_payload( $post ) );
@@ -303,7 +303,7 @@ class TWD_AP_REST {
 	public function get_summary_book_public( $request ) {
 		$post_id = (int) $request['id'];
 		$post    = get_post( $post_id );
-		if ( ! $post || 'post' !== $post->post_type || 'publish' !== $post->post_status ) {
+		if ( ! $post || 'post' !== $post->post_type || 'publish' !== $post->post_status || ! TWD_AP_Swipebook::is_enabled( $post_id ) ) {
 			return new WP_Error( 'twd_ap_not_found', __( 'That article could not be found.', 'twd-article-publisher' ), array( 'status' => 404 ) );
 		}
 		if ( ! TWD_AP_Summary_Book::is_published( $post_id ) ) {
@@ -548,6 +548,18 @@ class TWD_AP_REST {
 			}
 		}
 
+		// Per-article swipe book switch. Absent means "this save did not
+		// carry the switch" (an older client, an API call): leave it alone.
+		// Off is stored as meta; on removes it, so articles that existed
+		// before this switch stay on.
+		if ( isset( $request['swipebook_enabled'] ) ) {
+			if ( $request['swipebook_enabled'] ) {
+				delete_post_meta( $post_id, TWD_AP_Swipebook::META_OFF );
+			} else {
+				update_post_meta( $post_id, TWD_AP_Swipebook::META_OFF, 1 );
+			}
+		}
+
 		// "More articles" closing slide: up to 6 manually chosen articles.
 		// Empty/absent means the swipe book falls back to the 6 most
 		// recent other articles automatically -- see build_related_slide()
@@ -661,6 +673,7 @@ class TWD_AP_REST {
 			$data['tags']         = implode( ', ', $post_tags );
 			$data['featured']     = (bool) get_post_meta( $post_id, '_twd_ap_featured', true );
 			$data['include_bio']  = (bool) get_post_meta( $post_id, '_twd_ap_include_bio', true );
+			$data['swipebook_enabled'] = TWD_AP_Swipebook::is_enabled( $post_id );
 			$related_ids          = get_post_meta( $post_id, '_twd_ap_related_ids', true );
 			$data['related_ids']  = is_array( $related_ids ) ? array_map( 'intval', $related_ids ) : array();
 			$primary               = (int) get_post_meta( $post_id, '_twd_ap_primary_category', true );

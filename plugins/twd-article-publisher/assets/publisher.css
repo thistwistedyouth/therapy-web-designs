@@ -49,11 +49,54 @@
   font-size: 18px;
   line-height: 1;
 }
-.twd-ap-edit-btn {
+/* Small edit pencil, top left of an article page, for people who can edit
+   that article. Sits below the WordPress admin bar when it is showing
+   (32px tall on desktop, 46px at 782px and under). */
+.twd-ap-edit-pencil {
+  position: fixed !important;
+  top: 16px !important;
+  left: 16px !important;
+  z-index: 99998 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 50% !important;
   background: #374151 !important;
+  color: #fff !important;
+  line-height: 1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22) !important;
+  opacity: 0.88 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease, opacity 0.2s ease !important;
 }
-.twd-ap-edit-btn:hover {
+.twd-ap-edit-pencil:hover,
+.twd-ap-edit-pencil:focus {
   background: #1f2937 !important;
+  opacity: 1 !important;
+  color: #fff !important;
+}
+.twd-ap-edit-pencil svg {
+  width: 18px !important;
+  height: 18px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+body.admin-bar .twd-ap-edit-pencil {
+  top: 48px !important;
+}
+@media (max-width: 782px) {
+  body.admin-bar .twd-ap-edit-pencil {
+    top: 62px !important;
+  }
 }
 
 .twd-ap-overlay {

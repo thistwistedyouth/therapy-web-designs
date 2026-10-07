@@ -23,6 +23,13 @@
 		// between the AI version and the therapist's own text, both ways,
 		// without losing either.
 		swap: null,
+		// Set by a successful Publish or Update, acted on when the popup
+		// closes, so the page behind shows the change. Not set by a draft
+		// or a scheduled save: those make the article non-public, and a
+		// reload could land on a "not found" page.
+		reloadOnClose: false,
+		lastStatus: '',
+		lastLink: '',
 	};
 	var RELATED_MAX = 6;
 	var SUMMARY_BOOK_TYPES = ['text', 'quote', 'question'];
@@ -56,6 +63,7 @@
 		els.featuredRemove = document.getElementById('twd-ap-featured-remove');
 		els.featuredToggle = document.getElementById('twd-ap-featured-toggle');
 		els.includeBioToggle = document.getElementById('twd-ap-include-bio-toggle');
+		els.swipebookToggle = document.getElementById('twd-ap-swipebook-toggle');
 		els.relatedPicker = document.getElementById('twd-ap-related-picker');
 		els.categories = document.getElementById('twd-ap-categories');
 		els.catAddInput = document.getElementById('twd-ap-cat-add-input');
@@ -193,6 +201,11 @@
 			switchTab('json');
 		});
 		els.jsonFillBtn.addEventListener('click', fillFromJson);
+
+		els.swipebookToggle.addEventListener('change', function () {
+			markDirty();
+			updateSwipebookLink(state.lastStatus, state.lastLink);
+		});
 
 		if (els.start) {
 			els.startGenerate.addEventListener('click', generateOnSite);
@@ -1257,6 +1270,7 @@
 		els.catAddInput.value = '';
 		els.featuredToggle.checked = false;
 		els.includeBioToggle.checked = false;
+		els.swipebookToggle.checked = true;
 		state.relatedIds = [];
 		if (els.relatedPicker) { els.relatedPicker.innerHTML = ''; }
 		state.summaryBookDraft = null;
@@ -1296,7 +1310,9 @@
 		if (!els.swipebookLink) {
 			return;
 		}
-		if ('publish' !== status || !link) {
+		state.lastStatus = status;
+		state.lastLink = link;
+		if ('publish' !== status || !link || !els.swipebookToggle.checked) {
 			els.swipebookLink.hidden = true;
 			return;
 		}
@@ -1307,6 +1323,7 @@
 
 	function openModal(mode, postId) {
 		resetForm();
+		state.reloadOnClose = false;
 		if (mode === 'edit' && postId) {
 			state.editingId = postId;
 			els.modalSubtitle.textContent = 'Editing article';
@@ -1360,6 +1377,7 @@
 				els.tags.value = data.tags || '';
 				els.featuredToggle.checked = !!data.featured;
 				els.includeBioToggle.checked = !!data.include_bio;
+				els.swipebookToggle.checked = false !== data.swipebook_enabled;
 				state.featuredMediaId = data.featured_media || 0;
 				renderFeaturedPreview(data.featured_media_url || '');
 				renderCategories(data.category_ids || [], data.primary_category || 0);
@@ -1428,6 +1446,12 @@
 		els.helpOverlay.hidden = true;
 		document.documentElement.style.overflow = '';
 		document.body.style.overflow = '';
+		// Something was published or updated in this popup: refresh the
+		// page behind it so the change shows without a manual reload.
+		if (state.reloadOnClose) {
+			state.reloadOnClose = false;
+			window.location.reload();
+		}
 	}
 
 	function showStatus(msg, ok) {
@@ -1471,6 +1495,7 @@
 			tags: els.tags.value,
 			featured: els.featuredToggle.checked,
 			include_bio: els.includeBioToggle.checked,
+			swipebook_enabled: els.swipebookToggle.checked,
 			related_ids: getCheckedRelatedIds(),
 			category_ids: getCheckedCategoryIds(),
 			primary_category: state.primaryCategoryId,
@@ -1527,6 +1552,7 @@
 				}
 				state.editingId = result.data.id;
 				state.dirty = false;
+				state.reloadOnClose = 'publish' === status;
 				if (state.summaryBookDraft) {
 					// Now persisted server-side -- clear it so it isn't resent
 					// (and potentially overwrite a newer edit made through the

@@ -78,7 +78,7 @@ class TWD_AP_Summary_Book {
 		if ( ! ( $post instanceof WP_Post ) || 'publish' !== $post->post_status ) {
 			return;
 		}
-		if ( ! self::is_published( $post->ID ) ) {
+		if ( ! self::is_published( $post->ID ) || ! TWD_AP_Swipebook::is_enabled( $post->ID ) ) {
 			return;
 		}
 
@@ -101,7 +101,7 @@ class TWD_AP_Summary_Book {
 		}
 
 		$post = get_post();
-		if ( ! $post || 'publish' !== $post->post_status || ! self::is_published( $post->ID ) ) {
+		if ( ! $post || 'publish' !== $post->post_status || ! self::is_published( $post->ID ) || ! TWD_AP_Swipebook::is_enabled( $post->ID ) ) {
 			return $content;
 		}
 

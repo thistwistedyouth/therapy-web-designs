@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.36.0
+Stable tag: 1.37.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Lets approved users publish and edit blog articles from the live site in a popup
 
 == Description ==
 
-Adds a "New Article" button and, on any article the current user can edit, an "Edit This Article" button, both shown only to logged-in users on the site's front end. Both open the same popup, titled "Resource Maker", styled in a calm, therapy-friendly palette and showing the site's own logo (from Customize > Site Identity) if one is set.
+Adds a "New Article" button and, on any article the current user can edit, a small edit pencil at the top left, both shown only to logged-in users on the site's front end. Both open the same popup, titled "Resource Maker", styled in a calm, therapy-friendly palette and showing the site's own logo (from Customize > Site Identity) if one is set.
 
 The popup lets you:
 
@@ -55,6 +55,20 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.37.0): four changes to the popup. (1) After you publish or
+update, the page behind the popup refreshes when the popup closes, so
+the change shows without reloading by hand. (2) The big "Edit This
+Article" button is replaced by a small round pencil at the top left of
+an article, for people who can edit it. (3) A new tick, "Offer a swipe
+book for this article", on the new and edit popups. Unticked, it hides
+the swipe book button and the Summary Book button on that article, the
+direct links to both, and the article's place in other articles' "More
+Articles" slide. Every article that already exists stays on, and the
+Summary Book is still published only after you review it. (4) "New
+Article" now shows only on pages with the [twd_articles] shortcode on
+any site that has not saved that setting yet. Sites that already saved
+it keep their choice; change it under Settings > Article Publisher.
 
 NEW (1.36.0): on sites with their own Anthropic key, a new article
 now starts with one box: write, dictate or paste an idea, a rough draft

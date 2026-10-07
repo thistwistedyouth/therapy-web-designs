@@ -9,12 +9,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<span class="twd-ap-plus">+</span> <?php esc_html_e( 'New Article', 'twd-article-publisher' ); ?>
 		</button>
 	<?php endif; ?>
-	<?php if ( $show_edit ) : ?>
-		<button type="button" id="twd-ap-edit-btn" class="twd-ap-float-btn twd-ap-edit-btn">
-			<?php esc_html_e( 'Edit This Article', 'twd-article-publisher' ); ?>
-		</button>
-	<?php endif; ?>
 </div>
+<?php if ( $show_edit ) : ?>
+	<button type="button" id="twd-ap-edit-btn" class="twd-ap-edit-pencil" aria-label="<?php esc_attr_e( 'Edit this article', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Edit this article', 'twd-article-publisher' ); ?>">
+		<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+	</button>
+<?php endif; ?>
 
 <div id="twd-ap-overlay" class="twd-ap-overlay" hidden>
 	<div id="twd-ap-modal" class="twd-ap-modal" role="dialog" aria-modal="true" aria-labelledby="twd-ap-modal-title">
@@ -138,6 +138,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup)', 'twd-article-publisher' ); ?>
 					</label>
 
+					<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
+						<input type="checkbox" id="twd-ap-swipebook-toggle" checked />
+						<?php esc_html_e( 'Offer a swipe book for this article (shows the "View as a swipe book" button, and the Summary Book button if one is published). Untick to hide both.', 'twd-article-publisher' ); ?>
+					</label>
+
 					<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'More articles slide (swipe book closing section)', 'twd-article-publisher' ); ?></label>
 					<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Leave all unticked to show the 6 most recent other articles automatically. Tick up to 6 to choose exactly which ones show here instead.', 'twd-article-publisher' ); ?></p>
 					<ul id="twd-ap-related-picker" class="twd-ap-related-picker"></ul>
@@ -251,7 +256,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<p class="twd-ap-section-heading twd-ap-spaced"><?php esc_html_e( 'Editing an existing article', 'twd-article-publisher' ); ?></p>
 			<ul class="twd-ap-help-list">
-				<li><?php esc_html_e( 'Open any article you can edit and click "Edit This Article" to change it in this same popup.', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Open any article you can edit and click the small pencil at the top left of the page to change it in this same popup. When you publish or update, the page behind refreshes when the popup closes.', 'twd-article-publisher' ); ?></li>
 				<li><?php esc_html_e( 'The "Edit in WordPress" link opens the normal WordPress editor for advanced changes. Avoid using Elementor to edit articles published here -- once a post is edited in Elementor, further edits made in this popup may stop appearing on the page.', 'twd-article-publisher' ); ?></li>
 			</ul>
 

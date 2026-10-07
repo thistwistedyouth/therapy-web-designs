@@ -11,7 +11,7 @@ This file is the short version: rules, not stories. **HISTORY.md** has the full 
 ## What it does
 
 - Adds a floating **New Article** button on every front-end page, visible only to logged-in users in an allowed role.
-- Adds a floating **Edit This Article** button on any single post the current user has permission to edit.
+- Adds a small round **edit pencil**, fixed top left (below the WordPress admin bar when it is showing), on any single post the current user has permission to edit. It replaced the big "Edit This Article" button in v1.37.0; the element id `twd-ap-edit-btn` is unchanged so `publisher.js` binds it as before.
 - Both open the same popup: title, a Visual/HTML dual-mode editor (inline images from the Media Library, YouTube embeds, click-to-align/drag-to-resize on inline images), category checkboxes plus an inline "add category", a tags field with autocomplete, a featured image picker (native Media Library), an excerpt field, Yoast SEO title/description (shown only if Yoast is active), and Save Draft / Publish / Schedule.
 - An "Instructions for use" link opens a built-in help screen (toolbar/shortcode/AI-prompt reference) so a therapist never needs this file.
 - An "Edit in WordPress" link opens the normal wp-admin editor for the article being edited. Deliberately no "Edit with Elementor" link — see Conventions below.
@@ -112,6 +112,13 @@ Two server-side WordPress filters, registered by `TWD_AP_AI_Generate::init()` (c
 - Do not change the argument order, the null-means-nothing-answered contract or the clamp range without a written brief to Site Kit, because it depends on all three.
 - Not touched by this: `generate()`, the article popup, the prompts and the JSON handling.
 
+## Popup behaviour added in v1.37.0
+
+- **Page behind refreshes after Publish or Update.** `submitPost()` sets `state.reloadOnClose = ('publish' === status)`; `closeModal()` reloads the page when it is set. A brand-new Publish keeps the popup open (as before) and refreshes when it is closed; Update closes itself after 600ms and refreshes. The LAST save decides, so publish then Save Draft does not refresh, and a draft or scheduled save never does: those make the article non-public and a reload could land on a "not found" page. A failed save never sets it.
+- **Per-article swipe book switch** (`_twd_ap_swipebook_off`, `TWD_AP_Swipebook::is_enabled()`). The tick "Offer a swipe book for this article" is in the Details section for new and existing articles (all sites, key or not). Off is stored as meta `1`; on DELETES the meta, so every article that existed before the switch (no meta) stays on. It hides BOTH books: the swipe book button and the Summary Book button, the standalone pages (`?twd_ap_swipebook=1`, `?twd_ap_summary_book=1` fall through to the normal article page), the public feeds (`/articles/{id}/swipebook` and `/articles/{id}/summary-book` return 404), and the article's slot in other articles' "More Articles" slide (automatic list uses a `NOT EXISTS` meta query, hand-picked list skips it). A save that does not carry `swipebook_enabled` leaves the switch alone. The header "Swipe book link" in the popup follows the tick live.
+- **The Summary Book is still review-first.** Nothing here publishes it automatically at creation: an AI-generated draft is only ever published from the Summary Book review screen after saving. Do not add an "also publish the summary book" tick without discussing that rule.
+- **"New Article" only on shortcode pages is now the default** for sites that have never saved the setting, and for fresh installs (`activate()` stores `'shortcode_page'`; it used to store `1`, which maps to `everywhere`). Sites that already saved a value keep it: existing sites were deliberately NOT switched over automatically, one tick in Settings does it.
+
 ## Elementor converter (v1.35.0)
 
 `includes/class-twd-ap-converter.php`, admin only, **off unless the "Elementor converter" tick-box in Settings > Article Publisher is ticked** (`converter_enabled`). Adds Tools > Convert Elementor posts. Built for sites whose old posts live in an Elementor HTML widget, which the popup cannot edit because it only reads and saves `post_content`, never `_elementor_data`.
@@ -195,11 +202,12 @@ TWD_WP_CORE=/tmp/wpc/vendor/johnpbloch/wordpress-core php tests/twd-article-publ
 
 Run it after any change to `class-twd-ap-converter.php` or `class-twd-ap-sanitizer.php`. It uses short made-up articles, never client text.
 
-Two more, also outside the plugin folder:
+Three more, also outside the plugin folder:
 
 ```bash
 php tests/twd-article-publisher/ai-test.php                                          # modes, reply sizes, input limit, daily count, twd_ai_* filters (no WordPress needed)
-NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/browser-test.js   # the popup start screen in real Chromium via Playwright
+NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/browser-test.js   # the popup (start screen, pencil, refresh after save, swipe book tick) in real Chromium via Playwright
+php tests/twd-article-publisher/swipe-switch-test.php                               # the swipe book switch, where it is enforced, and the New Article default
 ```
 
 The browser test renders the real `templates/buttons-and-modal.php` with `render.php`, loads the real `publisher.css` and `publisher.js`, and fakes only the server replies. Run both after touching the popup, `publisher.js`, `publisher.css` or `class-twd-ap-ai-generate.php`.

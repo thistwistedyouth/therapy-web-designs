@@ -24,7 +24,7 @@ class TWD_AP_Settings {
 		$defaults = array(
 			'allowed_roles'     => array( 'administrator', 'editor', 'author' ),
 			'default_category'  => (int) get_option( 'default_category' ),
-			'show_everywhere'   => 'everywhere',
+			'show_everywhere'   => 'shortcode_page',
 			'anthropic_api_key' => '',
 			'converter_enabled' => 0,
 			'converter_rules'   => class_exists( 'TWD_AP_Converter' ) ? TWD_AP_Converter::default_rules() : '',
@@ -78,8 +78,8 @@ class TWD_AP_Settings {
 		$output['default_category'] = isset( $input['default_category'] ) ? absint( $input['default_category'] ) : (int) get_option( 'default_category' );
 
 		$valid_scopes = array( 'everywhere', 'shortcode_page', 'nowhere' );
-		$scope        = isset( $input['show_everywhere'] ) ? sanitize_key( $input['show_everywhere'] ) : 'everywhere';
-		$output['show_everywhere'] = in_array( $scope, $valid_scopes, true ) ? $scope : 'everywhere';
+		$scope        = isset( $input['show_everywhere'] ) ? sanitize_key( $input['show_everywhere'] ) : 'shortcode_page';
+		$output['show_everywhere'] = in_array( $scope, $valid_scopes, true ) ? $scope : 'shortcode_page';
 
 		// The key field always posts blank (render_page() never echoes the
 		// saved value back into it, see there for why) -- so blank means
@@ -161,17 +161,17 @@ class TWD_AP_Settings {
 						<td>
 							<label style="display:block;margin-bottom:6px;">
 								<input type="radio" name="twd_ap_settings[show_everywhere]" value="everywhere" <?php checked( $settings['show_everywhere'], 'everywhere' ); ?> />
-								<?php esc_html_e( 'Show it on every page of the site for allowed users (recommended)', 'twd-article-publisher' ); ?>
+								<?php esc_html_e( 'Show it on every page of the site for allowed users', 'twd-article-publisher' ); ?>
 							</label>
 							<label style="display:block;margin-bottom:6px;">
 								<input type="radio" name="twd_ap_settings[show_everywhere]" value="shortcode_page" <?php checked( $settings['show_everywhere'], 'shortcode_page' ); ?> />
-								<?php esc_html_e( 'Only on pages with the [twd_articles] shortcode', 'twd-article-publisher' ); ?>
+								<?php esc_html_e( 'Only on pages with the [twd_articles] shortcode (recommended)', 'twd-article-publisher' ); ?>
 							</label>
 							<label style="display:block;">
 								<input type="radio" name="twd_ap_settings[show_everywhere]" value="nowhere" <?php checked( $settings['show_everywhere'], 'nowhere' ); ?> />
-								<?php esc_html_e( 'Do not show it (rely on "Edit This Article" only)', 'twd-article-publisher' ); ?>
+								<?php esc_html_e( 'Do not show it (rely on the edit pencil only)', 'twd-article-publisher' ); ?>
 							</label>
-							<p class="description"><?php esc_html_e( 'The "Edit This Article" button always shows only on the article being viewed, to people allowed to edit it, regardless of this setting.', 'twd-article-publisher' ); ?></p>
+							<p class="description"><?php esc_html_e( 'The small edit pencil (top left) always shows on the article being viewed, to people allowed to edit it, regardless of this setting.', 'twd-article-publisher' ); ?></p>
 						</td>
 					</tr>
 					<tr>

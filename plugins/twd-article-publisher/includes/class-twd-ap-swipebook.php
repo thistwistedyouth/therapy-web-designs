@@ -49,6 +49,21 @@ class TWD_AP_Swipebook {
 		return add_query_arg( 'twd_ap_swipebook', '1', get_permalink( $post ) );
 	}
 
+	// Stored only when an article has the swipe book switched OFF, so every
+	// article that existed before this switch (no meta at all) keeps its
+	// swipe book exactly as before.
+	const META_OFF = '_twd_ap_swipebook_off';
+
+	/**
+	 * The per-article "Offer a swipe book" switch. Off hides the swipe book
+	 * button, the Summary Book button, both standalone pages, both public
+	 * data feeds, and the article's slot in other articles' "More Articles"
+	 * slide.
+	 */
+	public static function is_enabled( $post_id ) {
+		return '1' !== (string) get_post_meta( (int) $post_id, self::META_OFF, true );
+	}
+
 	public function maybe_render() {
 		if ( is_admin() || ! is_singular( 'post' ) ) {
 			return;
@@ -58,7 +73,7 @@ class TWD_AP_Swipebook {
 		}
 
 		$post = get_queried_object();
-		if ( ! ( $post instanceof WP_Post ) || 'publish' !== $post->post_status ) {
+		if ( ! ( $post instanceof WP_Post ) || 'publish' !== $post->post_status || ! self::is_enabled( $post->ID ) ) {
 			return;
 		}
 
@@ -125,7 +140,7 @@ class TWD_AP_Swipebook {
 		}
 
 		$post = get_post();
-		if ( ! $post || 'publish' !== $post->post_status ) {
+		if ( ! $post || 'publish' !== $post->post_status || ! self::is_enabled( $post->ID ) ) {
 			return $content;
 		}
 
@@ -312,7 +327,7 @@ class TWD_AP_Swipebook {
 			$posts = array();
 			foreach ( $related_ids as $id ) {
 				$candidate = get_post( $id );
-				if ( $candidate && 'publish' === $candidate->post_status && (int) $candidate->ID !== (int) $post->ID ) {
+				if ( $candidate && 'publish' === $candidate->post_status && (int) $candidate->ID !== (int) $post->ID && self::is_enabled( $candidate->ID ) ) {
 					$posts[] = $candidate;
 				}
 			}
@@ -327,6 +342,12 @@ class TWD_AP_Swipebook {
 					'order'          => 'DESC',
 					'post__not_in'   => array( $post->ID ),
 					'no_found_rows'  => true,
+					'meta_query'     => array(
+						array(
+							'key'     => self::META_OFF,
+							'compare' => 'NOT EXISTS',
+						),
+					),
 				)
 			);
 		}
