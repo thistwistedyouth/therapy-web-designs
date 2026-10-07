@@ -108,6 +108,23 @@ $fp = new ReflectionMethod( 'TWD_AP_REST', 'format_post' ); $fp->setAccessible( 
 t( 'edit data: swipebook_enabled true for an article that is on', true === $fp->invoke( $rest, 1, true )['swipebook_enabled'] );
 t( 'edit data: swipebook_enabled false for an article that is off', false === $fp->invoke( $rest, 2, true )['swipebook_enabled'] );
 
+// ---------- grid cards: the edit pencil permission and the per-article edit link ----------
+function get_the_category() { return array( (object) array( 'name' => 'Anxiety' ) ); }
+function wp_strip_all_tags( $s ) { return strip_tags( $s ); }
+function wp_trim_words( $s ) { return $s; }
+function get_the_date() { return '1 Oct 2026'; }
+function get_edit_post_link( $id ) { return 'https://example.test/wp-admin/post.php?post=' . $id . '&action=edit'; }
+$GLOBALS['can_edit'] = array( 1 => true, 3 => false );
+function current_user_can( $cap, $id = 0 ) { return 'edit_post' === $cap && ! empty( $GLOBALS['can_edit'][ $id ] ); }
+$card = new ReflectionMethod( 'TWD_AP_REST', 'format_article_card' ); $card->setAccessible( true );
+t( 'grid card: can_edit true for an article this person can edit', true === $card->invoke( $rest, 1 )['can_edit'] );
+t( 'grid card: can_edit false for one they cannot edit', false === $card->invoke( $rest, 3 )['can_edit'] );
+t( 'grid card: can_edit is a real boolean (never leaks anything else)', is_bool( $card->invoke( $rest, 1 )['can_edit'] ) && is_bool( $card->invoke( $rest, 3 )['can_edit'] ) );
+$GLOBALS['can_edit'] = array();
+t( 'grid card: a logged-out visitor gets can_edit false on every card', false === $card->invoke( $rest, 1 )['can_edit'] );
+t( 'edit data: carries the edit link for THAT article', 'https://example.test/wp-admin/post.php?post=2&action=edit' === $fp->invoke( $rest, 2, true )['edit_url'] );
+t( 'public (non-edit) data does not carry the edit link', ! isset( $fp->invoke( $rest, 2, false )['edit_url'] ) );
+
 // ---------- "More Articles" slide skips switched-off articles ----------
 $rel = new ReflectionMethod( 'TWD_AP_Swipebook', 'build_related_slide' ); $rel->setAccessible( true );
 mkpost( 10 ); mkpost( 11 ); mkpost( 12 );

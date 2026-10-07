@@ -44,6 +44,16 @@
 
 	document.addEventListener('DOMContentLoaded', init);
 
+	// Lets the articles grid open the edit popup for any article card.
+	// Permission is still checked by the server when the article loads and
+	// when it is saved; this only opens the popup.
+	window.TWD_AP_OpenEditor = function (id) {
+		var postId = parseInt(id, 10);
+		if (postId && els.overlay) {
+			openModal('edit', postId);
+		}
+	};
+
 	function init() {
 		els.overlay = document.getElementById('twd-ap-overlay');
 		if (!els.overlay) {
@@ -1466,6 +1476,13 @@
 					els.yoastTitle.value = data.yoast_title || '';
 					els.yoastDesc.value = data.yoast_desc || '';
 				}
+				// The "Edit in WordPress" link points at THIS article, which
+				// matters when the popup was opened from a grid card rather
+				// than from the article's own page.
+				if (data.edit_url) {
+					els.adminEditLink.href = data.edit_url;
+					els.adminEditLink.hidden = false;
+				}
 				updateSwipebookLink(data.status, data.link);
 				state.summaryBookHasDraft = !!data.summary_book_has_draft;
 				state.summaryBookIsPublished = !!data.summary_book_is_published;
@@ -1509,8 +1526,14 @@
 					return;
 				}
 				state.dirty = false;
+				var viewingThis = TWD_AP.currentPostId && parseInt(TWD_AP.currentPostId, 10) === state.editingId;
+				// Deleting from a grid (or any page that is not the deleted
+				// article's own) refreshes the page behind so the card is
+				// gone. Deleting the article being viewed reloads onto a page
+				// that no longer exists, as it always did.
+				state.reloadOnClose = !viewingThis;
 				closeModal();
-				if (TWD_AP.currentPostId && parseInt(TWD_AP.currentPostId, 10) === state.editingId) {
+				if (viewingThis) {
 					window.location.reload();
 				}
 			})

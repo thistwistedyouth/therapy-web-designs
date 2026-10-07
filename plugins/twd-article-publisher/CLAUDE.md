@@ -112,6 +112,16 @@ Two server-side WordPress filters, registered by `TWD_AP_AI_Generate::init()` (c
 - Do not change the argument order, the null-means-nothing-answered contract or the clamp range without a written brief to Site Kit, because it depends on all three.
 - Not touched by this: `generate()`, the article popup, the prompts and the JSON handling.
 
+## Edit pencil on grid cards (v1.37.1)
+
+- Each `[twd_articles]` card shows a small round pencil (top left over the thumbnail, top right when thumbnails are switched off) to a logged-in person who can edit THAT article. It opens the normal edit popup via `window.TWD_AP_OpenEditor(id)` (defined in `publisher.js`), so Update, Delete, the swipe book tick and the Summary Book button all work from the grid.
+- **Who sees it is decided by the server, per article.** `format_article_card()` returns `can_edit` (`current_user_can( 'edit_post', id )`). For that to be accurate the grid's list requests (`/articles`, `/articles/grouped`) carry the REST nonce (`config.nonce`) when `config.isAdmin` is true (`listFetch()` in `articles-grid.js`); without a nonce WordPress treats the request as logged out and every `can_edit` is false. Visitors send nothing extra and get `false` everywhere.
+- **Stale nonce fallback.** A nonce on a cached page can have expired, and WordPress then rejects even PUBLIC REST routes with a 403. `listFetch()` retries once without the nonce, so the grid always still loads (just without pencils). Do not remove that retry.
+- The card is one big `<a>`, so the pencil is a `span role="button" tabindex="0"` and a delegated click/keydown handler on the grid root stops the link being followed. Enter and Space work. Clicking anywhere else on the card still opens the article.
+- The edit payload now carries `edit_url`, so "Edit in WordPress" in the popup points at the clicked article (the page-level `adminEditUrl` is only right on that article's own page).
+- Deleting from a grid card (or any page other than the deleted article's own) now refreshes the page behind, so the card disappears; deleting the article you are viewing reloads as before.
+- The grid's "Customise this grid" popup close button uses the same SVG cross as the main popup.
+
 ## Popup behaviour added in v1.37.0
 
 - **Publish, Update and Schedule close the popup; Publish and Update also refresh the page behind.** While saving, a "working" layer (`#twd-ap-working`, `showWorking()` in `publisher.js`) shows an animated page-being-written graphic and a message ("Publishing your article", "Updating your article", "Scheduling your article", "Saving your draft"); on success it says "Published" / "Updated" / "Scheduled" for 900ms, then `closeModal()` runs. `submitPost()` sets `state.reloadOnClose = ('publish' === status)` and `closeModal()` reloads when it is set, so a new Publish, a first-time Update and a later Update all behave the same. Only a **draft** keeps the popup open (nothing public changed). A scheduled save closes but does not refresh (the article is not public yet, and an article's own page would 404). A failed save never closes or refreshes: the layer is hidden and the error shown. The working layer starts below the header (top set from the header's height in JS) so Close stays clickable, and animation is switched off for `prefers-reduced-motion`.
@@ -204,12 +214,13 @@ TWD_WP_CORE=/tmp/wpc/vendor/johnpbloch/wordpress-core php tests/twd-article-publ
 
 Run it after any change to `class-twd-ap-converter.php` or `class-twd-ap-sanitizer.php`. It uses short made-up articles, never client text.
 
-Three more, also outside the plugin folder:
+Four more, also outside the plugin folder:
 
 ```bash
 php tests/twd-article-publisher/ai-test.php                                          # modes, reply sizes, input limit, daily count, twd_ai_* filters (no WordPress needed)
 NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/browser-test.js   # the popup (start screen, pencil, refresh after save, swipe book tick) in real Chromium via Playwright
-php tests/twd-article-publisher/swipe-switch-test.php                               # the swipe book switch, where it is enforced, and the New Article default
+php tests/twd-article-publisher/swipe-switch-test.php                               # the swipe book switch, where it is enforced, the New Article default, and the grid card edit permission
+NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/grid-test.js      # the edit pencil on grid cards, in real Chromium
 ```
 
 The browser test renders the real `templates/buttons-and-modal.php` with `render.php`, loads the real `publisher.css` and `publisher.js`, and fakes only the server replies. Run both after touching the popup, `publisher.js`, `publisher.css` or `class-twd-ap-ai-generate.php`.

@@ -26,6 +26,8 @@
 		return html;
 	}
 
+	var PENCIL_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var containers = document.querySelectorAll('.twd-ap-articles');
 		Array.prototype.forEach.call(containers, initGrid);
@@ -46,6 +48,44 @@
 		var searchEl    = root.querySelector('.twd-ap-articles-search');
 		var selectEl    = root.querySelector('.twd-ap-articles-category-select');
 		var settingsBtn = root.querySelector('.twd-ap-articles-settings-btn');
+
+		// For a logged-in editor the list requests carry the REST nonce, so
+		// the server can say which cards that person may edit (the edit
+		// pencil). If the nonce has gone stale (a cached page) WordPress
+		// rejects it with a 403 even on a public route, so the request is
+		// repeated once without it: the grid then still loads, just without
+		// pencils, never broken.
+		function listFetch(url) {
+			if (config.isAdmin && config.nonce) {
+				return fetch(url, { cache: 'no-store', headers: { 'X-WP-Nonce': config.nonce } }).then(function (r) {
+					return r.status === 403 ? fetch(url, { cache: 'no-store' }) : r;
+				});
+			}
+			return fetch(url, { cache: 'no-store' });
+		}
+
+		// The card is one big link, so the pencil is a span with a button
+		// role that stops the click from following the link.
+		function openEditFromCard(el) {
+			if (typeof window.TWD_AP_OpenEditor === 'function') {
+				window.TWD_AP_OpenEditor(el.getAttribute('data-edit-id'));
+			}
+		}
+		root.addEventListener('click', function (e) {
+			var el = e.target.closest ? e.target.closest('.twd-ap-card-edit') : null;
+			if (!el) { return; }
+			e.preventDefault();
+			e.stopPropagation();
+			openEditFromCard(el);
+		});
+		root.addEventListener('keydown', function (e) {
+			if (e.key !== 'Enter' && e.key !== ' ') { return; }
+			var el = e.target.closest ? e.target.closest('.twd-ap-card-edit') : null;
+			if (!el) { return; }
+			e.preventDefault();
+			e.stopPropagation();
+			openEditFromCard(el);
+		});
 
 		var state = {
 			search: '',
@@ -215,7 +255,7 @@
 			emptyEl.hidden = true;
 			loadMoreBtn.hidden = true;
 
-			fetch(config.restUrl + '/articles/grouped', { cache: 'no-store' })
+			listFetch(config.restUrl + '/articles/grouped')
 				.then(function (r) { return r.json(); })
 				.then(function (data) {
 					state.loading = false;
@@ -285,7 +325,7 @@
 				params.push('tag=' + encodeURIComponent(state.tag));
 			}
 
-			fetch(config.restUrl + '/articles?' + params.join('&'), { cache: 'no-store' })
+			listFetch(config.restUrl + '/articles?' + params.join('&'))
 				.then(function (r) {
 					return r.json();
 				})
@@ -330,8 +370,12 @@
 					: '<span class="twd-ap-article-thumb twd-ap-article-thumb-placeholder" aria-hidden="true">' + PLACEHOLDER_SVG + '</span>')
 				: '';
 			var eyebrow = item.category ? escapeHtml(item.category) + ' &middot; ' : '';
+			var edit = (item.can_edit && typeof window.TWD_AP_OpenEditor === 'function')
+				? '<span class="twd-ap-card-edit" role="button" tabindex="0" data-edit-id="' + parseInt(item.id, 10) + '" aria-label="Edit this article" title="Edit this article">' + PENCIL_SVG + '</span>'
+				: '';
 
 			return '<a class="twd-ap-article-card" href="' + escapeHtml(item.link) + '">' +
+				edit +
 				thumb +
 				'<span class="twd-ap-article-body">' +
 					'<span class="twd-ap-article-date">' + eyebrow + escapeHtml(item.date) + ' &middot; ' + parseInt(item.reading_time, 10) + ' min read</span>' +

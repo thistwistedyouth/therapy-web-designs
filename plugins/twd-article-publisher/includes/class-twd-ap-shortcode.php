@@ -146,7 +146,7 @@ class TWD_AP_Shortcode {
 				<div class="twd-ap-modal twd-ap-grid-settings-modal">
 					<div class="twd-ap-modal-header">
 						<p class="twd-ap-modal-title"><?php esc_html_e( 'Customise this grid', 'twd-article-publisher' ); ?></p>
-						<button type="button" class="twd-ap-close-btn twd-ap-grid-settings-close" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>">&times;</button>
+						<button type="button" class="twd-ap-close-btn twd-ap-grid-settings-close" aria-label="<?php esc_attr_e( 'Close', 'twd-article-publisher' ); ?>"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
 					</div>
 					<div class="twd-ap-modal-body">
 						<p id="twd-ap-grid-settings-status" class="twd-ap-status" hidden></p>

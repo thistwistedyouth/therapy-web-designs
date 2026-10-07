@@ -329,3 +329,51 @@
   font-size: 14px !important;
   line-height: 1 !important;
 }
+
+/* Small edit pencil on a card, for logged-in people who can edit that
+   article. Top left over the thumbnail (top right when thumbnails are
+   switched off, so it never sits on the date line). */
+.twd-ap-card-edit {
+  position: absolute !important;
+  top: 10px !important;
+  left: 10px !important;
+  z-index: 3 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: #374151 !important;
+  color: #fff !important;
+  line-height: 1 !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25) !important;
+  opacity: 0.92 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.2s ease !important;
+}
+.twd-ap-card-edit:hover,
+.twd-ap-card-edit:focus-visible {
+  background: #1f2937 !important;
+  opacity: 1 !important;
+  transform: scale(1.08) !important;
+  outline: none !important;
+}
+.twd-ap-card-edit svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+.twd-ap-no-thumbnails .twd-ap-card-edit {
+  left: auto !important;
+  right: 10px !important;
+}

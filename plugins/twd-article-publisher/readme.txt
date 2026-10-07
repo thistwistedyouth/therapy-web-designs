@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.37.0
+Stable tag: 1.37.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.37.1): the small edit pencil now also shows on the cards in the
+articles grid, for logged-in people who can edit that article. Click it
+to open the same edit popup straight from the grid, without opening the
+article first. It only appears on articles you are allowed to edit, and
+clicking anywhere else on a card still opens the article as before.
+Deleting an article from the grid now refreshes the grid so the card is
+gone, and "Edit in WordPress" in the popup now always points at the
+article you opened.
 
 NEW (1.37.0): changes to the popup. (1) Publish, Update and Schedule
 now close the popup by themselves after a short animated "Publishing /

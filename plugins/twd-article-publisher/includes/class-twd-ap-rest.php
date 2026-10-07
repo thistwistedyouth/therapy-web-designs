@@ -667,6 +667,7 @@ class TWD_AP_REST {
 
 		if ( $for_edit ) {
 			$data['content_html'] = $post->post_content;
+			$data['edit_url']     = (string) get_edit_post_link( $post_id, '' );
 			$data['yoast_title']  = get_post_meta( $post_id, '_yoast_wpseo_title', true );
 			$data['yoast_desc']   = get_post_meta( $post_id, '_yoast_wpseo_metadesc', true );
 			$post_tags            = wp_get_post_tags( $post_id, array( 'fields' => 'names' ) );
@@ -822,6 +823,11 @@ class TWD_AP_REST {
 			'thumbnail'    => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '',
 			'category'     => ! empty( $topic_cats ) ? html_entity_decode( $topic_cats[0]->name, ENT_QUOTES, 'UTF-8' ) : '',
 			'featured'     => (bool) get_post_meta( $post->ID, '_twd_ap_featured', true ),
+			// Only ever true for a logged-in person (the grid sends the REST
+			// nonce for them) who can edit this exact article. Drives the
+			// small edit pencil on the card; the server still checks the
+			// same permission again when the edit popup loads or saves.
+			'can_edit'     => current_user_can( 'edit_post', $post->ID ),
 		);
 	}
 
