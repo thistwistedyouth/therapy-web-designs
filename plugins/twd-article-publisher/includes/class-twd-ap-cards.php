@@ -431,7 +431,13 @@ class TWD_AP_Cards {
 		if ( $page < $pages ) {
 			$items .= '<li class="twd-ap-pager-next"><a rel="next" href="' . esc_url( $href( $page + 1 ) ) . '">' . esc_html__( 'Next', 'twd-article-publisher' ) . ' &rarr;</a></li>';
 		}
-		return '<nav class="twd-ap-articles-pager" aria-label="' . esc_attr__( 'More articles', 'twd-article-publisher' ) . '"><ul>' . $items . '</ul></nav>';
+		// The inline script right after the nav marks it as "JavaScript is on"
+		// before the browser has painted it, so it never flashes up and then
+		// vanishes when articles-grid.js (loaded in the footer) runs. Without
+		// JavaScript it never runs and the links stay. data-deep is page 2 and
+		// beyond, where only the Previous link stays.
+		return '<nav class="twd-ap-articles-pager"' . ( $page > 1 ? ' data-deep="1"' : '' ) . ' aria-label="' . esc_attr__( 'More articles', 'twd-article-publisher' ) . '"><ul>' . $items . '</ul></nav>' .
+			'<script>document.currentScript.previousElementSibling.setAttribute("data-js","1");</script>';
 	}
 
 	/**

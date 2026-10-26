@@ -29,6 +29,7 @@ function is_admin() { return false; }
 function is_singular() { return $GLOBALS['single']; }
 function in_the_loop() { return true; }
 function is_main_query() { return true; }
+require $plugin . 'includes/class-twd-ap-sanitizer.php';
 require $plugin . 'includes/class-twd-ap-grid-settings.php';
 require $plugin . 'includes/class-twd-ap-cta.php';
 
@@ -66,6 +67,12 @@ t( 'nothing but a label: nothing shows at all', '' === TWD_AP_Cta::html( 'grid' 
 TWD_AP_Grid_Settings::save( array( 'cta_button_url' => 'tel:+441234567890', 'cta_button_label' => 'Call me' ) );
 $dump['button'] = TWD_AP_Cta::html( 'grid' );
 t( 'only a button and a link: just the button shows', false !== strpos( TWD_AP_Cta::html( 'grid' ), 'href="tel:+441234567890"' ) && false === strpos( TWD_AP_Cta::html( 'grid' ), 'twd-ap-cta-heading' ) );
+
+// ---------- no em or en dashes in site copy ----------
+reset_cta();
+TWD_AP_Grid_Settings::save( array( 'cta_heading' => "Talk \u{2014} today", 'cta_text' => "Free \u{2013} no obligation", 'cta_button_label' => "Book \u{2014} now" ) );
+$s = TWD_AP_Grid_Settings::get();
+t( 'dashes: heading, text and button text have em and en dashes turned into commas', 'Talk, today' === $s['cta_heading'] && 'Free, no obligation' === $s['cta_text'] && 'Book, now' === $s['cta_button_label'], json_encode( $s ) );
 
 // ---------- safe input ----------
 reset_cta();

@@ -32,8 +32,10 @@ class TWD_AP_Grid_Settings {
 			// so a site that never touches these looks exactly as before.
 			// Call to action (1.38.0): empty and switched off everywhere until
 			// the owner fills it in and ticks where it should show.
-			// Category intro (1.38.0): print a category page's own Description above its grid.
-			'intro_show'         => true,
+			// Category intro (1.38.0): print a category page's own Description above
+			// its grid. Off until the owner ticks it, because many themes already
+			// print the description themselves and it would show twice.
+			'intro_show'         => false,
 			'cta_heading'        => '',
 			'cta_text'           => '',
 			'cta_button_label'   => '',
@@ -150,13 +152,13 @@ class TWD_AP_Grid_Settings {
 			$output['intro_show'] = (bool) $input['intro_show'];
 		}
 		if ( isset( $input['cta_heading'] ) ) {
-			$output['cta_heading'] = mb_substr( sanitize_text_field( $input['cta_heading'] ), 0, 120 );
+			$output['cta_heading'] = mb_substr( TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( $input['cta_heading'] ) ), 0, 120 );
 		}
 		if ( isset( $input['cta_text'] ) ) {
-			$output['cta_text'] = mb_substr( sanitize_textarea_field( $input['cta_text'] ), 0, 500 );
+			$output['cta_text'] = mb_substr( TWD_AP_Sanitizer::strip_dashes( sanitize_textarea_field( $input['cta_text'] ) ), 0, 500 );
 		}
 		if ( isset( $input['cta_button_label'] ) ) {
-			$output['cta_button_label'] = mb_substr( sanitize_text_field( $input['cta_button_label'] ), 0, 40 );
+			$output['cta_button_label'] = mb_substr( TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( $input['cta_button_label'] ) ), 0, 40 );
 		}
 		if ( isset( $input['cta_button_url'] ) ) {
 			// http, https, mailto and tel only; anything else becomes empty.

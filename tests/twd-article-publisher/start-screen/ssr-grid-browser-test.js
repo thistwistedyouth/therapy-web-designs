@@ -43,7 +43,7 @@ async function open(browser, name, o) {
 	let restDone = 0;
 	page.on('pageerror', (e) => errors.push(String(e)));
 	if (o.onRequest) { page.on('request', o.onRequest); }
-	await page.route('https://example.test/page', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: pageHtml(name, o.js) }));
+	await page.route('https://example.test/page', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: pageHtml(name, o.js && !o.noScript) }));
 	await page.route(REST + '/**', async (route) => {
 		const url = route.request().url();
 		await wait(o.delay);
@@ -53,7 +53,7 @@ async function open(browser, name, o) {
 		if (/\/articles\/grouped/.test(url)) { body = DUMP[name].grouped; }
 		else if (/\/articles\/facets/.test(url)) { body = { categories: [{ name: 'Anxiety', slug: 'anxiety' }, { name: 'Sleep', slug: 'sleep' }], tags: [] }; }
 		else if (/\/articles\?/.test(url)) { body = o.empty ? { items: [], has_more: false } : DUMP[name].list; }
-		else if (/\/grid-settings/.test(url)) { if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal', cta_heading: '', cta_text: '', cta_button_label: '', cta_button_url: '', cta_show_grid: false, cta_show_categories: false, cta_show_index: false, cta_show_articles: false };
+		else if (/\/grid-settings/.test(url)) { if (o.settingsFail && route.request().method() !== 'POST') { return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }); } if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal', cta_heading: '', cta_text: '', cta_button_label: '', cta_button_url: '', cta_show_grid: false, cta_show_categories: false, cta_show_index: false, cta_show_articles: false };
 			Object.assign(body, window_cta); }
 		if (/\/term-intro/.test(url)) { introSaves.push(JSON.parse(route.request().postData())); return route.fulfill({ status: introStatus, contentType: 'application/json', body: JSON.stringify(introStatus === 200 ? { html: '<p>' + introSaves[introSaves.length - 1].description + '</p>', raw: introSaves[introSaves.length - 1].description } : { code: 'x' }) }); }
 		return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
@@ -383,6 +383,52 @@ async function open(browser, name, o) {
 		await wait(500);
 		t('paging, page 2: Load more continues from offset 18 and the Previous link goes', reqs.some((u) => /offset=18/.test(u)) && !(await r.page.locator('.twd-ap-articles-pager').isVisible()), JSON.stringify(reqs));
 		t('paging, page 2: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+	}
+
+
+	// 16. The page links never flash: with JavaScript on but the grid script not yet loaded, only the tiny inline script has run.
+	{
+		let r = await open(browser, 'paged1', { noScript: true });
+		t('paging flash: page 1 links are hidden by the inline script before the grid script runs', !(await r.page.locator('.twd-ap-articles-pager').isVisible()) && (await r.page.locator('.twd-ap-articles-pager').getAttribute('data-js')) === '1');
+		await r.ctx.close();
+		r = await open(browser, 'paged2', { noScript: true });
+		const vis = await r.page.$$eval('.twd-ap-articles-pager li', (l) => l.filter((x) => x.getBoundingClientRect().height > 0).map((x) => x.className));
+		t('paging flash: page 2 shows only Previous before the grid script runs', JSON.stringify(vis) === JSON.stringify(['twd-ap-pager-prev']), JSON.stringify(vis));
+		await r.ctx.close();
+	}
+
+	// 17. The gear popup: Save is off until the settings load, and an older cached popup cannot wipe settings.
+	{
+		let r = await open(browser, 'admin', { delay: 50, settingsFail: true });
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await wait(500);
+		t('popup load failure: it says so and Save is switched off', (await r.page.locator('#twd-ap-grid-settings-status').innerText()).includes('Could not load') && await r.page.locator('#twd-ap-gs-save').isDisabled());
+		await r.ctx.close();
+
+		window_cta = { cta_heading: 'Keep me', cta_show_grid: true };
+		r = await open(browser, 'admin', { delay: 50 });
+		await r.page.evaluate(() => { ['#twd-ap-gs-cta-details', '#twd-ap-gs-look-details', '#twd-ap-gs-intro-details', '#twd-ap-gs-topics'].forEach((sel) => { const el = document.querySelector(sel); if (el) { el.remove(); } }); });
+		const before = saved.length;
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		const sent = saved[saved.length - 1];
+		t('older cached popup: saving sends none of the sections it does not have, so nothing is cleared', saved.length === before + 1 && !('cta_heading' in sent) && !('look_text_color' in sent) && !('intro_show' in sent) && !('topic_category_ids' in sent) && 'categories_count' in sent, JSON.stringify(Object.keys(sent)));
+		t('older cached popup: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+		window_cta = {};
+
+		r = await open(browser, 'admin', { delay: 50 });
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		t('popup: the category intro tick starts off (the intro is opt in)', !(await r.page.isChecked('#twd-ap-gs-intro-show')));
+		await r.page.click('#twd-ap-gs-intro-details > summary');
+		await r.page.check('#twd-ap-gs-intro-show');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		t('popup: ticking the intro saves intro_show true', saved[saved.length - 1].intro_show === true);
 		await r.ctx.close();
 	}
 

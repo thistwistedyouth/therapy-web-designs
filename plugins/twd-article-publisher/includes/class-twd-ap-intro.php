@@ -47,7 +47,7 @@ class TWD_AP_Intro {
 		}
 		$edit = '';
 		if ( $editable ) {
-			$edit = '<button type="button" class="twd-ap-intro-edit" data-term-id="' . (int) $term->term_id . '" data-taxonomy="' . esc_attr( $term->taxonomy ) . '" data-name="' . esc_attr( $term->name ) . '" data-raw="' . esc_attr( (string) $term->description ) . '">' .
+			$edit = '<button type="button" class="twd-ap-intro-edit" data-term-id="' . (int) $term->term_id . '" data-taxonomy="' . esc_attr( $term->taxonomy ) . '" data-name="' . esc_attr( html_entity_decode( $term->name, ENT_QUOTES, 'UTF-8' ) ) . '" data-raw="' . esc_attr( (string) $term->description ) . '">' .
 				'<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> ' .
 				esc_html( '' === $text ? __( 'Add an intro', 'twd-article-publisher' ) : __( 'Edit intro', 'twd-article-publisher' ) ) .
 			'</button>';
@@ -67,8 +67,11 @@ class TWD_AP_Intro {
 		if ( ! current_user_can( 'edit_term', $term_id ) ) {
 			return new WP_Error( 'twd_ap_forbidden', __( 'You do not have permission to edit this category.', 'twd-article-publisher' ), array( 'status' => 403 ) );
 		}
-		$clean   = trim( wp_kses_post( (string) $description ) );
-		$updated = wp_update_term( $term_id, $taxonomy, array( 'description' => $clean ) );
+		// No em or en dashes in site copy (the plugin-wide rule), then the same
+		// cleaning WordPress applies to post content. wp_update_term() expects
+		// slashed data, like every core save, so a backslash survives.
+		$clean   = trim( wp_kses_post( TWD_AP_Sanitizer::strip_dashes( (string) $description ) ) );
+		$updated = wp_update_term( $term_id, $taxonomy, array( 'description' => wp_slash( $clean ) ) );
 		if ( is_wp_error( $updated ) ) {
 			return $updated;
 		}

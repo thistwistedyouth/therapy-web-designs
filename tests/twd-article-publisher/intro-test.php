@@ -19,8 +19,12 @@ function wpautop( $t ) { return '<p>' . str_replace( "\n\n", "</p>\n<p>", trim( 
 function wp_kses_post( $t ) { $t = preg_replace( '#<(script|style)[^>]*>.*?</\1>#is', '', $t ); $t = preg_replace( '/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]*)/i', '', $t ); return strip_tags( $t, '<p><a><strong><em><br><ul><ol><li>' ); }
 function current_user_can( $cap, $id = 0 ) { return 'edit_term' === $cap && in_array( $id, $GLOBALS['may_edit'], true ); }
 function get_term( $id, $tax ) { $t = $GLOBALS['terms'][ $id ] ?? null; return $t && $t->taxonomy === $tax ? $t : new WP_Error(); }
-function wp_update_term( $id, $tax, $args ) { $GLOBALS['updates'][] = array( $id, $tax, $args ); if ( ! empty( $GLOBALS['update_fails'] ) ) { return new WP_Error( 'x' ); } $GLOBALS['terms'][ $id ]->description = $args['description']; return array( 'term_id' => $id ); }
+function wp_slash( $s ) { return addslashes( $s ); }
+function wp_unslash( $s ) { return stripslashes( $s ); }
+// Like core: wp_update_term() expects slashed data and unslashes it before storing.
+function wp_update_term( $id, $tax, $args ) { $GLOBALS['updates'][] = array( $id, $tax, $args ); if ( ! empty( $GLOBALS['update_fails'] ) ) { return new WP_Error( 'x' ); } $GLOBALS['terms'][ $id ]->description = wp_unslash( $args['description'] ); return array( 'term_id' => $id ); }
 class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } }
+require $plugin . 'includes/class-twd-ap-sanitizer.php';
 require $plugin . 'includes/class-twd-ap-intro.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
 
@@ -38,6 +42,10 @@ $rest = TWD_AP_REST::instance();
 $r = $rest->save_term_intro( new Req( array( 'term_id' => 2, 'taxonomy' => 'category', 'description' => "Hello <strong>there</strong>.\n\nSecond <script>alert(1)</script>paragraph." ) ) );
 t( 'saving: the description is stored with scripts removed', ! is_wp_error( $r ) && false === strpos( $GLOBALS['terms'][2]->description, '<script' ) && false !== strpos( $GLOBALS['terms'][2]->description, '<strong>there</strong>' ) );
 t( 'saving: the reply carries the cleaned, formatted text ready to show', ! is_wp_error( $r ) && 1 === preg_match( '/^<p>Hello <strong>there<\/strong>\.<\/p>\n<p>Second paragraph\.<\/p>$/', $r['html'] ) && $r['raw'] === $GLOBALS['terms'][2]->description );
+$r = $rest->save_term_intro( new Req( array( 'term_id' => 2, 'taxonomy' => 'category', 'description' => 'Path C:\\notes and \\o/ cheer, it\'s fine' ) ) );
+t( 'saving: backslashes and apostrophes survive a save exactly (core expects slashed data)', ! is_wp_error( $r ) && 'Path C:\\notes and \\o/ cheer, it\'s fine' === $GLOBALS['terms'][2]->description, $GLOBALS['terms'][2]->description );
+$r = $rest->save_term_intro( new Req( array( 'term_id' => 2, 'taxonomy' => 'category', 'description' => "Calm \u{2014} and steady \u{2013} always" ) ) );
+t( 'saving: em and en dashes are turned into commas, like every other text field', ! is_wp_error( $r ) && false === strpos( $GLOBALS['terms'][2]->description, "\u{2014}" ) && false === strpos( $GLOBALS['terms'][2]->description, "\u{2013}" ) && false !== strpos( $GLOBALS['terms'][2]->description, 'Calm, and steady, always' ), $GLOBALS['terms'][2]->description );
 $r = $rest->save_term_intro( new Req( array( 'term_id' => 2, 'taxonomy' => 'category', 'description' => '' ) ) );
 t( 'saving: an empty text clears the intro', ! is_wp_error( $r ) && '' === $r['html'] && '' === $GLOBALS['terms'][2]->description );
 $r = $rest->save_term_intro( new Req( array( 'term_id' => 9, 'taxonomy' => 'post_tag', 'description' => 'About calm' ) ) );
@@ -66,6 +74,8 @@ t( 'button: not for a visitor', false === strpos( TWD_AP_Intro::html( $term ), '
 $GLOBALS['allowed'] = true;
 t( 'button: for a publisher who may edit this category', false !== strpos( TWD_AP_Intro::html( $term ), 'twd-ap-intro-edit' ) );
 t( 'button: not for a publisher who may not edit this category', false === strpos( TWD_AP_Intro::html( $GLOBALS['terms'][3] ), 'twd-ap-intro-edit' ) && '' === TWD_AP_Intro::html( $GLOBALS['terms'][3] ) );
+$GLOBALS['terms'][2]->name = 'Tom &amp; Jerry';
+t( 'button: the category name shows as typed in the popup title, not entity text', false !== strpos( TWD_AP_Intro::html( $GLOBALS['terms'][2] ), 'data-name="Tom &amp; Jerry"' ) && false === strpos( TWD_AP_Intro::html( $GLOBALS['terms'][2] ), '&amp;amp;' ) );
 $bad = (object) array( 'term_id' => 5, 'name' => 'x', 'taxonomy' => 'nav_menu', 'description' => 'text' );
 t( 'a term from another taxonomy gets no intro', '' === TWD_AP_Intro::html( $bad ) );
 

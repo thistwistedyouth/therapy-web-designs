@@ -64,9 +64,11 @@ preview. Untouched, articles look exactly as before. (2) Call to action: a
 heading, some text and a button, shown where you tick: under the resources
 grid, under a category page's grid, under the article index, and at the
 end of every article. Nothing shows until you fill it in. (3) Category
-intro: a category page now shows the category's own description above its
-articles, and anyone who can edit the category gets an "Edit intro" button
-on the page to write or change it without going into wp-admin. (4) Long
+intro: tick "Show the category description" and a category page shows the
+category's own description above its articles, and anyone who can edit the
+category gets an "Edit intro" button on the page to write or change it
+without going into wp-admin (off until ticked, because many themes already
+show the description). (4) Long
 category and list pages get real page links (Previous, 1, 2, 3, Next) for
 search engines and visitors without JavaScript; everyone else keeps Load
 more.

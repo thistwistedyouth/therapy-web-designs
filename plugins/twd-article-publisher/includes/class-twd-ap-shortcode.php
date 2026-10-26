@@ -118,7 +118,10 @@ class TWD_AP_Shortcode {
 		$many_articles  = $total_articles > 12;
 		$category       = sanitize_title( $atts['category'] );
 		$tag            = sanitize_title( $atts['tag'] );
-		$count          = max( 1, (int) $atts['count'] );
+		// 24 is the most the REST route (and TWD_AP_Cards::fetch()) will return
+		// per request, so the printed cards, the page links, the start offset
+		// and the JS's Load more all use the same page size.
+		$count          = max( 1, min( 24, (int) $atts['count'] ) );
 		// A site with 12 or fewer articles shows every one of them in a single
 		// flat list with no Load more (articles-grid.js applies the same rule
 		// once its settings reply lands). Doing it here means the first batch
@@ -252,7 +255,7 @@ class TWD_AP_Shortcode {
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-intro-details">
 							<summary><?php esc_html_e( 'Category intro', 'twd-article-publisher' ); ?></summary>
-							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'On a category page the category\'s own description is shown above its articles. Open a category page while logged in and use "Edit intro" to write or change it. You can also edit it under Posts, Categories.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'When this is ticked, a category page shows the category\'s own description above its articles (leave it off if your theme already shows the description). Open a category page while logged in and use "Edit intro" to write or change it, or edit it under Posts, Categories.', 'twd-article-publisher' ); ?></p>
 							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-intro-show" /> <?php esc_html_e( 'Show the category description above the grid on category pages', 'twd-article-publisher' ); ?></label>
 						</details>
 

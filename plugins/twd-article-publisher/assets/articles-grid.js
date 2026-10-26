@@ -161,7 +161,10 @@
 		// "Previous" link stays, until the person searches, filters or loads more.
 		var pagerEl = root.querySelector('.twd-ap-articles-pager');
 		if (pagerEl) {
-			if ((config.startOffset || 0) > 0) { pagerEl.classList.add('twd-ap-articles-pager-slim'); } else { pagerEl.hidden = true; }
+			// Normally already done by the tiny inline script printed after the
+			// links (so there is no flash); this covers a page where inline
+			// scripts were stripped.
+			pagerEl.setAttribute('data-js', '1');
 		}
 
 		// For a logged-in editor the list requests carry the REST nonce, so
@@ -788,8 +791,14 @@
 			return closest.element;
 		}
 
+		// Save stays off until the current settings have loaded, so a failed or
+		// partial load can never save blank fields over what is stored.
+		saveBtn.disabled = true;
 		fetch(config.restUrl + '/grid-settings', { cache: 'no-store' })
-			.then(function (r) { return r.json(); })
+			.then(function (r) {
+				if (!r.ok) { throw new Error('load'); }
+				return r.json();
+			})
 			.then(function (data) {
 				catsCount.value = data.categories_count || 4;
 				postsCount.value = data.posts_per_category || 6;
@@ -804,7 +813,7 @@
 				sbLogoId = data.swipebook_logo_id || 0;
 				renderSbLogoPreview(data.swipebook_logo_url || '');
 				renderOrderList(data.categories || []);
-				renderTopics(data.categories || [], data.topic_category_ids);
+				if (topicsBox) { renderTopics(data.categories || [], data.topic_category_ids); }
 				lookState = {
 					look_text_color: data.look_text_color || '',
 					look_heading_color: data.look_heading_color || '',
@@ -814,25 +823,31 @@
 					look_size: data.look_size || 'medium',
 					look_spacing: data.look_spacing || 'normal'
 				};
-				fillLookInputs();
-				introShow.checked = false !== data.intro_show;
-				ctaHeading.value = data.cta_heading || '';
-				ctaText.value = data.cta_text || '';
-				ctaLabel.value = data.cta_button_label || '';
-				ctaUrl.value = data.cta_button_url || '';
-				ctaGrid.checked = !!data.cta_show_grid;
-				ctaCategories.checked = !!data.cta_show_categories;
-				ctaIndex.checked = !!data.cta_show_index;
-				ctaArticles.checked = !!data.cta_show_articles;
+				if (lookInputs.length) { fillLookInputs(); }
+				if (introShow) { introShow.checked = !!data.intro_show; }
+				// A page cached before an update can carry an older popup without
+				// some of these fields; they are skipped here and on save.
+				if (ctaHeading) {
+					ctaHeading.value = data.cta_heading || '';
+					ctaText.value = data.cta_text || '';
+					ctaLabel.value = data.cta_button_label || '';
+					ctaUrl.value = data.cta_button_url || '';
+					ctaGrid.checked = !!data.cta_show_grid;
+					ctaCategories.checked = !!data.cta_show_categories;
+					ctaIndex.checked = !!data.cta_show_index;
+					ctaArticles.checked = !!data.cta_show_articles;
+				}
 				profilePhotoId = data.profile_photo_id || 0;
 				renderPhotoPreview(data.profile_photo_url || '');
 				nameInput.value = data.profile_name || '';
 				bioInput.value = data.profile_bio || '';
 				linkUrlInput.value = data.profile_link_url || '';
 				linkLabelInput.value = data.profile_link_label || '';
+				saveBtn.disabled = false;
 				overlay.hidden = false;
 			})
 			.catch(function () {
+				setStatus('Could not load your current settings, so saving is switched off. Close this and try again.', false);
 				overlay.hidden = false;
 			});
 
@@ -853,29 +868,36 @@
 				swipebook_logo_bg: sbLogoBgSelect.value,
 				swipebook_export_branding: !!sbExportBrandingBox.checked,
 				category_order: order,
-				topic_category_ids: topicsValue(),
-				intro_show: !!introShow.checked,
-				cta_heading: ctaHeading.value,
-				cta_text: ctaText.value,
-				cta_button_label: ctaLabel.value,
-				cta_button_url: ctaUrl.value,
-				cta_show_grid: !!ctaGrid.checked,
-				cta_show_categories: !!ctaCategories.checked,
-				cta_show_index: !!ctaIndex.checked,
-				cta_show_articles: !!ctaArticles.checked,
-				look_text_color: lookState.look_text_color || '',
-				look_heading_color: lookState.look_heading_color || '',
-				look_link_color: lookState.look_link_color || '',
-				look_quote_color: lookState.look_quote_color || '',
-				look_font: lookState.look_font || 'system',
-				look_size: lookState.look_size || 'medium',
-				look_spacing: lookState.look_spacing || 'normal',
 				profile_photo_id: profilePhotoId,
 				profile_name: nameInput.value,
 				profile_bio: bioInput.value,
 				profile_link_url: linkUrlInput.value,
 				profile_link_label: linkLabelInput.value,
 			};
+
+			// Only the sections this popup actually has are sent, so an older cached
+			// popup can never clear a setting it does not show.
+			if (topicsBox) { payload.topic_category_ids = topicsValue(); }
+			if (introShow) { payload.intro_show = !!introShow.checked; }
+			if (ctaHeading) {
+				payload.cta_heading = ctaHeading.value;
+				payload.cta_text = ctaText.value;
+				payload.cta_button_label = ctaLabel.value;
+				payload.cta_button_url = ctaUrl.value;
+				payload.cta_show_grid = !!ctaGrid.checked;
+				payload.cta_show_categories = !!ctaCategories.checked;
+				payload.cta_show_index = !!ctaIndex.checked;
+				payload.cta_show_articles = !!ctaArticles.checked;
+			}
+			if (lookInputs.length) {
+				payload.look_text_color = lookState.look_text_color || '';
+				payload.look_heading_color = lookState.look_heading_color || '';
+				payload.look_link_color = lookState.look_link_color || '';
+				payload.look_quote_color = lookState.look_quote_color || '';
+				payload.look_font = lookState.look_font || 'system';
+				payload.look_size = lookState.look_size || 'medium';
+				payload.look_spacing = lookState.look_spacing || 'normal';
+			}
 
 			setStatus('Saving…', false);
 			fetch(config.restUrl + '/grid-settings', {

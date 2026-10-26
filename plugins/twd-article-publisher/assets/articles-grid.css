@@ -766,8 +766,7 @@
 }
 
 /* Real page links under a long category or curated list. Visible without
-   JavaScript; the JS hides them (Load more takes over) or, on page 2 and
-   beyond, keeps only the Previous link. */
+   JavaScript; with it they are hidden (see data-js below). */
 .twd-ap-articles-pager[hidden] {
   display: none !important;
 }
@@ -815,6 +814,11 @@
   padding: 8px 4px !important;
   color: #6b7280 !important;
 }
-.twd-ap-articles-pager-slim li:not(.twd-ap-pager-prev) {
+/* JavaScript is on (data-js): Load more takes over, so hide the links; on page
+   2 and beyond (data-deep) keep only the Previous link. */
+.twd-ap-articles-pager[data-js]:not([data-deep]) {
+  display: none !important;
+}
+.twd-ap-articles-pager[data-js][data-deep] li:not(.twd-ap-pager-prev) {
   display: none !important;
 }

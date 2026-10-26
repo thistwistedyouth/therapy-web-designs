@@ -99,7 +99,7 @@ class WP_Query {
 	}
 }
 class TWD_AP_Grid_Settings {
-	static $s = array( 'intro_show' => true, 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false, 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
+	static $s = array( 'intro_show' => false, 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false, 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
 	static function get() { return self::$s; }
 }
 class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } }
@@ -135,6 +135,7 @@ function reset_site() {
 	TWD_AP_Grid_Settings::$s['show_thumbnails'] = true;
 	TWD_AP_Grid_Settings::$s['posts_per_category'] = 6;
 	TWD_AP_Grid_Settings::$s['topic_category_ids'] = 'all';
+	TWD_AP_Grid_Settings::$s['intro_show'] = false;
 }
 function add_post( $id, $title, $cats, $date, $extra = array() ) {
 	$GLOBALS['posts'][ $id ] = (object) array_merge( array(
@@ -310,8 +311,18 @@ foreach ( array( 1 => 0, 2 => 9 ) as $pg => $off ) {
 	);
 }
 $_GET = array();
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: an inline script right after the links marks them JavaScript-on before first paint', 1 === preg_match( '/<\/nav><script>document\.currentScript\.previousElementSibling\.setAttribute\("data-js","1"\);<\/script>/', $html ) );
+t( 'paging: page 1 is not marked deep, page 2 is', false === strpos( $html, 'data-deep' ) && ( $_GET['twd_page'] = '2' ) && false !== strpos( grid( array( 'category' => 'anxiety', 'count' => 9 ) ), 'data-deep="1"' ) );
+$_GET = array();
+// count above the 24 the REST route returns is clamped, so the page links match the cards
 $html = grid( array( 'category' => 'anxiety', 'count' => 30 ) );
-t( 'paging: no page links when everything fits on one page', false === strpos( $html, 'twd-ap-articles-pager' ) );
+t( 'count: count="30" is clamped to 24, so 24 cards and a pager for the other 6 (nothing unreachable)', 24 === count( card_links( $html ) ) && false !== strpos( $html, 'class="twd-ap-articles-pager"' ) && 24 === $page_cfg( $html )['count'] );
+$_GET['twd_page'] = '2';
+t( 'count: page 2 of the clamped list holds the last 6', 6 === count( card_links( grid( array( 'category' => 'anxiety', 'count' => 30 ) ) ) ) );
+$_GET = array();
+$html = grid( array( 'category' => 'anxiety', 'count' => 24 ) );
+t( 'paging: with 30 articles 24 to a page still needs a pager (6 left)', false !== strpos( $html, 'twd-ap-articles-pager' ) );
 $all = array();
 for ( $pg = 1; $pg <= 4; $pg++ ) { $_GET['twd_page'] = (string) $pg; $all = array_merge( $all, card_links( grid( array( 'category' => 'anxiety', 'count' => 9 ) ) ) ); }
 $_GET = array();
@@ -331,6 +342,9 @@ reset_site();
 add_post( 1, 'Some piece', array( 2 ), '2026-02-01' );
 $GLOBALS['archive'] = 2;
 t( 'intro: a category with no description shows nothing to a visitor', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+TWD_AP_Grid_Settings::$s['intro_show'] = true;
+t( 'intro: off by default, so a theme that already prints the description is not doubled', ( $GLOBALS['terms'][2]->description = 'Words' ) && ( TWD_AP_Grid_Settings::$s['intro_show'] = false ) === false && false === strpos( grid(), 'twd-ap-articles-intro' ) );
+TWD_AP_Grid_Settings::$s['intro_show'] = true;
 $GLOBALS['terms'][2]->description = "Anxiety can feel <strong>huge</strong>.\n\nThese pieces help. <script>alert(1)</script><a href=\"https://example.test/x\" onclick=\"evil()\">More</a>";
 $html = grid();
 t( 'intro: the category description is printed above the grid, in paragraphs', 1 === preg_match( '/twd-ap-articles-intro-text"><p>Anxiety can feel <strong>huge<\/strong>\.<\/p>\s*<p>These pieces help\./', $html ) && strpos( $html, 'twd-ap-articles-intro' ) < strpos( $html, 'twd-ap-articles-grid' ) );
@@ -339,7 +353,7 @@ t( 'intro: a visitor gets no edit button', false === strpos( $html, 'twd-ap-intr
 snap( 'intro' );
 t( 'intro: intro="no" switches it off', false === strpos( grid( array( 'intro' => 'no' ) ), 'twd-ap-articles-intro' ) );
 TWD_AP_Grid_Settings::$s['intro_show'] = false;
-t( 'intro: the Customise this grid tick switches it off everywhere', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+t( 'intro: untick in Customise this grid switches it off everywhere', false === strpos( grid(), 'twd-ap-articles-intro' ) );
 TWD_AP_Grid_Settings::$s['intro_show'] = true;
 $GLOBALS['archive'] = 0;
 t( 'intro: not shown on an ordinary page, only on a category page', false === strpos( grid(), 'twd-ap-articles-intro' ) );
