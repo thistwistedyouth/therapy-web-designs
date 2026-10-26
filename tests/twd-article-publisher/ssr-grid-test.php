@@ -37,7 +37,9 @@ function wp_strip_all_tags( $s ) { return trim( strip_tags( (string) $s ) ); }
 function wp_trim_words( $s, $n ) { $w = preg_split( '/\s+/', trim( $s ) ); return count( $w ) > $n ? implode( ' ', array_slice( $w, 0, $n ) ) . '&hellip;' : implode( ' ', $w ); }
 function get_option( $k, $d = false ) { if ( 'default_category' === $k ) { return 1; } return $GLOBALS['opts'][ $k ] ?? $d; }
 function get_post_status( $id ) { return $GLOBALS['page_status'][ $id ] ?? false; }
-function current_user_can() { return false; }
+function current_user_can( $cap = '' ) { return ! empty( $GLOBALS['caps'][ $cap ] ); }
+function wpautop( $t ) { $parts = preg_split( '/\n\s*\n/', trim( $t ) ); return implode( "\n", array_map( function ( $p ) { return '<p>' . $p . '</p>'; }, $parts ) ); }
+function wp_kses_post( $t ) { $t = preg_replace( '#<(script|style)[^>]*>.*?</\1>#is', '', $t ); $t = preg_replace( '/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]*)/i', '', $t ); return strip_tags( $t, '<p><a><strong><em><br><ul><ol><li>' ); }
 function post_password_required( $p ) { return ! empty( $p->protected ); }
 function get_post( $id ) { return is_object( $id ) ? $id : ( $GLOBALS['posts'][ $id ] ?? null ); }
 function get_post_meta( $id, $k ) { return $GLOBALS['meta'][ $id ][ $k ] ?? ''; }
@@ -92,13 +94,14 @@ class WP_Query {
 	}
 }
 class TWD_AP_Grid_Settings {
-	static $s = array( 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false, 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
+	static $s = array( 'intro_show' => true, 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false, 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
 	static function get() { return self::$s; }
 }
 class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } }
 
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-cta.php';
+require $plugin . 'includes/class-twd-ap-intro.php';
 require $plugin . 'includes/class-twd-ap-index.php';
 require $plugin . 'includes/class-twd-ap-shortcode.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
@@ -117,12 +120,12 @@ function snap( $name ) {
 $pass = 0; $fail = 0;
 function t( $name, $ok, $extra = '' ) { global $pass, $fail; if ( $ok ) { $pass++; echo "PASS  $name\n"; } else { $fail++; echo "FAIL  $name $extra\n"; } }
 function reset_site() {
-	$GLOBALS['posts'] = array(); $GLOBALS['meta'] = array(); $GLOBALS['archive'] = 0;
+	$GLOBALS['posts'] = array(); $GLOBALS['meta'] = array(); $GLOBALS['archive'] = 0; $GLOBALS['caps'] = array(); $GLOBALS['allowed'] = false;
 	$GLOBALS['terms'] = array(
-		1 => (object) array( 'term_id' => 1, 'name' => 'Uncategorized', 'slug' => 'uncategorized', 'count' => 0 ),
-		2 => (object) array( 'term_id' => 2, 'name' => 'Anxiety', 'slug' => 'anxiety', 'count' => 0 ),
-		3 => (object) array( 'term_id' => 3, 'name' => 'Sleep', 'slug' => 'sleep', 'count' => 0 ),
-		4 => (object) array( 'term_id' => 4, 'name' => 'Empty topic', 'slug' => 'empty-topic', 'count' => 0 ),
+		1 => (object) array( 'term_id' => 1, 'name' => 'Uncategorized', 'slug' => 'uncategorized', 'count' => 0, 'taxonomy' => 'category', 'description' => '' ),
+		2 => (object) array( 'term_id' => 2, 'name' => 'Anxiety', 'slug' => 'anxiety', 'count' => 0, 'taxonomy' => 'category', 'description' => '' ),
+		3 => (object) array( 'term_id' => 3, 'name' => 'Sleep', 'slug' => 'sleep', 'count' => 0, 'taxonomy' => 'category', 'description' => '' ),
+		4 => (object) array( 'term_id' => 4, 'name' => 'Empty topic', 'slug' => 'empty-topic', 'count' => 0, 'taxonomy' => 'category', 'description' => '' ),
 	);
 	TWD_AP_Grid_Settings::$s['show_thumbnails'] = true;
 	TWD_AP_Grid_Settings::$s['posts_per_category'] = 6;
@@ -264,6 +267,35 @@ $GLOBALS['archive'] = 0;
 TWD_AP_Grid_Settings::$s['cta_show_grid'] = false;
 t( 'cta: unticked for the grid, a normal page shows none', false === strpos( grid(), 'twd-ap-cta' ) );
 TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_categories' => false ) );
+
+// ---------- the category intro above the grid ----------
+reset_site();
+add_post( 1, 'Some piece', array( 2 ), '2026-02-01' );
+$GLOBALS['archive'] = 2;
+t( 'intro: a category with no description shows nothing to a visitor', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+$GLOBALS['terms'][2]->description = "Anxiety can feel <strong>huge</strong>.\n\nThese pieces help. <script>alert(1)</script><a href=\"https://example.test/x\" onclick=\"evil()\">More</a>";
+$html = grid();
+t( 'intro: the category description is printed above the grid, in paragraphs', 1 === preg_match( '/twd-ap-articles-intro-text"><p>Anxiety can feel <strong>huge<\/strong>\.<\/p>\s*<p>These pieces help\./', $html ) && strpos( $html, 'twd-ap-articles-intro' ) < strpos( $html, 'twd-ap-articles-grid' ) );
+t( 'intro: scripts and event handlers in the description are removed', false === strpos( $html, '<script' ) && false === strpos( $html, 'onclick' ) && false !== strpos( $html, 'href="https://example.test/x"' ) );
+t( 'intro: a visitor gets no edit button', false === strpos( $html, 'twd-ap-intro-edit' ) );
+snap( 'intro' );
+t( 'intro: intro="no" switches it off', false === strpos( grid( array( 'intro' => 'no' ) ), 'twd-ap-articles-intro' ) );
+TWD_AP_Grid_Settings::$s['intro_show'] = false;
+t( 'intro: the Customise this grid tick switches it off everywhere', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+TWD_AP_Grid_Settings::$s['intro_show'] = true;
+$GLOBALS['archive'] = 0;
+t( 'intro: not shown on an ordinary page, only on a category page', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+$GLOBALS['archive'] = 2; $GLOBALS['allowed'] = true; $GLOBALS['caps']['edit_term'] = true;
+$html = grid();
+t( 'intro: someone who can edit the category gets an Edit intro button carrying the id, taxonomy and current text', 1 === preg_match( '/<button type="button" class="twd-ap-intro-edit" data-term-id="2" data-taxonomy="category" data-name="Anxiety" data-raw="[^"]*huge/', $html ) && false !== strpos( $html, 'Edit intro' ) );
+t( 'intro: the raw text in the button is escaped inside the attribute', false === strpos( $html, 'data-raw="Anxiety can feel <strong>' ) && false !== strpos( $html, 'data-raw="Anxiety can feel &lt;strong&gt;' ) );
+snap( 'introedit' );
+$GLOBALS['terms'][2]->description = '';
+$html = grid();
+t( 'intro: with no description an editor sees an Add an intro button and an empty text area', false !== strpos( $html, 'Add an intro' ) && false !== strpos( $html, 'twd-ap-articles-intro-text"></div>' ) );
+$GLOBALS['caps']['edit_term'] = false;
+t( 'intro: an allowed publisher who may not edit that category sees nothing', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+$GLOBALS['archive'] = 0; $GLOBALS['allowed'] = false; $GLOBALS['caps'] = array();
 
 $GLOBALS['allowed'] = true; snap( 'admin' ); $GLOBALS['allowed'] = false;
 // ---------- the filter dropdown starts with All; the topic row follows the setting ----------

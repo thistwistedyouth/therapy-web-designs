@@ -25,6 +25,8 @@ let pass = 0, fail = 0;
 const saved = [];
 let window_topics = 'all';
 let window_cta = {};
+const introSaves = [];
+let introStatus = 200;
 function t(name, ok, extra) { if (ok) { pass++; console.log('PASS  ' + name); } else { fail++; console.log('FAIL  ' + name + (extra ? '  ' + extra : '')); } }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -52,6 +54,7 @@ async function open(browser, name, o) {
 		else if (/\/articles\?/.test(url)) { body = o.empty ? { items: [], has_more: false } : DUMP[name].list; }
 		else if (/\/grid-settings/.test(url)) { if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal', cta_heading: '', cta_text: '', cta_button_label: '', cta_button_url: '', cta_show_grid: false, cta_show_categories: false, cta_show_index: false, cta_show_articles: false };
 			Object.assign(body, window_cta); }
+		if (/\/term-intro/.test(url)) { introSaves.push(JSON.parse(route.request().postData())); return route.fulfill({ status: introStatus, contentType: 'application/json', body: JSON.stringify(introStatus === 200 ? { html: '<p>' + introSaves[introSaves.length - 1].description + '</p>', raw: introSaves[introSaves.length - 1].description } : { code: 'x' }) }); }
 		return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 	});
 	await page.goto('https://example.test/page');
@@ -312,6 +315,42 @@ async function open(browser, name, o) {
 		t('cta setting: no JavaScript errors', errors.length === 0, errors.join(' | '));
 		await ctx.close();
 		window_cta = {};
+	}
+
+
+	// 14. The category intro: visitors read it, an editor can change it from the page.
+	{
+		let r = await open(browser, 'intro', { delay: 50 });
+		await wait(500);
+		const text = await r.page.locator('.twd-ap-articles-intro-text').innerText();
+		t('intro: a visitor reads the description above the grid', text.includes('Anxiety can feel huge.') && text.includes('These pieces help.'));
+		t('intro: a visitor has no edit button', (await r.page.locator('.twd-ap-intro-edit').count()) === 0);
+		const above = (await r.page.locator('.twd-ap-articles-intro').boundingBox()).y < (await r.page.locator('.twd-ap-articles-grid').first().boundingBox()).y;
+		t('intro: it sits above the grid and survives the JS taking over', above && r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+
+		r = await open(browser, 'introedit', { delay: 50 });
+		await wait(500);
+		await r.page.click('.twd-ap-intro-edit');
+		const ta = r.page.locator('.twd-ap-intro-text');
+		t('intro edit: the popup opens with the current text and the category name', (await ta.inputValue()).includes('Anxiety can feel') && (await r.page.locator('#twd-ap-intro-title').innerText()) === 'Intro for Anxiety');
+		await ta.fill('A new intro for this topic.');
+		await r.page.click('.twd-ap-intro-save');
+		await wait(900);
+		const sent = introSaves[introSaves.length - 1];
+		t('intro edit: saving sends the category, taxonomy and the new text', sent && sent.term_id === 2 && sent.taxonomy === 'category' && sent.description === 'A new intro for this topic.', JSON.stringify(sent));
+		t('intro edit: the page shows the new text without a reload and the popup closes', (await r.page.locator('.twd-ap-articles-intro-text').innerText()).includes('A new intro for this topic.') && !(await r.page.locator('.twd-ap-intro-overlay').isVisible()));
+		await r.page.click('.twd-ap-intro-edit');
+		t('intro edit: reopening shows the saved text', (await r.page.locator('.twd-ap-intro-text').inputValue()) === 'A new intro for this topic.');
+		introStatus = 403;
+		await r.page.click('.twd-ap-intro-save');
+		await wait(500);
+		t('intro edit: a refused save says so and keeps the popup open', (await r.page.locator('.twd-ap-intro-status').innerText()).includes('Could not save') && await r.page.locator('.twd-ap-intro-overlay').isVisible());
+		introStatus = 200;
+		await r.page.keyboard.press('Escape');
+		t('intro edit: Escape closes the popup', !(await r.page.locator('.twd-ap-intro-overlay').isVisible()));
+		t('intro edit: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
 	}
 
 	await browser.close();

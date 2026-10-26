@@ -82,6 +82,7 @@ class TWD_AP_Shortcode {
 				'tag'      => '',
 				'count'    => 9,
 				'columns'  => 3,
+				'intro'    => 'yes',
 			),
 			$atts,
 			'twd_articles'
@@ -163,6 +164,13 @@ class TWD_AP_Shortcode {
 		// here so the colours are right from the first paint.
 		$root_style = '--twd-ap-readmore-color:' . $grid_settings['read_more_color'] . ';--twd-ap-accent-color:' . $grid_settings['accent_color'] . ';';
 
+		// The category's own Description above the grid, on a category or tag
+		// archive (switch off with intro="no" or in Customise this grid).
+		$intro_html = '';
+		if ( $on_archive && $grid_settings['intro_show'] && 'no' !== strtolower( trim( (string) $atts['intro'] ) ) ) {
+			$intro_html = TWD_AP_Intro::html( get_queried_object() );
+		}
+
 		ob_start();
 		?>
 		<div id="<?php echo esc_attr( $instance_id ); ?>" class="<?php echo esc_attr( $root_classes ); ?>" style="<?php echo esc_attr( $root_style ); ?>" data-ssr="1" data-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
@@ -177,6 +185,7 @@ class TWD_AP_Shortcode {
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
+			<?php echo $intro_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Intro. ?>
 			<div class="twd-ap-articles-groups"><?php echo $groups_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?></div>
 			<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: <?php echo esc_attr( $columns ); ?>;"<?php echo ( $grouped || ! $has_items ) ? ' hidden' : ''; ?>><?php echo $cards_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?></div>
 			<p class="twd-ap-articles-empty" hidden></p>
@@ -221,6 +230,12 @@ class TWD_AP_Shortcode {
 						<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Categories listed under the grid ("Browse by topic")', 'twd-article-publisher' ); ?></label>
 						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Tick the categories to list as links under the grid. Leave them all ticked to list every category, including new ones. Untick them all to hide the row.', 'twd-article-publisher' ); ?></p>
 						<div id="twd-ap-gs-topics" class="twd-ap-gs-topics"></div>
+
+						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-intro-details">
+							<summary><?php esc_html_e( 'Category intro', 'twd-article-publisher' ); ?></summary>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'On a category page the category\'s own description is shown above its articles. Open a category page while logged in and use "Edit intro" to write or change it. You can also edit it under Posts, Categories.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-intro-show" /> <?php esc_html_e( 'Show the category description above the grid on category pages', 'twd-article-publisher' ); ?></label>
+						</details>
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-cta-details">
 							<summary><?php esc_html_e( 'Call to action', 'twd-article-publisher' ); ?></summary>

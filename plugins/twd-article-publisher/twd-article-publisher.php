@@ -32,6 +32,7 @@ require_once TWD_AP_PATH . 'includes/class-twd-ap-frontend.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-shortcode.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-index.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-cta.php';
+require_once TWD_AP_PATH . 'includes/class-twd-ap-intro.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-article-style.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-swipebook.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-summary-book.php';

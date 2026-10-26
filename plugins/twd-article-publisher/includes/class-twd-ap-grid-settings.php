@@ -32,6 +32,8 @@ class TWD_AP_Grid_Settings {
 			// so a site that never touches these looks exactly as before.
 			// Call to action (1.38.0): empty and switched off everywhere until
 			// the owner fills it in and ticks where it should show.
+			// Category intro (1.38.0): print a category page's own Description above its grid.
+			'intro_show'         => true,
 			'cta_heading'        => '',
 			'cta_text'           => '',
 			'cta_button_label'   => '',
@@ -77,6 +79,7 @@ class TWD_AP_Grid_Settings {
 			'read_more_color'    => $current['read_more_color'],
 			'accent_color'       => $current['accent_color'],
 			'topic_category_ids' => $current['topic_category_ids'],
+			'intro_show'         => $current['intro_show'],
 			'cta_heading'        => $current['cta_heading'],
 			'cta_text'           => $current['cta_text'],
 			'cta_button_label'   => $current['cta_button_label'],
@@ -142,6 +145,9 @@ class TWD_AP_Grid_Settings {
 				$color            = '' === $input[ $key ] ? '' : sanitize_hex_color( $input[ $key ] );
 				$output[ $key ]   = $color ? $color : ( '' === $input[ $key ] ? '' : $output[ $key ] );
 			}
+		}
+		if ( isset( $input['intro_show'] ) ) {
+			$output['intro_show'] = (bool) $input['intro_show'];
 		}
 		if ( isset( $input['cta_heading'] ) ) {
 			$output['cta_heading'] = mb_substr( sanitize_text_field( $input['cta_heading'] ), 0, 120 );

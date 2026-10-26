@@ -37,6 +37,80 @@
 	// [twd_articles_index]: the topic dropdown is printed hidden and only
 	// switched on here, so without JavaScript the plain jump links stay and
 	// every section shows. Choosing a topic shows just that section.
+	// The "Edit intro" popup, built on first use and shared by every grid.
+	function openIntroEditor(btn, config) {
+		var overlay = document.querySelector('.twd-ap-intro-overlay');
+		if (!overlay) {
+			overlay = document.createElement('div');
+			overlay.className = 'twd-ap-overlay twd-ap-intro-overlay';
+			overlay.hidden = true;
+			overlay.innerHTML =
+				'<div class="twd-ap-modal twd-ap-grid-settings-modal" role="dialog" aria-modal="true" aria-labelledby="twd-ap-intro-title">' +
+					'<div class="twd-ap-modal-header">' +
+						'<p class="twd-ap-modal-title" id="twd-ap-intro-title"></p>' +
+						'<button type="button" class="twd-ap-close-btn twd-ap-intro-close" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button>' +
+					'</div>' +
+					'<div class="twd-ap-modal-body">' +
+						'<p class="twd-ap-status twd-ap-intro-status" hidden></p>' +
+						'<p class="twd-ap-muted twd-ap-hint">A short introduction shown above the articles on this category page. Plain text is fine; a blank line starts a new paragraph.</p>' +
+						'<textarea class="twd-ap-textarea-small twd-ap-intro-text" rows="8"></textarea>' +
+					'</div>' +
+					'<div class="twd-ap-modal-footer"><div class="twd-ap-footer-spacer"></div><button type="button" class="twd-ap-btn-primary twd-ap-intro-save">Save</button></div>' +
+				'</div>';
+			document.body.appendChild(overlay);
+		}
+		var title = overlay.querySelector('#twd-ap-intro-title');
+		var textarea = overlay.querySelector('.twd-ap-intro-text');
+		var status = overlay.querySelector('.twd-ap-intro-status');
+		var saveBtn = overlay.querySelector('.twd-ap-intro-save');
+		var closeBtn = overlay.querySelector('.twd-ap-intro-close');
+		title.textContent = 'Intro for ' + (btn.getAttribute('data-name') || 'this category');
+		textarea.value = btn.getAttribute('data-raw') || '';
+		status.hidden = true;
+		saveBtn.disabled = false;
+		overlay.hidden = false;
+		textarea.focus();
+
+		function close() { overlay.hidden = true; document.removeEventListener('keydown', onKey); btn.focus(); }
+		function onKey(e) { if (e.key === 'Escape') { close(); } }
+		function setStatus(msg, ok) {
+			status.textContent = msg;
+			status.hidden = !msg;
+			status.classList.toggle('twd-ap-status-ok', !!ok);
+		}
+		document.addEventListener('keydown', onKey);
+		closeBtn.onclick = close;
+		overlay.onclick = function (e) { if (e.target === overlay) { close(); } };
+		saveBtn.onclick = function () {
+			saveBtn.disabled = true;
+			setStatus('Saving…', false);
+			fetch(config.restUrl + '/term-intro', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
+				body: JSON.stringify({ term_id: parseInt(btn.getAttribute('data-term-id'), 10), taxonomy: btn.getAttribute('data-taxonomy'), description: textarea.value }),
+			})
+				.then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+				.then(function (result) {
+					if (!result.ok) {
+						saveBtn.disabled = false;
+						setStatus('Could not save. Please try again.', false);
+						return;
+					}
+					// The server returns the description already cleaned and formatted.
+					var holder = btn.parentNode.querySelector('.twd-ap-articles-intro-text');
+					if (holder) { holder.innerHTML = result.data.html || ''; }
+					btn.setAttribute('data-raw', result.data.raw || '');
+					btn.lastChild.textContent = result.data.html ? 'Edit intro' : 'Add an intro';
+					setStatus('Saved.', true);
+					setTimeout(close, 600);
+				})
+				.catch(function () {
+					saveBtn.disabled = false;
+					setStatus('Could not save. Please try again.', false);
+				});
+		};
+	}
+
 	function initIndex(root) {
 		var filter = root.querySelector('.twd-ap-index-filter');
 		var select = filter ? filter.querySelector('select') : null;
@@ -104,6 +178,14 @@
 				window.TWD_AP_OpenEditor(el.getAttribute('data-edit-id'));
 			}
 		}
+		// "Edit intro" on a category page: opens a small popup that saves the
+		// category's description (only printed for people who may edit it).
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest ? e.target.closest('.twd-ap-intro-edit') : null;
+			if (!btn) { return; }
+			e.preventDefault();
+			openIntroEditor(btn, config);
+		});
 		root.addEventListener('click', function (e) {
 			var el = e.target.closest ? e.target.closest('.twd-ap-card-edit') : null;
 			if (!el) { return; }
@@ -471,6 +553,7 @@
 		var sbExportBrandingBox = overlay.querySelector('#twd-ap-gs-sb-export-branding');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var topicsBox  = overlay.querySelector('#twd-ap-gs-topics');
+		var introShow = overlay.querySelector('#twd-ap-gs-intro-show');
 		var ctaHeading = overlay.querySelector('#twd-ap-gs-cta-heading');
 		var ctaText = overlay.querySelector('#twd-ap-gs-cta-text');
 		var ctaLabel = overlay.querySelector('#twd-ap-gs-cta-label');
@@ -721,6 +804,7 @@
 					look_spacing: data.look_spacing || 'normal'
 				};
 				fillLookInputs();
+				introShow.checked = false !== data.intro_show;
 				ctaHeading.value = data.cta_heading || '';
 				ctaText.value = data.cta_text || '';
 				ctaLabel.value = data.cta_button_label || '';
@@ -759,6 +843,7 @@
 				swipebook_export_branding: !!sbExportBrandingBox.checked,
 				category_order: order,
 				topic_category_ids: topicsValue(),
+				intro_show: !!introShow.checked,
 				cta_heading: ctaHeading.value,
 				cta_text: ctaText.value,
 				cta_button_label: ctaLabel.value,

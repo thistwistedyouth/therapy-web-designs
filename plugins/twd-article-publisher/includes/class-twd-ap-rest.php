@@ -39,6 +39,16 @@ class TWD_AP_REST {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/term-intro',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'save_term_intro' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/tags',
 			array(
 				'methods'             => 'GET',
@@ -332,6 +342,23 @@ class TWD_AP_REST {
 			return new WP_Error( 'twd_ap_forbidden', __( 'You do not have permission to edit this article.', 'twd-article-publisher' ), array( 'status' => 403 ) );
 		}
 		return true;
+	}
+
+	/**
+	 * Saves the Description of a category or tag from the "Edit intro" popup
+	 * on a category page (see TWD_AP_Intro::save() for the checks).
+	 */
+	public function save_term_intro( $request ) {
+		$params = $request->get_json_params();
+		if ( ! is_array( $params ) ) {
+			$params = array();
+		}
+		$result = TWD_AP_Intro::save(
+			isset( $params['term_id'] ) ? $params['term_id'] : 0,
+			isset( $params['taxonomy'] ) ? sanitize_key( $params['taxonomy'] ) : '',
+			isset( $params['description'] ) ? $params['description'] : ''
+		);
+		return is_wp_error( $result ) ? $result : rest_ensure_response( $result );
 	}
 
 	public function get_categories() {
@@ -783,6 +810,7 @@ class TWD_AP_REST {
 				'read_more_color'     => $settings['read_more_color'],
 				'accent_color'        => $settings['accent_color'],
 				'topic_category_ids'  => $settings['topic_category_ids'],
+				'intro_show'          => (bool) $settings['intro_show'],
 				'cta_heading'         => $settings['cta_heading'],
 				'cta_text'            => $settings['cta_text'],
 				'cta_button_label'    => $settings['cta_button_label'],
