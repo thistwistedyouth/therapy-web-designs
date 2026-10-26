@@ -7,6 +7,7 @@
 // card code; the real database ordering is checked on a live site.
 //   php tests/twd-article-publisher/ssr-grid-test.php
 define( 'ABSPATH', '/' );
+define( 'TWD_AP_PATH', dirname( __DIR__, 2 ) . '/plugins/twd-article-publisher/' );
 $plugin = dirname( __DIR__, 2 ) . '/plugins/twd-article-publisher/';
 
 class WP_Error { }
@@ -246,12 +247,19 @@ t( 'a curated category with nothing in it also shows the friendly line', false !
 // ---------- the automatic link to the full index page ----------
 reset_site();
 add_post( 1, 'Some piece', array( 2 ), '2026-02-01' );
-t( 'index link: absent when no index page exists yet', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
+t( 'index link: absent when no index page exists yet', false === strpos( grid(), 'twd-ap-articles-index-link' ) && false === strpos( grid(), 'twd-ap-topics-all' ) );
 $GLOBALS['opts']['twd_ap_index_page_id'] = 77; $GLOBALS['page_status'][77] = 'publish';
 snap( 'indexlink' );
 $html = grid();
-t( 'index link: a pill button on the grid once the index page is published', false !== strpos( $html, '<a class="twd-ap-articles-index-pill" href="https://example.test/page-77/">Browse all articles' ) );
-t( 'index link: also on a curated category list', false !== strpos( grid( array( 'category' => 'anxiety' ) ), 'twd-ap-articles-index-link' ) );
+preg_match( '/<nav class="twd-ap-articles-topics".*?<\/nav>/s', $html, $nav );
+t( 'index link: on the default view it is a quiet last item in the Browse by topic row, a real link', ! empty( $nav ) && false !== strpos( $nav[0], '<li class="twd-ap-topics-all"><a href="https://example.test/page-77/">All articles</a></li>' ) && 1 === preg_match( '/<\/li><li class="twd-ap-topics-all">/', $nav[0] ) );
+t( 'index link: no big button any more', false === strpos( $html, 'index-pill' ) && false === strpos( $html, 'twd-ap-articles-index-link' ) );
+$cur = grid( array( 'category' => 'anxiety' ) );
+t( 'index link: a curated list has no topics row, so it gets the same quiet link on its own', false !== strpos( $cur, '<p class="twd-ap-articles-index-link"><a href="https://example.test/page-77/">Browse all articles</a></p>' ) && false === strpos( $cur, 'twd-ap-topics-all' ) );
+TWD_AP_Grid_Settings::$s['topic_category_ids'] = array();
+$none = grid();
+t( 'index link: with the topics row hidden by the owner the quiet link still shows', false !== strpos( $none, 'twd-ap-articles-index-link' ) && false === strpos( $none, 'twd-ap-articles-topics' ) );
+TWD_AP_Grid_Settings::$s['topic_category_ids'] = 'all';
 $GLOBALS['page_status'][77] = 'trash';
 t( 'index link: gone when the page is trashed', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
 $GLOBALS['page_status'][77] = 'draft';
@@ -273,6 +281,26 @@ $GLOBALS['archive'] = 0;
 TWD_AP_Grid_Settings::$s['cta_show_grid'] = false;
 t( 'cta: unticked for the grid, a normal page shows none', false === strpos( grid(), 'twd-ap-cta' ) );
 TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_categories' => false ) );
+
+// ---------- the plugin's own category page (template + shortcode together) ----------
+function get_header() { echo '<header class="theme-header">Site header</header>'; }
+function get_footer() { echo '<footer class="theme-footer">Site footer</footer>'; }
+function do_shortcode( $s ) { return grid( 'intro="force"' === substr( $s, -14, -1 ) || false !== strpos( $s, 'intro="force"' ) ? array( 'intro' => 'force' ) : array() ); }
+function render_archive_page() { ob_start(); include TWD_AP_PATH . 'templates/archive-grid.php'; return ob_get_clean(); }
+reset_site();
+add_post( 1, 'Some piece', array( 2 ), '2026-02-01' );
+add_post( 2, 'Another piece', array( 2 ), '2026-02-02' );
+add_post( 3, 'Third piece', array( 2 ), '2026-02-03' );
+$GLOBALS['archive'] = 2;
+$GLOBALS['terms'][2]->description = "Anxiety can feel huge.\n\nThese pieces help.";
+$_GET = array();
+$page_html = render_archive_page();
+$dump['archivepage'] = array( 'html' => $page_html, 'list' => array( 'items' => array(), 'has_more' => false ), 'grouped' => array( 'groups' => array() ), 'total' => 3 );
+t( 'archive page: theme header, the category name as H1, the intro (forced on although the setting is off), the cards, then the footer', 1 === preg_match( '/theme-header.*<h1 class="twd-ap-archive-title">Anxiety<\/h1>.*twd-ap-articles-intro-text">\s*<p>Anxiety can feel huge\..*twd-ap-article-card.*theme-footer/s', $page_html ) && 3 === count( card_links( $page_html ) ) );
+t( 'archive page: one H1 only (the shortcode adds none)', 1 === substr_count( $page_html, '<h1' ) );
+t( 'archive page: no filter toolbar on a category page', false === strpos( $page_html, 'twd-ap-articles-toolbar' ) );
+$GLOBALS['archive'] = 0;
+reset_site();
 
 // ---------- real page links under a long list ----------
 reset_site();
@@ -344,6 +372,7 @@ $GLOBALS['archive'] = 2;
 t( 'intro: a category with no description shows nothing to a visitor', false === strpos( grid(), 'twd-ap-articles-intro' ) );
 TWD_AP_Grid_Settings::$s['intro_show'] = true;
 t( 'intro: off by default, so a theme that already prints the description is not doubled', ( $GLOBALS['terms'][2]->description = 'Words' ) && ( TWD_AP_Grid_Settings::$s['intro_show'] = false ) === false && false === strpos( grid(), 'twd-ap-articles-intro' ) );
+t( 'intro: intro="force" shows it even when the setting is off (the plugin\'s own category page uses this)', false !== strpos( grid( array( 'intro' => 'force' ) ), 'twd-ap-articles-intro-text' ) );
 TWD_AP_Grid_Settings::$s['intro_show'] = true;
 $GLOBALS['terms'][2]->description = "Anxiety can feel <strong>huge</strong>.\n\nThese pieces help. <script>alert(1)</script><a href=\"https://example.test/x\" onclick=\"evil()\">More</a>";
 $html = grid();

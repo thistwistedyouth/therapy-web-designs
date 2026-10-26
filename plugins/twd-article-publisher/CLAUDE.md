@@ -128,8 +128,17 @@ Two server-side WordPress filters, registered by `TWD_AP_AI_Generate::init()` (c
 - **`[twd_articles_index]`** (`includes/class-twd-ap-index.php`, `TWD_AP_Index`) prints a plain, crawlable list of every published article: one link (title and date) each, grouped under its primary category (the one the grouped grid uses; a "Featured Articles" primary yields to a real topic), categories A to Z, **"Other articles" last**, titles A to Z within each (`strnatcasecmp`, so case is ignored). No JavaScript, no cards. Up to 2000 articles. It exists so every article is one click from a page crawlers can read, since the grid only prints its first batch.
 - **Pagination only on very large sites:** over 300 articles it splits by whole categories, about 100 articles a page, with real `?twd_idx=N` links and `rel="prev"` / `rel="next"`. A page number past the end shows the last page; junk shows page 1. Most sites are one page with no pager.
 - **The "Article index" page.** `maybe_create_page()` runs on `admin_init` for an administrator, once per site (activation hooks do not run on an update): it adopts a published page that already contains the shortcode, otherwise creates a published page, slug `article-index`, with the shortcode. The page ID is stored in the `twd_ap_index_page_id` option, so it is never created twice, and a page that is later trashed or unpublished is **not** brought back. Shortcodes inside Elementor data are not found by the adoption search; in that case an extra page is created and either can be deleted.
-- **The automatic link.** `TWD_AP_Index::index_url()` returns the page's permalink only while that page is published; every `[twd_articles]` grid then prints a pill button, "Browse all articles" (`.twd-ap-articles-index-pill` inside `.twd-ap-articles-index-link`, accent colour), below its topics row. Trash the page and the link disappears. It sits outside the grouped/flat containers, so the JS never touches it.
+- **The automatic link.** `TWD_AP_Index::index_url()` returns the page's permalink only while that page is published; every `[twd_articles]` grid then prints a quiet text link: "All articles" as the last item of the Browse by topic row (`li.twd-ap-topics-all`), or, on a view without that row, a small "Browse all articles" paragraph (`.twd-ap-articles-index-link`). It is a real link for search engines, deliberately not a prominent button (changed in 1.39.0; it was a pill in 1.37.4 to 1.38.0). Trash the page and the link disappears. It sits outside the grouped/flat containers, so the JS never touches it.
 - Tests: `php tests/twd-article-publisher/index-test.php` (38 checks: both sort orders, one link per article, primary category rule, escaping, published only, empty site, pagination, page creation and adoption) plus five link checks in `ssr-grid-test.php`.
+
+## Category and tag pages out of the box (v1.39.0)
+
+- **`TWD_AP_Archive`** (`includes/class-twd-ap-archive.php`) hooks `template_include` at priority 99 and, on a category or tag page, returns `templates/archive-grid.php`: the theme's own `get_header()`, a `<main class="twd-ap-archive">` with the category name as the one H1 (no "Category:" prefix, entities decoded), `[twd_articles intro="force"]` (intro, grid, page links, call to action, all from the shortcode), then `get_footer()`. So a site needs no page-builder template. `intro="force"` shows the description even when the `intro_show` setting is off (that setting is only for a grid the owner places themselves).
+- **It steps aside, in this order of checks (`should_take_over()`)**: not wp-admin, main query, a category or tag page; the owner has not turned it off (`archive_takeover`, on by default, "Use this grid on category and tag pages" in Customise this grid > Category pages); the theme is not a block theme (`wp_is_block_theme()`, header and footer are template parts there); the theme has no dedicated template of its own (`category.php`, `category-{slug}.php`, `category-{id}.php`, or the `tag` equivalents, found with `locate_template()`; the generic `archive.php` and `index.php` do not count); Elementor Pro's Theme Builder has no archive template that applies (`get_documents_for_location( 'archive' )`, wrapped so any other Elementor version or an exception just means "no template known"); and the `twd_ap_archive_takeover` filter does not return false.
+- **Behaviour change on update:** a site with none of those reasons to step aside gets the plugin's category page the moment it updates (that is the point of the feature). The owner can untick it.
+- Not covered: block themes, and a page builder other than Elementor Pro whose archive template the plugin cannot detect; both keep the theme's output (use the shortcode in a template there).
+- Styling lives in `articles-grid.css` (`.twd-ap-archive`, `.twd-ap-archive-title`: 1140px wide, centred, 36px title, 28px on a phone).
+- Tests: `archive-test.php` (24: every step-aside case, Elementor Pro faked three ways, the template output), plus the archive page checks in `ssr-grid-test.php` and `ssr-grid-browser-test.js` (title, intro and cards in order, centred, one row, no sideways scroll).
 
 ## Article look, call to action, category intro, paging (v1.38.0)
 
@@ -144,7 +153,7 @@ All four are set in "Customise this grid" (the gear popup, collapsible `<details
 
 ## Grid and index polish (v1.37.4)
 
-- **Index link is a pill button** (`a.twd-ap-articles-index-pill`, "Browse all articles", centred under the grid, accent colour).
+- **Index link** was a pill button in this version; since 1.39.0 it is a quiet text link (see Article index above).
 - **Top category dropdown starts with "All"**, then the categories (server prints the `All` option, JS `renderCategorySelect()` keeps it first). There is no "Show all" option any more.
 - **Index page dropdown.** `[twd_articles_index]` prints a hidden `.twd-ap-index-filter` select ("All topics" then each topic with its count) next to the plain jump links, only when the page has more than two topics. `initIndex()` in `articles-grid.js` un-hides the select, hides the jump links (`.twd-ap-index-enhanced`) and shows one section at a time. Without JavaScript every section and the jump links show. Every section stays in the HTML.
 - **The index page uses the saved accent colour** (printed as `--twd-ap-accent-color` on `.twd-ap-index`), like the grid.
@@ -195,6 +204,7 @@ includes/class-twd-ap-sanitizer.php      TWD_AP_Sanitizer::clean() — the one p
 includes/class-twd-ap-rest.php           REST routes: /categories, /tags, /posts, /posts/{id}, /media, /articles, /articles/facets
 includes/class-twd-ap-frontend.php       Enqueues editor assets, decides which buttons show, capability gate
 includes/class-twd-ap-cards.php          TWD_AP_Cards: the one query, card formatter, grouped view and card markup shared by the REST routes and the shortcode
+includes/class-twd-ap-archive.php        TWD_AP_Archive: the plugin's own category and tag page (template_include), steps aside for theme or Elementor Pro templates
 includes/class-twd-ap-index.php          [twd_articles_index] alphabetical index shortcode, its auto-created page and the grid's link to it
 includes/class-twd-ap-shortcode.php      [twd_articles] shortcode -- grid/group container with the first batch of cards printed in, dropdown, admin "Customise this grid" popup markup
 includes/class-twd-ap-article-style.php  Public article typography — the_content wrap + unconditional CSS enqueue
@@ -204,6 +214,7 @@ includes/class-twd-ap-starter-content.php  Publishes a one-time "Getting Started
 includes/class-twd-ap-converter.php      TWD_AP_Converter: admin-only Elementor to normal post converter (tick-box in Settings), one post at a time, backup and Undo
 includes/class-twd-ap-updater.php        Self-hosted update checker (admin-only); see Releases section below
 templates/buttons-and-modal.php          The popup's HTML skeleton + the help modal (PHP-rendered once per page load)
+templates/archive-grid.php               The plugin's own category and tag page: theme header, category name, [twd_articles], theme footer
 assets/publisher.css                     Popup, button and image-toolbar styling (neutral, not client-branded)
 assets/publisher.js                      All popup behaviour: tabs, toolbar, media picker, image align/resize, REST calls
 assets/article-content.css               Public-facing single-article typography + YouTube/alignment styles
@@ -265,6 +276,7 @@ NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/grid-te
 php tests/twd-article-publisher/grid-settings-test.php                              # which categories the topic row lists
 php tests/twd-article-publisher/article-look-test.php                               # Article look settings and the wrapper style
 php tests/twd-article-publisher/cta-test.php                                        # the call to action box
+php tests/twd-article-publisher/archive-test.php                                    # the plugin's own category page: when it takes over and when it steps aside
 php tests/twd-article-publisher/intro-test.php                                      # saving a category intro
 NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/article-look-browser-test.js   # Article look in real Chromium
 php tests/twd-article-publisher/index-test.php                                      # the alphabetical index, pagination, the Article index page

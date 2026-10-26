@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.38.0
+Stable tag: 1.39.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,18 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.39.0): category and tag pages now work out of the box. Open any
+category page and it shows the category's name, its description (with an
+"Edit intro" button for people who can edit it), the grid of its articles,
+the page links and your call to action, using your theme's own header and
+footer. Nobody needs to build a template in Elementor first. It steps
+aside automatically if your theme or Elementor Pro already has its own
+category template, on block themes, or if you untick "Use this grid on
+category and tag pages" under Category pages in Customise this grid. Also,
+the link to the full article index is now a quiet "All articles" text link
+at the end of the "Browse by topic" row (still a real link for search
+engines) instead of a large button.
 
 NEW (1.38.0): four things, all set in Customise this grid (the gear icon on
 your resources page). (1) Article look: choose the text, heading, link and
