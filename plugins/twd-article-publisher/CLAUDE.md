@@ -272,6 +272,8 @@ available" row in wp-admin Plugins with a one-click update. Checked every
 12 hours, cached in a transient, cache cleared on "Check again" or right
 after an update runs.
 
+**Standing practice (owner's instruction, 26 Oct 2026):** every version branch is finished with the `dist/` zip and update JSON already built and checked against the plugin folder, and an open pull request. The owner checks the build and merges; nothing is built or merged without a branch to review first.
+
 To ship a new version to every client site running the plugin:
 
 ```bash
