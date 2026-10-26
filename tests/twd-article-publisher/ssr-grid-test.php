@@ -24,6 +24,9 @@ function add_action() {}
 function add_filter() {}
 function add_shortcode() {}
 function nocache_headers() {}
+function absint( $n ) { return abs( (int) $n ); }
+function remove_query_arg( $k ) { return 'https://example.test/category/anxiety/'; }
+function add_query_arg( $k, $v, $u ) { return $u . ( false === strpos( $u, '?' ) ? '?' : '&' ) . $k . '=' . $v; }
 function get_bloginfo() { return 'Example Site'; }
 function rest_ensure_response( $x ) { return $x; }
 function rest_url( $p = '' ) { return 'https://example.test/wp-json/' . $p; }
@@ -37,7 +40,9 @@ function wp_strip_all_tags( $s ) { return trim( strip_tags( (string) $s ) ); }
 function wp_trim_words( $s, $n ) { $w = preg_split( '/\s+/', trim( $s ) ); return count( $w ) > $n ? implode( ' ', array_slice( $w, 0, $n ) ) . '&hellip;' : implode( ' ', $w ); }
 function get_option( $k, $d = false ) { if ( 'default_category' === $k ) { return 1; } return $GLOBALS['opts'][ $k ] ?? $d; }
 function get_post_status( $id ) { return $GLOBALS['page_status'][ $id ] ?? false; }
-function current_user_can() { return false; }
+function current_user_can( $cap = '' ) { return ! empty( $GLOBALS['caps'][ $cap ] ); }
+function wpautop( $t ) { $parts = preg_split( '/\n\s*\n/', trim( $t ) ); return implode( "\n", array_map( function ( $p ) { return '<p>' . $p . '</p>'; }, $parts ) ); }
+function wp_kses_post( $t ) { $t = preg_replace( '#<(script|style)[^>]*>.*?</\1>#is', '', $t ); $t = preg_replace( '/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]*)/i', '', $t ); return strip_tags( $t, '<p><a><strong><em><br><ul><ol><li>' ); }
 function post_password_required( $p ) { return ! empty( $p->protected ); }
 function get_post( $id ) { return is_object( $id ) ? $id : ( $GLOBALS['posts'][ $id ] ?? null ); }
 function get_post_meta( $id, $k ) { return $GLOBALS['meta'][ $id ][ $k ] ?? ''; }
@@ -74,6 +79,7 @@ function get_queried_object() { return $GLOBALS['terms'][ $GLOBALS['archive'] ];
 // The fake query: category/tag filter, featured first then newest, offset and limit, as the real args ask.
 class WP_Query {
 	public $posts = array();
+	public $found_posts = 0;
 	function __construct( $a ) {
 		$GLOBALS['last_args'] = $a;
 		$p = live_posts();
@@ -88,16 +94,19 @@ class WP_Query {
 			$fy = ! empty( $GLOBALS['meta'][ $y->ID ]['_twd_ap_featured'] ) ? 1 : 0;
 			return $fy <=> $fx ?: strcmp( $y->post_date, $x->post_date );
 		} );
-		$this->posts = array_slice( $p, $a['offset'], $a['posts_per_page'] );
+		$this->found_posts = count( $p );
+		$this->posts = array_slice( $p, $a['offset'] ?? 0, $a['posts_per_page'] );
 	}
 }
 class TWD_AP_Grid_Settings {
-	static $s = array( 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
+	static $s = array( 'intro_show' => false, 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false, 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
 	static function get() { return self::$s; }
 }
 class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } }
 
 require $plugin . 'includes/class-twd-ap-cards.php';
+require $plugin . 'includes/class-twd-ap-cta.php';
+require $plugin . 'includes/class-twd-ap-intro.php';
 require $plugin . 'includes/class-twd-ap-index.php';
 require $plugin . 'includes/class-twd-ap-shortcode.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
@@ -116,16 +125,17 @@ function snap( $name ) {
 $pass = 0; $fail = 0;
 function t( $name, $ok, $extra = '' ) { global $pass, $fail; if ( $ok ) { $pass++; echo "PASS  $name\n"; } else { $fail++; echo "FAIL  $name $extra\n"; } }
 function reset_site() {
-	$GLOBALS['posts'] = array(); $GLOBALS['meta'] = array(); $GLOBALS['archive'] = 0;
+	$GLOBALS['posts'] = array(); $GLOBALS['meta'] = array(); $GLOBALS['archive'] = 0; $GLOBALS['caps'] = array(); $GLOBALS['allowed'] = false;
 	$GLOBALS['terms'] = array(
-		1 => (object) array( 'term_id' => 1, 'name' => 'Uncategorized', 'slug' => 'uncategorized', 'count' => 0 ),
-		2 => (object) array( 'term_id' => 2, 'name' => 'Anxiety', 'slug' => 'anxiety', 'count' => 0 ),
-		3 => (object) array( 'term_id' => 3, 'name' => 'Sleep', 'slug' => 'sleep', 'count' => 0 ),
-		4 => (object) array( 'term_id' => 4, 'name' => 'Empty topic', 'slug' => 'empty-topic', 'count' => 0 ),
+		1 => (object) array( 'term_id' => 1, 'name' => 'Uncategorized', 'slug' => 'uncategorized', 'count' => 0, 'taxonomy' => 'category', 'description' => '' ),
+		2 => (object) array( 'term_id' => 2, 'name' => 'Anxiety', 'slug' => 'anxiety', 'count' => 0, 'taxonomy' => 'category', 'description' => '' ),
+		3 => (object) array( 'term_id' => 3, 'name' => 'Sleep', 'slug' => 'sleep', 'count' => 0, 'taxonomy' => 'category', 'description' => '' ),
+		4 => (object) array( 'term_id' => 4, 'name' => 'Empty topic', 'slug' => 'empty-topic', 'count' => 0, 'taxonomy' => 'category', 'description' => '' ),
 	);
 	TWD_AP_Grid_Settings::$s['show_thumbnails'] = true;
 	TWD_AP_Grid_Settings::$s['posts_per_category'] = 6;
 	TWD_AP_Grid_Settings::$s['topic_category_ids'] = 'all';
+	TWD_AP_Grid_Settings::$s['intro_show'] = false;
 }
 function add_post( $id, $title, $cats, $date, $extra = array() ) {
 	$GLOBALS['posts'][ $id ] = (object) array_merge( array(
@@ -247,6 +257,117 @@ t( 'index link: gone when the page is trashed', false === strpos( grid(), 'twd-a
 $GLOBALS['page_status'][77] = 'draft';
 t( 'index link: gone when the page is not published', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
 $GLOBALS['opts'] = array(); $GLOBALS['page_status'] = array();
+
+// ---------- the call to action under the grid ----------
+reset_site();
+add_post( 1, 'Some piece', array( 2 ), '2026-02-01' ); add_post( 2, 'Another', array( 3 ), '2026-02-02' );
+t( 'cta: nothing under the grid by default', false === strpos( grid(), 'twd-ap-cta' ) );
+TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => 'Ready to talk?', 'cta_text' => 'A short chat is free.', 'cta_button_label' => 'Book a call', 'cta_button_url' => 'https://example.test/book', 'cta_show_grid' => true ) );
+$html = grid();
+t( 'cta: shown under the grid once ticked, after the topics row and the index pill', 1 === preg_match( '/twd-ap-articles-topics.*twd-ap-cta twd-ap-cta-grid.*<\/div>\s*$/s', $html ) );
+snap( 'cta' );
+t( 'cta: on a category page it follows the category switch, not the grid one', ( $GLOBALS['archive'] = 3 ) && false === strpos( grid(), 'twd-ap-cta' ) );
+TWD_AP_Grid_Settings::$s['cta_show_categories'] = true;
+t( 'cta: ticked for category pages, it shows there with its own class', false !== strpos( grid(), 'twd-ap-cta twd-ap-cta-category' ) && false === strpos( grid(), 'twd-ap-cta-grid' ) );
+$GLOBALS['archive'] = 0;
+TWD_AP_Grid_Settings::$s['cta_show_grid'] = false;
+t( 'cta: unticked for the grid, a normal page shows none', false === strpos( grid(), 'twd-ap-cta' ) );
+TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_categories' => false ) );
+
+// ---------- real page links under a long list ----------
+reset_site();
+for ( $i = 1; $i <= 30; $i++ ) { add_post( $i, 'Piece ' . $i, array( 2 ), sprintf( '2026-02-%02d', $i ) ); }
+$page_cfg = function ( $html ) { $c = json_decode( html_entity_decode( preg_replace( '/^.*data-config="([^"]+)".*$/s', '$1', $html ) ), true ); return $c; };
+$_GET = array();
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: a category with more than count articles gets page links', false !== strpos( $html, 'class="twd-ap-articles-pager"' ) && 4 === preg_match_all( '/<li><(?:a|span)[^>]*>\d<\/(?:a|span)><\/li>/', $html ) );
+t( 'paging: page 1 shows the first 9 and is marked current', 9 === count( card_links( $html ) ) && false !== strpos( $html, '<span aria-current="page">1</span>' ) );
+t( 'paging: page links are real links with rel next, and page 1 has no ?twd_page', false !== strpos( $html, '<a rel="next" href="https://example.test/category/anxiety/?twd_page=2">2</a>' ) && false !== strpos( $html, 'Next &rarr;' ) && false === strpos( $html, 'twd_page=1' ) );
+t( 'paging: no Previous link on page 1', false === strpos( $html, 'twd-ap-pager-prev' ) );
+t( 'paging: the config starts at offset 0', 0 === $page_cfg( $html )['startOffset'] );
+$_GET['twd_page'] = '2';
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: ?twd_page=2 shows the next 9, matching the REST route at that offset', card_links( $html ) === rest_links( array( 'per_page' => 9, 'offset' => 9, 'category' => 'anxiety' ) ) && 9 === count( card_links( $html ) ) );
+t( 'paging: page 2 has Previous and Next, and links back to page 1 without the parameter', false !== strpos( $html, 'twd-ap-pager-prev"><a rel="prev" href="https://example.test/category/anxiety/">' ) && false !== strpos( $html, 'twd-ap-pager-next' ) );
+t( 'paging: the config tells the JS to start at offset 9', 9 === $page_cfg( $html )['startOffset'] );
+$_GET['twd_page'] = '4';
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: the last page shows the remaining 3 and no Next', 3 === count( card_links( $html ) ) && false === strpos( $html, 'twd-ap-pager-next' ) );
+$_GET['twd_page'] = '99';
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: a page past the end shows the last page, not an empty grid', 3 === count( card_links( $html ) ) && false !== strpos( $html, '<span aria-current="page">4</span>' ) && 27 === $page_cfg( $html )['startOffset'] );
+foreach ( array( 'abc', '0', '' ) as $junk ) {
+	$_GET['twd_page'] = $junk;
+	t( "paging: a junk page number ('$junk') shows page 1", 9 === count( card_links( grid( array( 'category' => 'anxiety', 'count' => 9 ) ) ) ) && false !== strpos( grid( array( 'category' => 'anxiety', 'count' => 9 ) ), '<span aria-current="page">1</span>' ) );
+}
+// Page snapshots for the browser test: page 1 and page 2 of a 30 article category, 9 to a page.
+foreach ( array( 1 => 0, 2 => 9 ) as $pg => $off ) {
+	$_GET['twd_page'] = (string) $pg;
+	$dump[ 'paged' . $pg ] = array(
+		'html'    => grid( array( 'category' => 'anxiety', 'count' => 9 ) ),
+		'list'    => TWD_AP_REST::instance()->list_articles( new ArrayObject( array( 'per_page' => 9, 'offset' => $off, 'category' => 'anxiety' ) ) ),
+		'grouped' => array( 'groups' => array() ),
+		'total'   => 30,
+	);
+}
+$_GET = array();
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: an inline script right after the links marks them JavaScript-on before first paint', 1 === preg_match( '/<\/nav><script>document\.currentScript\.previousElementSibling\.setAttribute\("data-js","1"\);<\/script>/', $html ) );
+t( 'paging: page 1 is not marked deep, page 2 is', false === strpos( $html, 'data-deep' ) && ( $_GET['twd_page'] = '2' ) && false !== strpos( grid( array( 'category' => 'anxiety', 'count' => 9 ) ), 'data-deep="1"' ) );
+$_GET = array();
+// count above the 24 the REST route returns is clamped, so the page links match the cards
+$html = grid( array( 'category' => 'anxiety', 'count' => 30 ) );
+t( 'count: count="30" is clamped to 24, so 24 cards and a pager for the other 6 (nothing unreachable)', 24 === count( card_links( $html ) ) && false !== strpos( $html, 'class="twd-ap-articles-pager"' ) && 24 === $page_cfg( $html )['count'] );
+$_GET['twd_page'] = '2';
+t( 'count: page 2 of the clamped list holds the last 6', 6 === count( card_links( grid( array( 'category' => 'anxiety', 'count' => 30 ) ) ) ) );
+$_GET = array();
+$html = grid( array( 'category' => 'anxiety', 'count' => 24 ) );
+t( 'paging: with 30 articles 24 to a page still needs a pager (6 left)', false !== strpos( $html, 'twd-ap-articles-pager' ) );
+$all = array();
+for ( $pg = 1; $pg <= 4; $pg++ ) { $_GET['twd_page'] = (string) $pg; $all = array_merge( $all, card_links( grid( array( 'category' => 'anxiety', 'count' => 9 ) ) ) ); }
+$_GET = array();
+t( 'paging: pages 1 to 4 together list all 30 articles once', 30 === count( $all ) && 30 === count( array_unique( $all ) ) );
+t( 'paging: the large-site grouped view has no page links (its sections link to the category pages)', ( function () { for ( $i = 31; $i <= 40; $i++ ) { add_post( $i, 'Extra ' . $i, array( 3 ), sprintf( '2026-03-%02d', $i - 30 ) ); } return false === strpos( grid(), 'twd-ap-articles-pager' ); } )() );
+reset_site();
+for ( $i = 1; $i <= 120; $i++ ) { add_post( $i, 'Item ' . $i, array( 2 ), '2026-01-01' ); }
+$_GET['twd_page'] = '12';
+$html = grid( array( 'category' => 'anxiety', 'count' => 5 ) );
+preg_match( '/<nav class="twd-ap-articles-pager".*?<\/nav>/s', $html, $nav );
+t( 'paging: 24 pages are shortened to the first, last and the pages around the current one', ! empty( $nav ) && 1 === preg_match( '/>1<.*gap.*>11<.*aria-current="page">12<.*>13<.*gap.*>24</s', $nav[0] ) && false === strpos( $nav[0], '>7<' ) );
+$_GET = array();
+reset_site();
+
+// ---------- the category intro above the grid ----------
+reset_site();
+add_post( 1, 'Some piece', array( 2 ), '2026-02-01' );
+$GLOBALS['archive'] = 2;
+t( 'intro: a category with no description shows nothing to a visitor', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+TWD_AP_Grid_Settings::$s['intro_show'] = true;
+t( 'intro: off by default, so a theme that already prints the description is not doubled', ( $GLOBALS['terms'][2]->description = 'Words' ) && ( TWD_AP_Grid_Settings::$s['intro_show'] = false ) === false && false === strpos( grid(), 'twd-ap-articles-intro' ) );
+TWD_AP_Grid_Settings::$s['intro_show'] = true;
+$GLOBALS['terms'][2]->description = "Anxiety can feel <strong>huge</strong>.\n\nThese pieces help. <script>alert(1)</script><a href=\"https://example.test/x\" onclick=\"evil()\">More</a>";
+$html = grid();
+t( 'intro: the category description is printed above the grid, in paragraphs', 1 === preg_match( '/twd-ap-articles-intro-text"><p>Anxiety can feel <strong>huge<\/strong>\.<\/p>\s*<p>These pieces help\./', $html ) && strpos( $html, 'twd-ap-articles-intro' ) < strpos( $html, 'twd-ap-articles-grid' ) );
+t( 'intro: scripts and event handlers in the description are removed', false === strpos( $html, '<script' ) && false === strpos( $html, 'onclick' ) && false !== strpos( $html, 'href="https://example.test/x"' ) );
+t( 'intro: a visitor gets no edit button', false === strpos( $html, 'twd-ap-intro-edit' ) );
+snap( 'intro' );
+t( 'intro: intro="no" switches it off', false === strpos( grid( array( 'intro' => 'no' ) ), 'twd-ap-articles-intro' ) );
+TWD_AP_Grid_Settings::$s['intro_show'] = false;
+t( 'intro: untick in Customise this grid switches it off everywhere', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+TWD_AP_Grid_Settings::$s['intro_show'] = true;
+$GLOBALS['archive'] = 0;
+t( 'intro: not shown on an ordinary page, only on a category page', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+$GLOBALS['archive'] = 2; $GLOBALS['allowed'] = true; $GLOBALS['caps']['edit_term'] = true;
+$html = grid();
+t( 'intro: someone who can edit the category gets an Edit intro button carrying the id, taxonomy and current text', 1 === preg_match( '/<button type="button" class="twd-ap-intro-edit" data-term-id="2" data-taxonomy="category" data-name="Anxiety" data-raw="[^"]*huge/', $html ) && false !== strpos( $html, 'Edit intro' ) );
+t( 'intro: the raw text in the button is escaped inside the attribute', false === strpos( $html, 'data-raw="Anxiety can feel <strong>' ) && false !== strpos( $html, 'data-raw="Anxiety can feel &lt;strong&gt;' ) );
+snap( 'introedit' );
+$GLOBALS['terms'][2]->description = '';
+$html = grid();
+t( 'intro: with no description an editor sees an Add an intro button and an empty text area', false !== strpos( $html, 'Add an intro' ) && false !== strpos( $html, 'twd-ap-articles-intro-text"></div>' ) );
+$GLOBALS['caps']['edit_term'] = false;
+t( 'intro: an allowed publisher who may not edit that category sees nothing', false === strpos( grid(), 'twd-ap-articles-intro' ) );
+$GLOBALS['archive'] = 0; $GLOBALS['allowed'] = false; $GLOBALS['caps'] = array();
 
 $GLOBALS['allowed'] = true; snap( 'admin' ); $GLOBALS['allowed'] = false;
 // ---------- the filter dropdown starts with All; the topic row follows the setting ----------

@@ -151,7 +151,7 @@ class TWD_AP_Index {
 		if ( count( $pages ) > 1 ) {
 			$html .= self::pager_html( $page, count( $pages ) );
 		}
-		return $html . '</div>';
+		return $html . TWD_AP_Cta::html( 'index' ) . '</div>';
 	}
 
 	/**

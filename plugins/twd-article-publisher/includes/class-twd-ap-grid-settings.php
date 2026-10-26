@@ -26,6 +26,31 @@ class TWD_AP_Grid_Settings {
 			// 'all' (every real, non-empty category, the default, so new
 			// categories appear on their own) or an array of category IDs.
 			'topic_category_ids' => 'all',
+			// Article look (1.38.0): how a published article reads. Empty
+			// colours and the 'system' / 'medium' / 'normal' choices mean "the
+			// plugin's own typography", and then nothing is printed at all,
+			// so a site that never touches these looks exactly as before.
+			// Call to action (1.38.0): empty and switched off everywhere until
+			// the owner fills it in and ticks where it should show.
+			// Category intro (1.38.0): print a category page's own Description above
+			// its grid. Off until the owner ticks it, because many themes already
+			// print the description themselves and it would show twice.
+			'intro_show'         => false,
+			'cta_heading'        => '',
+			'cta_text'           => '',
+			'cta_button_label'   => '',
+			'cta_button_url'     => '',
+			'cta_show_grid'      => false,
+			'cta_show_categories' => false,
+			'cta_show_index'     => false,
+			'cta_show_articles'  => false,
+			'look_text_color'    => '',
+			'look_heading_color' => '',
+			'look_link_color'    => '',
+			'look_quote_color'   => '',
+			'look_font'          => 'system',
+			'look_size'          => 'medium',
+			'look_spacing'       => 'normal',
 			'swipebook_color'    => '#5b8a72',
 			'swipebook_heading'  => '',
 			'swipebook_label'    => 'Swipe Book',
@@ -56,6 +81,22 @@ class TWD_AP_Grid_Settings {
 			'read_more_color'    => $current['read_more_color'],
 			'accent_color'       => $current['accent_color'],
 			'topic_category_ids' => $current['topic_category_ids'],
+			'intro_show'         => $current['intro_show'],
+			'cta_heading'        => $current['cta_heading'],
+			'cta_text'           => $current['cta_text'],
+			'cta_button_label'   => $current['cta_button_label'],
+			'cta_button_url'     => $current['cta_button_url'],
+			'cta_show_grid'      => $current['cta_show_grid'],
+			'cta_show_categories' => $current['cta_show_categories'],
+			'cta_show_index'     => $current['cta_show_index'],
+			'cta_show_articles'  => $current['cta_show_articles'],
+			'look_text_color'    => $current['look_text_color'],
+			'look_heading_color' => $current['look_heading_color'],
+			'look_link_color'    => $current['look_link_color'],
+			'look_quote_color'   => $current['look_quote_color'],
+			'look_font'          => $current['look_font'],
+			'look_size'          => $current['look_size'],
+			'look_spacing'       => $current['look_spacing'],
 			'swipebook_color'    => $current['swipebook_color'],
 			'swipebook_heading'  => $current['swipebook_heading'],
 			'swipebook_label'    => $current['swipebook_label'],
@@ -98,6 +139,44 @@ class TWD_AP_Grid_Settings {
 				$output['topic_category_ids'] = 'all';
 			} elseif ( is_array( $input['topic_category_ids'] ) ) {
 				$output['topic_category_ids'] = array_values( array_unique( array_filter( array_map( 'absint', $input['topic_category_ids'] ) ) ) );
+			}
+		}
+		foreach ( array( 'look_text_color', 'look_heading_color', 'look_link_color', 'look_quote_color' ) as $key ) {
+			if ( isset( $input[ $key ] ) ) {
+				// An empty value clears the colour back to the plugin default.
+				$color            = '' === $input[ $key ] ? '' : sanitize_hex_color( $input[ $key ] );
+				$output[ $key ]   = $color ? $color : ( '' === $input[ $key ] ? '' : $output[ $key ] );
+			}
+		}
+		if ( isset( $input['intro_show'] ) ) {
+			$output['intro_show'] = (bool) $input['intro_show'];
+		}
+		if ( isset( $input['cta_heading'] ) ) {
+			$output['cta_heading'] = mb_substr( TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( $input['cta_heading'] ) ), 0, 120 );
+		}
+		if ( isset( $input['cta_text'] ) ) {
+			$output['cta_text'] = mb_substr( TWD_AP_Sanitizer::strip_dashes( sanitize_textarea_field( $input['cta_text'] ) ), 0, 500 );
+		}
+		if ( isset( $input['cta_button_label'] ) ) {
+			$output['cta_button_label'] = mb_substr( TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( $input['cta_button_label'] ) ), 0, 40 );
+		}
+		if ( isset( $input['cta_button_url'] ) ) {
+			// http, https, mailto and tel only; anything else becomes empty.
+			$output['cta_button_url'] = esc_url_raw( trim( (string) $input['cta_button_url'] ), array( 'http', 'https', 'mailto', 'tel' ) );
+		}
+		foreach ( array( 'cta_show_grid', 'cta_show_categories', 'cta_show_index', 'cta_show_articles' ) as $key ) {
+			if ( isset( $input[ $key ] ) ) {
+				$output[ $key ] = (bool) $input[ $key ];
+			}
+		}
+		$choices = array(
+			'look_font'    => array( 'system', 'serif', 'theme' ),
+			'look_size'    => array( 'medium', 'large' ),
+			'look_spacing' => array( 'compact', 'normal', 'relaxed' ),
+		);
+		foreach ( $choices as $key => $allowed ) {
+			if ( isset( $input[ $key ] ) && in_array( $input[ $key ], $allowed, true ) ) {
+				$output[ $key ] = $input[ $key ];
 			}
 		}
 		if ( isset( $input['swipebook_color'] ) ) {
