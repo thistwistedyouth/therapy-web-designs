@@ -700,251 +700,30 @@ class TWD_AP_REST {
 		$offset   = isset( $request['offset'] ) ? max( 0, (int) $request['offset'] ) : 0;
 		$per_page = isset( $request['per_page'] ) ? max( 1, min( 24, (int) $request['per_page'] ) ) : 9;
 
-		$query_args = array(
-			'post_type'      => 'post',
-			'post_status'    => 'publish',
-			// One extra post is fetched beyond what's actually shown, purely
-			// to answer "is there a next page" directly from what came back,
-			// rather than from WP_Query's own found_posts/max_num_pages --
-			// those count matching rows before the featured/not-featured OR
-			// meta_query below is resolved down to one match per post, which
-			// in practice reported more pages than actually existed and left
-			// "Load more" showing with nothing left to load. offset (not
-			// paged) keeps every page's items lined up exactly count apart
-			// regardless of this +1. no_found_rows since found_posts/
-			// max_num_pages are never read here any more.
-			'posts_per_page' => $per_page + 1,
-			'offset'         => $offset,
-			'no_found_rows'  => true,
-			// A bare 'meta_key' query var is NOT a LEFT JOIN: WP_Query turns it
-			// into an implicit meta_query clause that INNER JOINs postmeta,
-			// which excludes every post that doesn't have that meta row at
-			// all. Since _twd_ap_featured only ever exists on posts someone
-			// explicitly featured, that silently excluded every other post
-			// from the grid. The fix is an explicit OR between "has the key"
-			// and "doesn't have the key", a named clause, so every post
-			// matches one branch or the other, while still being orderable
-			// by whether it matched the first branch.
-			'meta_query'     => array(
-				'relation'        => 'OR',
-				'featured_clause' => array(
-					'key'     => '_twd_ap_featured',
-					'compare' => 'EXISTS',
-				),
-				array(
-					'key'     => '_twd_ap_featured',
-					'compare' => 'NOT EXISTS',
-				),
-			),
-			'orderby'        => array(
-				'featured_clause' => 'DESC',
-				'date'            => 'DESC',
-			),
-		);
-
-		if ( '' !== $search ) {
-			$query_args['s'] = $search;
-		}
-		if ( '' !== $category ) {
-			$query_args['category_name'] = $category;
-		}
-		if ( '' !== $tag ) {
-			$query_args['tag'] = $tag;
-		}
-
-		$query = new WP_Query( $query_args );
-		$posts = $query->posts;
-
-		$has_more = count( $posts ) > $per_page;
-		if ( $has_more ) {
-			$posts = array_slice( $posts, 0, $per_page );
-		}
+		// The query and the card shape live in TWD_AP_Cards, shared with the
+		// [twd_articles] shortcode, which prints the first batch into the
+		// page HTML.
+		$result = TWD_AP_Cards::fetch( $per_page, $offset, $search, $category, $tag );
 
 		$items = array();
-		foreach ( $posts as $post ) {
-			$items[] = $this->format_article_card( $post );
+		foreach ( $result['posts'] as $post ) {
+			$items[] = TWD_AP_Cards::format( $post );
 		}
 
 		return rest_ensure_response(
 			array(
 				'items'    => $items,
-				'has_more' => $has_more,
+				'has_more' => $result['has_more'],
 			)
 		);
 	}
 
 	/**
-	 * The single place a post becomes a grid card, shared by list_articles()
-	 * and list_articles_grouped() so both stay in sync (entity decoding,
-	 * excerpt trimming, reading time). Accepts either a WP_Post or a post ID.
-	 */
-	private function format_article_card( $post ) {
-		$post = get_post( $post );
-
-		$thumb_id   = get_post_thumbnail_id( $post );
-		$cats       = get_the_category( $post->ID );
-		// "Featured Articles" is an organisational category for the grouped
-		// landing view's own section heading, not a topic -- showing it as a
-		// card's own eyebrow label reads as a sales tag rather than saying
-		// anything about what the article covers. Prefer any other assigned
-		// category (a post can carry both, with this one only as its primary
-		// for grouping purposes), falling back to it only when it's the sole
-		// category on the post.
-		$topic_cats = array_values(
-			array_filter(
-				$cats,
-				function ( $c ) {
-					return 0 !== strcasecmp( $c->name, 'Featured Articles' );
-				}
-			)
-		);
-		$topic_cats = ! empty( $topic_cats ) ? $topic_cats : $cats;
-		$word_count = str_word_count( wp_strip_all_tags( $post->post_content ) );
-		$excerpt    = $post->post_excerpt ? $post->post_excerpt : wp_strip_all_tags( $post->post_content );
-
-		// get_the_title() runs wptexturize, which turns a plain apostrophe
-		// or a run of dots into literal entity text ("&#8217;", "&hellip;"),
-		// meant for direct, unescaped HTML output. The grid renders this via
-		// JS, which re-escapes it for safety, double-encoding the leading
-		// "&" and leaving the entity text itself showing on the page.
-		// wp_specialchars_decode() looked like the fix but only reverses
-		// &amp;/&lt;/&gt;/&quot;/&#039; -- it never touches &#8217; or
-		// &hellip; at all, which is why this kept happening. html_entity_decode()
-		// is the general decoder: it turns every named and numeric HTML
-		// entity back into a real character, so the client only ever
-		// encodes once, correctly.
-		return array(
-			'id'           => $post->ID,
-			'title'        => html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ),
-			'excerpt'      => html_entity_decode( wp_trim_words( $excerpt, 22 ), ENT_QUOTES, 'UTF-8' ),
-			'link'         => get_permalink( $post ),
-			'date'         => get_the_date( '', $post ),
-			'reading_time' => max( 1, (int) ceil( $word_count / 200 ) ),
-			'thumbnail'    => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '',
-			'category'     => ! empty( $topic_cats ) ? html_entity_decode( $topic_cats[0]->name, ENT_QUOTES, 'UTF-8' ) : '',
-			'featured'     => (bool) get_post_meta( $post->ID, '_twd_ap_featured', true ),
-			// Only ever true for a logged-in person (the grid sends the REST
-			// nonce for them) who can edit this exact article. Drives the
-			// small edit pencil on the card; the server still checks the
-			// same permission again when the edit popup loads or saves.
-			'can_edit'     => current_user_can( 'edit_post', $post->ID ),
-		);
-	}
-
-	/**
-	 * The default landing view: published posts grouped by their primary
-	 * category (never repeated across sections), top categories first. One
-	 * pass over all published posts, done in PHP rather than a per-category
-	 * WP_Query loop, so the "already used in an earlier section" exclusion
-	 * and the true per-primary-category counts (used for default ordering)
-	 * come from a single consistent source. posts_per_page is capped at a
-	 * generous but finite number since this plugin targets a single
-	 * therapist's or small practice's blog, not a high-volume publication.
+	 * The default landing view (see TWD_AP_Cards::grouped()).
 	 */
 	public function list_articles_grouped() {
 		nocache_headers();
-		$settings = TWD_AP_Grid_Settings::get();
-
-		$post_ids = get_posts(
-			array(
-				'post_type'      => 'post',
-				'post_status'    => 'publish',
-				'posts_per_page' => 500,
-				'orderby'        => 'date',
-				'order'          => 'DESC',
-				'fields'         => 'ids',
-			)
-		);
-
-		$by_category = array();
-		foreach ( $post_ids as $post_id ) {
-			$cat_ids = wp_get_post_categories( $post_id );
-			if ( empty( $cat_ids ) ) {
-				continue;
-			}
-
-			$primary = (int) get_post_meta( $post_id, '_twd_ap_primary_category', true );
-			if ( ! $primary || ! in_array( $primary, $cat_ids, true ) ) {
-				$primary = $cat_ids[0];
-			}
-
-			if ( ! isset( $by_category[ $primary ] ) ) {
-				$by_category[ $primary ] = array();
-			}
-			$by_category[ $primary ][] = $post_id;
-		}
-
-		// WordPress's own fallback bucket for a post nobody categorised is
-		// not a real content category, and letting it win a section on the
-		// landing view (as it often does, being the biggest by default)
-		// pushes out the categories that actually say something about the
-		// site. A post whose only category is this one just does not show
-		// on the grouped view; a search still finds it by text.
-		unset( $by_category[ $this->uncategorized_id() ] );
-
-		$ordered_cat_ids = array();
-		foreach ( $settings['category_order'] as $cat_id ) {
-			if ( isset( $by_category[ $cat_id ] ) ) {
-				$ordered_cat_ids[] = $cat_id;
-			}
-		}
-		$remaining = array_diff( array_keys( $by_category ), $ordered_cat_ids );
-		usort(
-			$remaining,
-			function ( $a, $b ) use ( $by_category ) {
-				return count( $by_category[ $b ] ) - count( $by_category[ $a ] );
-			}
-		);
-		$ordered_cat_ids = array_merge( $ordered_cat_ids, $remaining );
-		$ordered_cat_ids = array_slice( $ordered_cat_ids, 0, $settings['categories_count'] );
-
-		$groups = array();
-		foreach ( $ordered_cat_ids as $cat_id ) {
-			$term = get_category( $cat_id );
-			if ( ! $term || is_wp_error( $term ) ) {
-				continue;
-			}
-
-			// Featured first, otherwise the newest-first order already in
-			// $ids is kept as-is (array_merge, not usort, so this stays
-			// stable regardless of PHP version).
-			$featured = array();
-			$rest     = array();
-			foreach ( $by_category[ $cat_id ] as $id ) {
-				if ( get_post_meta( $id, '_twd_ap_featured', true ) ) {
-					$featured[] = $id;
-				} else {
-					$rest[] = $id;
-				}
-			}
-			$ids = array_slice( array_merge( $featured, $rest ), 0, $settings['posts_per_category'] );
-
-			$items = array();
-			foreach ( $ids as $id ) {
-				$items[] = $this->format_article_card( $id );
-			}
-
-			$groups[] = array(
-				'category' => array(
-					'id'   => $cat_id,
-					'name' => html_entity_decode( $term->name, ENT_QUOTES, 'UTF-8' ),
-					'slug' => $term->slug,
-				),
-				'posts'    => $items,
-				'total'    => count( $by_category[ $cat_id ] ),
-			);
-		}
-
-		return rest_ensure_response(
-			array(
-				'groups'   => $groups,
-				'settings' => array(
-					'show_thumbnails' => (bool) $settings['show_thumbnails'],
-					'read_more_color' => $settings['read_more_color'],
-					'accent_color'    => $settings['accent_color'],
-				),
-			)
-		);
+		return rest_ensure_response( TWD_AP_Cards::grouped() );
 	}
 
 	/**
@@ -953,7 +732,7 @@ class TWD_AP_REST {
 	 * rather than matching on the literal name "Uncategorized".
 	 */
 	private function uncategorized_id() {
-		return (int) get_option( 'default_category' );
+		return TWD_AP_Cards::uncategorized_id();
 	}
 
 	public function get_grid_settings() {

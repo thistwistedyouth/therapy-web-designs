@@ -42,12 +42,27 @@
 		}
 
 		var groupsEl    = root.querySelector('.twd-ap-articles-groups');
-		var gridEl      = root.querySelector('.twd-ap-articles-grid');
+		// The grid that belongs to the root itself. A plain querySelector would
+		// find the first grouped section's grid instead, once the server has
+		// printed the grouped view into the page, and hiding it would blank it.
+		var gridEl      = Array.prototype.filter.call(root.children, function (c) {
+			return c.classList.contains('twd-ap-articles-grid');
+		})[0];
 		var emptyEl     = root.querySelector('.twd-ap-articles-empty');
 		var loadMoreBtn = root.querySelector('.twd-ap-articles-loadmore');
 		var searchEl    = root.querySelector('.twd-ap-articles-search');
 		var selectEl    = root.querySelector('.twd-ap-articles-category-select');
 		var settingsBtn = root.querySelector('.twd-ap-articles-settings-btn');
+		// A page cached before this version has no such element; the stub
+		// keeps the code below from failing on it.
+		var noneEl      = root.querySelector('.twd-ap-articles-none') || { hidden: true };
+
+		// The server prints the first view into the page (class-twd-ap-
+		// shortcode.php, data-ssr), so the first load must not wipe it for
+		// skeleton cards: it fetches quietly and swaps in the same markup in
+		// one step. Consumed by the first fetch only; later searches and
+		// filters show skeletons as before.
+		var keepFirstPaint = root.getAttribute('data-ssr') === '1';
 
 		// For a logged-in editor the list requests carry the REST nonce, so
 		// the server can say which cards that person may edit (the edit
@@ -93,7 +108,9 @@
 			tag: config.tag || '',
 			offset: 0,
 			loading: false,
-			showThumbnails: true,
+			// Matches the class the server printed from the saved setting, so
+			// the first fetch draws the same cards the server did.
+			showThumbnails: !root.classList.contains('twd-ap-no-thumbnails'),
 			// Set once, synchronously, from config.manyArticles -- baked into
 			// this page's own server-rendered HTML (class-twd-ap-shortcode.php),
 			// not fetched over REST after load. Nothing async, nothing that
@@ -246,11 +263,16 @@
 		function fetchGrouped() {
 			if (state.loading) { return; }
 			state.loading = true;
-			groupsEl.innerHTML =
-				'<div class="twd-ap-articles-group">' +
-					'<span class="twd-ap-skeleton-line twd-ap-skeleton-line-heading"></span>' +
-					'<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: 3;">' + skeletonCardsHtml(3) + '</div>' +
-				'</div>';
+			var firstPaint = keepFirstPaint;
+			keepFirstPaint = false;
+			if (!firstPaint) {
+				groupsEl.innerHTML =
+					'<div class="twd-ap-articles-group">' +
+						'<span class="twd-ap-skeleton-line twd-ap-skeleton-line-heading"></span>' +
+						'<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: 3;">' + skeletonCardsHtml(3) + '</div>' +
+					'</div>';
+				noneEl.hidden = true;
+			}
 			gridEl.hidden = true;
 			emptyEl.hidden = true;
 			loadMoreBtn.hidden = true;
@@ -262,7 +284,9 @@
 					var groups = data.groups || [];
 					if (!groups.length) {
 						groupsEl.innerHTML = '';
-						emptyEl.hidden = false;
+						// No search or category chosen here, so this is a site
+						// with nothing to group, not a filter with no matches.
+						noneEl.hidden = false;
 						return;
 					}
 					var html = '';
@@ -293,7 +317,8 @@
 				})
 				.catch(function () {
 					state.loading = false;
-					groupsEl.innerHTML = '';
+					// A failed first fetch keeps what the server printed.
+					if (!firstPaint) { groupsEl.innerHTML = ''; }
 				});
 		}
 
@@ -302,15 +327,20 @@
 				return;
 			}
 			state.loading = true;
+			var firstPaint = keepFirstPaint;
+			keepFirstPaint = false;
 			loadMoreBtn.textContent = 'Loading…';
 			groupsEl.innerHTML = '';
-			gridEl.hidden = false;
+			if (!firstPaint) {
+				gridEl.hidden = false;
+				noneEl.hidden = true;
+			}
 			// A fresh list (new filter/search, or the very first load) has
 			// nothing on screen yet to keep shape while it fetches, so
 			// skeleton cards go up immediately instead of an empty grid
 			// popping into a full one. "Load more" leaves what's already
 			// showing alone and just appends below it.
-			if (replace) {
+			if (replace && !firstPaint) {
 				gridEl.innerHTML = skeletonCardsHtml(config.count);
 			}
 
@@ -342,7 +372,16 @@
 					});
 
 					var hasResults = gridEl.children.length > 0;
-					emptyEl.hidden = hasResults;
+					// "No articles match your filters" only when the person
+					// searched or picked a category; a site (or a curated
+					// category/tag list) with nothing at all gets the
+					// friendly line instead.
+					var userFiltered = !!state.search || (config.showFilters && !!state.category);
+					emptyEl.hidden = hasResults || !userFiltered;
+					// The words live here, not in the page HTML, so they are only
+					// ever shown for a real search or category with no matches.
+					if (!emptyEl.hidden) { emptyEl.textContent = 'No articles match your filters.'; }
+					noneEl.hidden = hasResults || userFiltered;
 					gridEl.hidden = !hasResults;
 
 					// manyArticles is a hard gate on top of has_more, not just a
@@ -356,7 +395,8 @@
 				.catch(function () {
 					state.loading = false;
 					loadMoreBtn.textContent = 'Load more';
-					if (replace) {
+					// A failed first fetch keeps what the server printed.
+					if (replace && !firstPaint) {
 						gridEl.innerHTML = '';
 						gridEl.hidden = true;
 					}

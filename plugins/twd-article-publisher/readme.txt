@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.37.1
+Stable tag: 1.37.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.37.2): the articles grid now prints its first articles straight
+into the page, as real links, so search engines and anyone without
+JavaScript see the articles instead of an empty "Loading" page. The grid
+still loads and behaves exactly as before once the page is open, with no
+flash or jump. Large sites show the grouped-by-category view; every site
+also gets a "Browse by topic" row of plain links to its category pages. A
+site with no articles shows a short friendly line instead of "No articles
+match your filters". The word "Uncategorized" is never shown as a
+category on a card, and a password-protected article no longer shows any
+of its text on a card.
 
 NEW (1.37.1): the small edit pencil now also shows on the cards in the
 articles grid, for logged-in people who can edit that article. Click it
