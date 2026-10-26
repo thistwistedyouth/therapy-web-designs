@@ -166,7 +166,7 @@ class TWD_AP_Shortcode {
 			<?php if ( $show_filters ) : ?>
 				<div class="twd-ap-articles-toolbar">
 					<select class="twd-ap-articles-category-select" aria-label="<?php esc_attr_e( 'Jump to a category', 'twd-article-publisher' ); ?>">
-						<option value=""><?php esc_html_e( 'Loading…', 'twd-article-publisher' ); ?></option>
+						<option value=""><?php esc_html_e( 'All', 'twd-article-publisher' ); ?></option>
 					</select>
 					<input type="search" class="twd-ap-articles-search" placeholder="<?php esc_attr_e( 'Search articles…', 'twd-article-publisher' ); ?>" aria-label="<?php esc_attr_e( 'Search articles', 'twd-article-publisher' ); ?>" />
 					<?php if ( $is_admin_user ) : ?>
@@ -185,7 +185,7 @@ class TWD_AP_Shortcode {
 				<?php echo TWD_AP_Cards::topics_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?>
 			<?php endif; ?>
 			<?php if ( '' !== $index_url ) : ?>
-				<p class="twd-ap-articles-index-link"><a href="<?php echo esc_url( $index_url ); ?>"><?php esc_html_e( 'See the full index of articles', 'twd-article-publisher' ); ?></a></p>
+				<p class="twd-ap-articles-index-link"><a class="twd-ap-articles-index-pill" href="<?php echo esc_url( $index_url ); ?>"><?php esc_html_e( 'Browse all articles', 'twd-article-publisher' ); ?> <span aria-hidden="true">&rarr;</span></a></p>
 			<?php endif; ?>
 		</div>
 		<?php if ( $show_filters && $is_admin_user ) : ?>
@@ -211,8 +211,12 @@ class TWD_AP_Shortcode {
 						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-readmore-color"><?php esc_html_e( '"Read more" link colour', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-readmore-color" class="twd-ap-gs-color-input" />
 
-						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-accent-color"><?php esc_html_e( 'Accent colour (search focus, category links)', 'twd-article-publisher' ); ?></label>
+						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-accent-color"><?php esc_html_e( 'Accent colour (links, buttons and search focus)', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-accent-color" class="twd-ap-gs-color-input" />
+
+						<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Categories listed under the grid ("Browse by topic")', 'twd-article-publisher' ); ?></label>
+						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Tick the categories to list as links under the grid. Leave them all ticked to list every category, including new ones. Untick them all to hide the row.', 'twd-article-publisher' ); ?></p>
+						<div id="twd-ap-gs-topics" class="twd-ap-gs-topics"></div>
 
 						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-swipebook-color"><?php esc_html_e( '"View as a swipe book" button colour', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-swipebook-color" class="twd-ap-gs-color-input" />

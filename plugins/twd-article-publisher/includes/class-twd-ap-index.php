@@ -118,13 +118,21 @@ class TWD_AP_Index {
 		$page  = max( 1, min( count( $pages ), $page ) );
 		$show  = $pages[ $page - 1 ];
 
-		$html = '<div class="twd-ap-index">';
+		// The same saved accent colour the grid uses, so the links match the site.
+		$grid_settings = TWD_AP_Grid_Settings::get();
+		$html          = '<div class="twd-ap-index" style="' . esc_attr( '--twd-ap-accent-color:' . $grid_settings['accent_color'] . ';' ) . '">';
 		if ( count( $show ) > 2 ) {
-			$jump = '';
+			$jump    = '';
+			$options = '<option value="">' . esc_html__( 'All topics', 'twd-article-publisher' ) . '</option>';
 			foreach ( $show as $section ) {
-				$jump .= '<li><a href="#' . esc_attr( $section['id'] ) . '">' . esc_html( $section['name'] ) . '</a></li>';
+				$jump    .= '<li><a href="#' . esc_attr( $section['id'] ) . '">' . esc_html( $section['name'] ) . '</a></li>';
+				$options .= '<option value="' . esc_attr( $section['id'] ) . '">' . esc_html( $section['name'] ) . ' (' . count( $section['items'] ) . ')</option>';
 			}
+			// Plain jump links for crawlers and no-JavaScript visitors. When
+			// the JS runs it swaps them for the dropdown below, which shows
+			// one topic at a time (articles-grid.js, initIndex()).
 			$html .= '<nav class="twd-ap-index-jump" aria-label="' . esc_attr__( 'Jump to a topic', 'twd-article-publisher' ) . '"><ul>' . $jump . '</ul></nav>';
+			$html .= '<div class="twd-ap-index-filter" hidden><select aria-label="' . esc_attr__( 'Choose a topic', 'twd-article-publisher' ) . '">' . $options . '</select></div>';
 		}
 		foreach ( $show as $section ) {
 			$heading = esc_html( $section['name'] );

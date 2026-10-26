@@ -509,3 +509,91 @@
   font-size: 15px !important;
   padding: 48px 16px !important;
 }
+
+/* Index page: the topic dropdown is switched on by the JS; the jump links
+   it replaces stay for crawlers and for visitors without JavaScript. */
+.twd-ap-index-filter[hidden],
+.twd-ap-index-section[hidden] {
+  display: none !important;
+}
+.twd-ap-index-enhanced .twd-ap-index-jump {
+  display: none !important;
+}
+.twd-ap-index-filter {
+  margin: 0 0 28px !important;
+}
+.twd-ap-index-filter select {
+  width: 100% !important;
+  max-width: 340px !important;
+  padding: 10px 14px !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #1f2937 !important;
+  font-size: 15px !important;
+}
+.twd-ap-index-filter select:focus {
+  outline: none !important;
+  border-color: var(--twd-ap-accent-color, #2563eb) !important;
+}
+
+/* The link from every grid to the index page, as a pill button. */
+.twd-ap-articles-index-link {
+  margin: 28px 0 0 !important;
+  text-align: center !important;
+}
+.twd-ap-articles-index-link a.twd-ap-articles-index-pill {
+  display: inline-block !important;
+  padding: 11px 26px !important;
+  border-radius: 999px !important;
+  background: var(--twd-ap-accent-color, #2563eb) !important;
+  color: #fff !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+  transition: filter 0.2s ease, transform 0.2s ease !important;
+}
+.twd-ap-articles-index-link a.twd-ap-articles-index-pill:hover {
+  filter: brightness(0.9) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Small categories: one article is a wide card (image left, text right),
+   two articles sit two across, instead of leaving gaps in a 3 column row.
+   Browsers without :has() keep the normal card. */
+.twd-ap-articles-grid:has(> .twd-ap-article-card:nth-child(2):last-child) {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+.twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) {
+  grid-template-columns: 1fr !important;
+}
+.twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-card {
+  flex-direction: row !important;
+}
+.twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-thumb {
+  width: 40% !important;
+  height: auto !important;
+  min-height: 220px !important;
+}
+.twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-body {
+  flex: 1 1 auto !important;
+  justify-content: center !important;
+  padding: 28px !important;
+}
+.twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-title {
+  font-size: 21px !important;
+}
+@media (max-width: 600px) {
+  .twd-ap-articles-grid:has(> .twd-ap-article-card:nth-child(2):last-child) {
+    grid-template-columns: 1fr !important;
+  }
+  .twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-card {
+    flex-direction: column !important;
+  }
+  .twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-thumb {
+    width: 100% !important;
+    min-height: 0 !important;
+    height: 170px !important;
+  }
+}
