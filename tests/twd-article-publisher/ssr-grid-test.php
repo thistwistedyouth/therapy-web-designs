@@ -34,7 +34,8 @@ function sanitize_title( $s ) { return trim( preg_replace( '/[^a-z0-9]+/', '-', 
 function shortcode_atts( $pairs, $atts ) { return array_merge( $pairs, (array) $atts ); }
 function wp_strip_all_tags( $s ) { return trim( strip_tags( (string) $s ) ); }
 function wp_trim_words( $s, $n ) { $w = preg_split( '/\s+/', trim( $s ) ); return count( $w ) > $n ? implode( ' ', array_slice( $w, 0, $n ) ) . '&hellip;' : implode( ' ', $w ); }
-function get_option( $k, $d = false ) { return 'default_category' === $k ? 1 : $d; }
+function get_option( $k, $d = false ) { if ( 'default_category' === $k ) { return 1; } return $GLOBALS['opts'][ $k ] ?? $d; }
+function get_post_status( $id ) { return $GLOBALS['page_status'][ $id ] ?? false; }
 function current_user_can() { return false; }
 function post_password_required( $p ) { return ! empty( $p->protected ); }
 function get_post( $id ) { return is_object( $id ) ? $id : ( $GLOBALS['posts'][ $id ] ?? null ); }
@@ -43,7 +44,7 @@ function get_post_thumbnail_id( $p ) { return $p->thumb ? $p->ID : 0; }
 function wp_get_attachment_image_url( $id ) { return $GLOBALS['posts'][ $id ]->thumb; }
 // Like the real get_the_title(): wptexturize turns an apostrophe into entity text.
 function get_the_title( $p ) { return str_replace( "'", '&#8217;', $p->post_title ); }
-function get_permalink( $p ) { return 'https://example.test/' . $p->slug . '/'; }
+function get_permalink( $p ) { return is_object( $p ) ? 'https://example.test/' . $p->slug . '/' : 'https://example.test/page-' . $p . '/'; }
 function get_the_date( $f, $p ) { return date( 'j F Y', strtotime( $p->post_date ) ); }
 function get_the_category( $id ) { return array_map( function ( $c ) { return $GLOBALS['terms'][ $c ]; }, $GLOBALS['posts'][ $id ]->cats ); }
 function wp_get_post_categories( $id ) { return $GLOBALS['posts'][ $id ]->cats; }
@@ -96,6 +97,7 @@ class TWD_AP_Grid_Settings {
 class TWD_AP_Frontend { static function current_user_allowed() { return false; } }
 
 require $plugin . 'includes/class-twd-ap-cards.php';
+require $plugin . 'includes/class-twd-ap-index.php';
 require $plugin . 'includes/class-twd-ap-shortcode.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
 
@@ -228,6 +230,20 @@ t( 'empty site: no card links and the grid is hidden', 0 === count( card_links( 
 t( 'empty site: no loading text left behind', false === strpos( $html, 'Loading articles' ) );
 $html = grid( array( 'category' => 'anxiety' ) );
 t( 'a curated category with nothing in it also shows the friendly line', false !== strpos( $html, 'No articles yet' ) && 0 === count( card_links( $html ) ) );
+
+// ---------- the automatic link to the full index page ----------
+reset_site();
+add_post( 1, 'Some piece', array( 2 ), '2026-02-01' );
+t( 'index link: absent when no index page exists yet', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
+$GLOBALS['opts']['twd_ap_index_page_id'] = 77; $GLOBALS['page_status'][77] = 'publish';
+$html = grid();
+t( 'index link: present on the grid once the index page is published', false !== strpos( $html, '<a href="https://example.test/page-77/">See the full index of articles</a>' ) );
+t( 'index link: also on a curated category list', false !== strpos( grid( array( 'category' => 'anxiety' ) ), 'twd-ap-articles-index-link' ) );
+$GLOBALS['page_status'][77] = 'trash';
+t( 'index link: gone when the page is trashed', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
+$GLOBALS['page_status'][77] = 'draft';
+t( 'index link: gone when the page is not published', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
+$GLOBALS['opts'] = array(); $GLOBALS['page_status'] = array();
 
 if ( getenv( 'TWD_SSR_DUMP' ) ) { file_put_contents( getenv( 'TWD_SSR_DUMP' ), json_encode( $dump ) ); }
 echo "\n$pass passed, $fail failed\n";

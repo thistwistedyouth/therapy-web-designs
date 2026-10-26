@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.37.2
+Stable tag: 1.37.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.37.3): a plain, alphabetical index of every article. The new
+[twd_articles_index] shortcode lists every published article as a simple
+link with its date, under its category (categories A to Z, "Other articles"
+last), with no JavaScript, so search engines can reach every article from
+one page. The plugin creates an "Article index" page with the shortcode on
+it the first time an administrator opens wp-admin after updating (or uses a
+page that already has the shortcode), and every articles grid gets a "See
+the full index of articles" link to it. Delete or unpublish that page and
+the link goes away; it is not recreated. Very large sites (over 300
+articles) are split over several pages by category.
 
 NEW (1.37.2): the articles grid now prints its first articles straight
 into the page, as real links, so search engines and anyone without

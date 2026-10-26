@@ -425,3 +425,87 @@
   left: auto !important;
   right: 10px !important;
 }
+
+/* Link from every grid to the full alphabetical index page. */
+.twd-ap-articles-index-link {
+  margin: 14px 0 0 !important;
+  font-size: 14px !important;
+}
+.twd-ap-articles-index-link a {
+  color: var(--twd-ap-accent-color, #2563eb) !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+.twd-ap-articles-index-link a:hover {
+  text-decoration: underline !important;
+}
+
+/* [twd_articles_index]: plain, crawlable alphabetical index. */
+.twd-ap-index {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: #1f2937 !important;
+}
+.twd-ap-index-jump ul,
+.twd-ap-index-pager ul {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px 18px !important;
+  margin: 0 0 28px !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+.twd-ap-index-jump li,
+.twd-ap-index-pager li {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.twd-ap-index a {
+  color: var(--twd-ap-accent-color, #2563eb) !important;
+  text-decoration: none !important;
+}
+.twd-ap-index a:hover {
+  text-decoration: underline !important;
+}
+.twd-ap-index-section {
+  margin: 0 0 32px !important;
+}
+.twd-ap-index-title {
+  margin: 0 0 12px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  font-size: 21px !important;
+  font-weight: 700 !important;
+  color: #1f2937 !important;
+}
+.twd-ap-index-count {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: #6b7280 !important;
+}
+.twd-ap-index-list {
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+.twd-ap-index-list li {
+  margin: 0 !important;
+  padding: 6px 0 !important;
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+}
+.twd-ap-index-date {
+  margin-left: 8px !important;
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  white-space: nowrap !important;
+}
+.twd-ap-index-pager [aria-current="page"] {
+  font-weight: 700 !important;
+  color: #1f2937 !important;
+}
+.twd-ap-index-none {
+  text-align: center !important;
+  color: #6b7280 !important;
+  font-size: 15px !important;
+  padding: 48px 16px !important;
+}

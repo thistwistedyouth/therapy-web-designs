@@ -140,6 +140,9 @@ class TWD_AP_Shortcode {
 			$cards_html = TWD_AP_Cards::cards_html( $first['posts'], $show_thumbs );
 		}
 		$has_items = ( '' !== $groups_html || '' !== $cards_html );
+		// The automatic link to the full alphabetical index page (1.37.3), on
+		// every grid, so a crawler can reach every article from any of them.
+		$index_url = TWD_AP_Index::index_url();
 
 		$config = array(
 			'restUrl'      => esc_url_raw( rest_url( 'twd-publisher/v1' ) ),
@@ -180,6 +183,9 @@ class TWD_AP_Shortcode {
 			</div>
 			<?php if ( $show_filters ) : ?>
 				<?php echo TWD_AP_Cards::topics_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?>
+			<?php endif; ?>
+			<?php if ( '' !== $index_url ) : ?>
+				<p class="twd-ap-articles-index-link"><a href="<?php echo esc_url( $index_url ); ?>"><?php esc_html_e( 'See the full index of articles', 'twd-article-publisher' ); ?></a></p>
 			<?php endif; ?>
 		</div>
 		<?php if ( $show_filters && $is_admin_user ) : ?>

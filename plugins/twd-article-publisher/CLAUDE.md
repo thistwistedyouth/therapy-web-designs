@@ -123,6 +123,14 @@ Two server-side WordPress filters, registered by `TWD_AP_AI_Generate::init()` (c
 - **No edit pencils in the server HTML** (they are per person); the JS adds them for editors after load, so the page HTML is the same for everyone and safe to cache.
 - Tests: `php tests/twd-article-publisher/ssr-grid-test.php` (47 checks: links, titles, order against the REST route, escaping, thumbnails, count, archives, grouped view, empty site) and `NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/ssr-grid-browser-test.js` (23 checks in real Chromium: no skeletons, identical markup after the swap, first card does not move, failed fetch keeps the cards, no JavaScript, empty site, filter message). Run both after touching the grid, `class-twd-ap-cards.php` or `articles-grid.js`.
 
+## Article index (v1.37.3)
+
+- **`[twd_articles_index]`** (`includes/class-twd-ap-index.php`, `TWD_AP_Index`) prints a plain, crawlable list of every published article: one link (title and date) each, grouped under its primary category (the one the grouped grid uses; a "Featured Articles" primary yields to a real topic), categories A to Z, **"Other articles" last**, titles A to Z within each (`strnatcasecmp`, so case is ignored). No JavaScript, no cards. Up to 2000 articles. It exists so every article is one click from a page crawlers can read, since the grid only prints its first batch.
+- **Pagination only on very large sites:** over 300 articles it splits by whole categories, about 100 articles a page, with real `?twd_idx=N` links and `rel="prev"` / `rel="next"`. A page number past the end shows the last page; junk shows page 1. Most sites are one page with no pager.
+- **The "Article index" page.** `maybe_create_page()` runs on `admin_init` for an administrator, once per site (activation hooks do not run on an update): it adopts a published page that already contains the shortcode, otherwise creates a published page, slug `article-index`, with the shortcode. The page ID is stored in the `twd_ap_index_page_id` option, so it is never created twice, and a page that is later trashed or unpublished is **not** brought back. Shortcodes inside Elementor data are not found by the adoption search; in that case an extra page is created and either can be deleted.
+- **The automatic link.** `TWD_AP_Index::index_url()` returns the page's permalink only while that page is published; every `[twd_articles]` grid then prints "See the full index of articles" (`.twd-ap-articles-index-link`) below its topics row. Trash the page and the link disappears. It sits outside the grouped/flat containers, so the JS never touches it.
+- Tests: `php tests/twd-article-publisher/index-test.php` (38 checks: both sort orders, one link per article, primary category rule, escaping, published only, empty site, pagination, page creation and adoption) plus five link checks in `ssr-grid-test.php`.
+
 ## Edit pencil on grid cards (v1.37.1)
 
 - Each `[twd_articles]` card shows a small round pencil (top left over the thumbnail, top right when thumbnails are switched off) to a logged-in person who can edit THAT article. It opens the normal edit popup via `window.TWD_AP_OpenEditor(id)` (defined in `publisher.js`), so Update, Delete, the swipe book tick and the Summary Book button all work from the grid.
@@ -167,6 +175,7 @@ includes/class-twd-ap-sanitizer.php      TWD_AP_Sanitizer::clean() — the one p
 includes/class-twd-ap-rest.php           REST routes: /categories, /tags, /posts, /posts/{id}, /media, /articles, /articles/facets
 includes/class-twd-ap-frontend.php       Enqueues editor assets, decides which buttons show, capability gate
 includes/class-twd-ap-cards.php          TWD_AP_Cards: the one query, card formatter, grouped view and card markup shared by the REST routes and the shortcode
+includes/class-twd-ap-index.php          [twd_articles_index] alphabetical index shortcode, its auto-created page and the grid's link to it
 includes/class-twd-ap-shortcode.php      [twd_articles] shortcode -- grid/group container with the first batch of cards printed in, dropdown, admin "Customise this grid" popup markup
 includes/class-twd-ap-article-style.php  Public article typography — the_content wrap + unconditional CSS enqueue
 includes/class-twd-ap-swipebook.php      ?twd_ap_swipebook=1 -- renders any published article as a shareable swipe deck; get_payload() also feeds the overlay REST route
@@ -233,6 +242,7 @@ php tests/twd-article-publisher/ai-test.php                                     
 NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/browser-test.js   # the popup (start screen, pencil, refresh after save, swipe book tick) in real Chromium via Playwright
 php tests/twd-article-publisher/swipe-switch-test.php                               # the swipe book switch, where it is enforced, the New Article default, and the grid card edit permission
 NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/grid-test.js      # the edit pencil on grid cards, in real Chromium
+php tests/twd-article-publisher/index-test.php                                      # the alphabetical index, pagination, the Article index page
 php tests/twd-article-publisher/ssr-grid-test.php                                   # the server-rendered grid: links, order against REST, escaping, empty site
 NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/ssr-grid-browser-test.js   # the same grid in real Chromium: no flash or jump when the JS takes over
 ```
