@@ -24,6 +24,9 @@ function add_action() {}
 function add_filter() {}
 function add_shortcode() {}
 function nocache_headers() {}
+function absint( $n ) { return abs( (int) $n ); }
+function remove_query_arg( $k ) { return 'https://example.test/category/anxiety/'; }
+function add_query_arg( $k, $v, $u ) { return $u . ( false === strpos( $u, '?' ) ? '?' : '&' ) . $k . '=' . $v; }
 function get_bloginfo() { return 'Example Site'; }
 function rest_ensure_response( $x ) { return $x; }
 function rest_url( $p = '' ) { return 'https://example.test/wp-json/' . $p; }
@@ -76,6 +79,7 @@ function get_queried_object() { return $GLOBALS['terms'][ $GLOBALS['archive'] ];
 // The fake query: category/tag filter, featured first then newest, offset and limit, as the real args ask.
 class WP_Query {
 	public $posts = array();
+	public $found_posts = 0;
 	function __construct( $a ) {
 		$GLOBALS['last_args'] = $a;
 		$p = live_posts();
@@ -90,7 +94,8 @@ class WP_Query {
 			$fy = ! empty( $GLOBALS['meta'][ $y->ID ]['_twd_ap_featured'] ) ? 1 : 0;
 			return $fy <=> $fx ?: strcmp( $y->post_date, $x->post_date );
 		} );
-		$this->posts = array_slice( $p, $a['offset'], $a['posts_per_page'] );
+		$this->found_posts = count( $p );
+		$this->posts = array_slice( $p, $a['offset'] ?? 0, $a['posts_per_page'] );
 	}
 }
 class TWD_AP_Grid_Settings {
@@ -267,6 +272,59 @@ $GLOBALS['archive'] = 0;
 TWD_AP_Grid_Settings::$s['cta_show_grid'] = false;
 t( 'cta: unticked for the grid, a normal page shows none', false === strpos( grid(), 'twd-ap-cta' ) );
 TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_categories' => false ) );
+
+// ---------- real page links under a long list ----------
+reset_site();
+for ( $i = 1; $i <= 30; $i++ ) { add_post( $i, 'Piece ' . $i, array( 2 ), sprintf( '2026-02-%02d', $i ) ); }
+$page_cfg = function ( $html ) { $c = json_decode( html_entity_decode( preg_replace( '/^.*data-config="([^"]+)".*$/s', '$1', $html ) ), true ); return $c; };
+$_GET = array();
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: a category with more than count articles gets page links', false !== strpos( $html, 'class="twd-ap-articles-pager"' ) && 4 === preg_match_all( '/<li><(?:a|span)[^>]*>\d<\/(?:a|span)><\/li>/', $html ) );
+t( 'paging: page 1 shows the first 9 and is marked current', 9 === count( card_links( $html ) ) && false !== strpos( $html, '<span aria-current="page">1</span>' ) );
+t( 'paging: page links are real links with rel next, and page 1 has no ?twd_page', false !== strpos( $html, '<a rel="next" href="https://example.test/category/anxiety/?twd_page=2">2</a>' ) && false !== strpos( $html, 'Next &rarr;' ) && false === strpos( $html, 'twd_page=1' ) );
+t( 'paging: no Previous link on page 1', false === strpos( $html, 'twd-ap-pager-prev' ) );
+t( 'paging: the config starts at offset 0', 0 === $page_cfg( $html )['startOffset'] );
+$_GET['twd_page'] = '2';
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: ?twd_page=2 shows the next 9, matching the REST route at that offset', card_links( $html ) === rest_links( array( 'per_page' => 9, 'offset' => 9, 'category' => 'anxiety' ) ) && 9 === count( card_links( $html ) ) );
+t( 'paging: page 2 has Previous and Next, and links back to page 1 without the parameter', false !== strpos( $html, 'twd-ap-pager-prev"><a rel="prev" href="https://example.test/category/anxiety/">' ) && false !== strpos( $html, 'twd-ap-pager-next' ) );
+t( 'paging: the config tells the JS to start at offset 9', 9 === $page_cfg( $html )['startOffset'] );
+$_GET['twd_page'] = '4';
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: the last page shows the remaining 3 and no Next', 3 === count( card_links( $html ) ) && false === strpos( $html, 'twd-ap-pager-next' ) );
+$_GET['twd_page'] = '99';
+$html = grid( array( 'category' => 'anxiety', 'count' => 9 ) );
+t( 'paging: a page past the end shows the last page, not an empty grid', 3 === count( card_links( $html ) ) && false !== strpos( $html, '<span aria-current="page">4</span>' ) && 27 === $page_cfg( $html )['startOffset'] );
+foreach ( array( 'abc', '0', '' ) as $junk ) {
+	$_GET['twd_page'] = $junk;
+	t( "paging: a junk page number ('$junk') shows page 1", 9 === count( card_links( grid( array( 'category' => 'anxiety', 'count' => 9 ) ) ) ) && false !== strpos( grid( array( 'category' => 'anxiety', 'count' => 9 ) ), '<span aria-current="page">1</span>' ) );
+}
+// Page snapshots for the browser test: page 1 and page 2 of a 30 article category, 9 to a page.
+foreach ( array( 1 => 0, 2 => 9 ) as $pg => $off ) {
+	$_GET['twd_page'] = (string) $pg;
+	$dump[ 'paged' . $pg ] = array(
+		'html'    => grid( array( 'category' => 'anxiety', 'count' => 9 ) ),
+		'list'    => TWD_AP_REST::instance()->list_articles( new ArrayObject( array( 'per_page' => 9, 'offset' => $off, 'category' => 'anxiety' ) ) ),
+		'grouped' => array( 'groups' => array() ),
+		'total'   => 30,
+	);
+}
+$_GET = array();
+$html = grid( array( 'category' => 'anxiety', 'count' => 30 ) );
+t( 'paging: no page links when everything fits on one page', false === strpos( $html, 'twd-ap-articles-pager' ) );
+$all = array();
+for ( $pg = 1; $pg <= 4; $pg++ ) { $_GET['twd_page'] = (string) $pg; $all = array_merge( $all, card_links( grid( array( 'category' => 'anxiety', 'count' => 9 ) ) ) ); }
+$_GET = array();
+t( 'paging: pages 1 to 4 together list all 30 articles once', 30 === count( $all ) && 30 === count( array_unique( $all ) ) );
+t( 'paging: the large-site grouped view has no page links (its sections link to the category pages)', ( function () { for ( $i = 31; $i <= 40; $i++ ) { add_post( $i, 'Extra ' . $i, array( 3 ), sprintf( '2026-03-%02d', $i - 30 ) ); } return false === strpos( grid(), 'twd-ap-articles-pager' ); } )() );
+reset_site();
+for ( $i = 1; $i <= 120; $i++ ) { add_post( $i, 'Item ' . $i, array( 2 ), '2026-01-01' ); }
+$_GET['twd_page'] = '12';
+$html = grid( array( 'category' => 'anxiety', 'count' => 5 ) );
+preg_match( '/<nav class="twd-ap-articles-pager".*?<\/nav>/s', $html, $nav );
+t( 'paging: 24 pages are shortened to the first, last and the pages around the current one', ! empty( $nav ) && 1 === preg_match( '/>1<.*gap.*>11<.*aria-current="page">12<.*>13<.*gap.*>24</s', $nav[0] ) && false === strpos( $nav[0], '>7<' ) );
+$_GET = array();
+reset_site();
 
 // ---------- the category intro above the grid ----------
 reset_site();

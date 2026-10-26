@@ -97,6 +97,27 @@ class TWD_AP_Cards {
 	}
 
 	/**
+	 * How many published articles match a flat list (all of them, not just
+	 * one page), for the page links under a category or curated list.
+	 */
+	public static function count_matching( $category = '', $tag = '' ) {
+		$args = array(
+			'post_type'      => 'post',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+		);
+		if ( '' !== $category ) {
+			$args['category_name'] = $category;
+		}
+		if ( '' !== $tag ) {
+			$args['tag'] = $tag;
+		}
+		$query = new WP_Query( $args );
+		return (int) $query->found_posts;
+	}
+
+	/**
 	 * A post becomes a grid card. Accepts either a WP_Post or a post ID.
 	 */
 	public static function format( $post ) {
@@ -368,6 +389,49 @@ class TWD_AP_Cards {
 			'</div>';
 		}
 		return $html;
+	}
+
+	/**
+	 * Real page links under a flat list (?twd_page=N, with rel prev/next) so
+	 * a crawler can reach every page of a long category or curated list. The
+	 * grid's JS hides them and takes over with Load more; on page 2 and
+	 * beyond it keeps just the "Previous" link (see articles-grid.js).
+	 * Long runs are shortened to the first, last and nearby pages.
+	 */
+	public static function pager_html( $page, $pages, $base ) {
+		if ( $pages < 2 ) {
+			return '';
+		}
+		$href = function ( $n ) use ( $base ) {
+			return 1 === $n ? $base : add_query_arg( 'twd_page', $n, $base );
+		};
+		$shown = array();
+		for ( $i = 1; $i <= $pages; $i++ ) {
+			if ( $pages <= 9 || 1 === $i || $pages === $i || abs( $i - $page ) <= 1 ) {
+				$shown[] = $i;
+			}
+		}
+		$items = '';
+		if ( $page > 1 ) {
+			$items .= '<li class="twd-ap-pager-prev"><a rel="prev" href="' . esc_url( $href( $page - 1 ) ) . '">&larr; ' . esc_html__( 'Previous', 'twd-article-publisher' ) . '</a></li>';
+		}
+		$last = 0;
+		foreach ( $shown as $n ) {
+			if ( $last && $n - $last > 1 ) {
+				$items .= '<li class="twd-ap-pager-gap" aria-hidden="true">&hellip;</li>';
+			}
+			$last = $n;
+			if ( $n === $page ) {
+				$items .= '<li><span aria-current="page">' . (int) $n . '</span></li>';
+			} else {
+				$rel    = $n === $page - 1 ? ' rel="prev"' : ( $n === $page + 1 ? ' rel="next"' : '' );
+				$items .= '<li><a' . $rel . ' href="' . esc_url( $href( $n ) ) . '">' . (int) $n . '</a></li>';
+			}
+		}
+		if ( $page < $pages ) {
+			$items .= '<li class="twd-ap-pager-next"><a rel="next" href="' . esc_url( $href( $page + 1 ) ) . '">' . esc_html__( 'Next', 'twd-article-publisher' ) . ' &rarr;</a></li>';
+		}
+		return '<nav class="twd-ap-articles-pager" aria-label="' . esc_attr__( 'More articles', 'twd-article-publisher' ) . '"><ul>' . $items . '</ul></nav>';
 	}
 
 	/**

@@ -764,3 +764,57 @@
   min-height: 160px !important;
   box-sizing: border-box !important;
 }
+
+/* Real page links under a long category or curated list. Visible without
+   JavaScript; the JS hides them (Load more takes over) or, on page 2 and
+   beyond, keeps only the Previous link. */
+.twd-ap-articles-pager[hidden] {
+  display: none !important;
+}
+.twd-ap-articles-pager {
+  margin: 28px 0 0 !important;
+}
+.twd-ap-articles-pager ul {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+.twd-ap-articles-pager li {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.twd-ap-articles-pager a,
+.twd-ap-articles-pager span[aria-current] {
+  display: inline-block !important;
+  min-width: 38px !important;
+  padding: 8px 14px !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #1f2937 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+}
+.twd-ap-articles-pager a:hover {
+  border-color: var(--twd-ap-accent-color, #2563eb) !important;
+  color: var(--twd-ap-accent-color, #2563eb) !important;
+}
+.twd-ap-articles-pager span[aria-current] {
+  border-color: var(--twd-ap-accent-color, #2563eb) !important;
+  background: var(--twd-ap-accent-color, #2563eb) !important;
+  color: #fff !important;
+}
+.twd-ap-articles-pager .twd-ap-pager-gap {
+  padding: 8px 4px !important;
+  color: #6b7280 !important;
+}
+.twd-ap-articles-pager-slim li:not(.twd-ap-pager-prev) {
+  display: none !important;
+}

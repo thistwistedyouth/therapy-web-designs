@@ -156,6 +156,14 @@
 		// filters show skeletons as before.
 		var keepFirstPaint = root.getAttribute('data-ssr') === '1';
 
+		// Real page links under a long list, for crawlers and no-JavaScript
+		// visitors. Load more takes over here; on page 2 and beyond only the
+		// "Previous" link stays, until the person searches, filters or loads more.
+		var pagerEl = root.querySelector('.twd-ap-articles-pager');
+		if (pagerEl) {
+			if ((config.startOffset || 0) > 0) { pagerEl.classList.add('twd-ap-articles-pager-slim'); } else { pagerEl.hidden = true; }
+		}
+
 		// For a logged-in editor the list requests carry the REST nonce, so
 		// the server can say which cards that person may edit (the edit
 		// pencil). If the nonce has gone stale (a cached page) WordPress
@@ -206,7 +214,9 @@
 			search: '',
 			category: config.category || '',
 			tag: config.tag || '',
-			offset: 0,
+			// A page link (?twd_page=2) opens on that page, so the first fetch
+			// and Load more carry on from there.
+			offset: config.startOffset || 0,
 			loading: false,
 			// Matches the class the server printed from the saved setting, so
 			// the first fetch draws the same cards the server did.
@@ -430,6 +440,7 @@
 			state.loading = true;
 			var firstPaint = keepFirstPaint;
 			keepFirstPaint = false;
+			if (pagerEl && !firstPaint) { pagerEl.hidden = true; }
 			loadMoreBtn.textContent = 'Loading…';
 			groupsEl.innerHTML = '';
 			if (!firstPaint) {

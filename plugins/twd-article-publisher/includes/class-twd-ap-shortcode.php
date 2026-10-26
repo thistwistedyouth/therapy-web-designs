@@ -133,15 +133,32 @@ class TWD_AP_Shortcode {
 		// links. The JS replaces it with identical markup when it loads. Large
 		// sites on the bare shortcode start grouped by category, everything
 		// else starts as one flat list (see canGroup() in articles-grid.js).
-		$grouped     = $show_filters && $many_articles;
-		$groups_html = '';
-		$cards_html  = '';
+		$grouped      = $show_filters && $many_articles;
+		$groups_html  = '';
+		$cards_html   = '';
+		$pager_html   = '';
+		$start_offset = 0;
 		if ( $grouped ) {
 			$grouped_data = TWD_AP_Cards::grouped();
 			$groups_html  = TWD_AP_Cards::groups_html( $grouped_data['groups'], $show_thumbs );
 		} else {
-			$first      = TWD_AP_Cards::fetch( $count, 0, '', $category, $tag );
-			$cards_html = TWD_AP_Cards::cards_html( $first['posts'], $show_thumbs );
+			// A long flat list (a category with more than `count` articles) is
+			// split into pages with real ?twd_page=N links. The first fetch
+			// asks for that page too, so a link someone follows opens on it.
+			$page  = isset( $_GET['twd_page'] ) ? max( 1, absint( wp_unslash( $_GET['twd_page'] ) ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification -- read-only page number.
+			$first = TWD_AP_Cards::fetch( $count, ( $page - 1 ) * $count, '', $category, $tag );
+			$pages = 1;
+			if ( $first['has_more'] || $page > 1 ) {
+				$pages = max( 1, (int) ceil( TWD_AP_Cards::count_matching( $category, $tag ) / $count ) );
+				if ( $page > $pages ) {
+					// A page past the end shows the last page, not an empty grid.
+					$page  = $pages;
+					$first = TWD_AP_Cards::fetch( $count, ( $page - 1 ) * $count, '', $category, $tag );
+				}
+				$pager_html = TWD_AP_Cards::pager_html( $page, $pages, remove_query_arg( 'twd_page' ) );
+			}
+			$start_offset = ( $page - 1 ) * $count;
+			$cards_html   = TWD_AP_Cards::cards_html( $first['posts'], $show_thumbs );
 		}
 		$has_items = ( '' !== $groups_html || '' !== $cards_html );
 		// The automatic link to the full alphabetical index page (1.37.3), on
@@ -157,6 +174,7 @@ class TWD_AP_Shortcode {
 			'showFilters'  => $show_filters,
 			'isAdmin'      => $is_admin_user,
 			'manyArticles' => $many_articles,
+			'startOffset'  => $start_offset,
 		);
 
 		$root_classes = 'twd-ap-articles' . ( $show_thumbs ? '' : ' twd-ap-no-thumbnails' );
@@ -193,6 +211,7 @@ class TWD_AP_Shortcode {
 			<div class="twd-ap-articles-loadmore-row">
 				<button type="button" class="twd-ap-articles-loadmore" hidden><?php esc_html_e( 'Load more', 'twd-article-publisher' ); ?></button>
 			</div>
+			<?php echo $pager_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?>
 			<?php if ( $show_filters ) : ?>
 				<?php echo TWD_AP_Cards::topics_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?>
 			<?php endif; ?>

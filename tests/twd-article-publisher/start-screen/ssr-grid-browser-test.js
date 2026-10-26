@@ -42,6 +42,7 @@ async function open(browser, name, o) {
 	const errors = [];
 	let restDone = 0;
 	page.on('pageerror', (e) => errors.push(String(e)));
+	if (o.onRequest) { page.on('request', o.onRequest); }
 	await page.route('https://example.test/page', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: pageHtml(name, o.js) }));
 	await page.route(REST + '/**', async (route) => {
 		const url = route.request().url();
@@ -350,6 +351,38 @@ async function open(browser, name, o) {
 		await r.page.keyboard.press('Escape');
 		t('intro edit: Escape closes the popup', !(await r.page.locator('.twd-ap-intro-overlay').isVisible()));
 		t('intro edit: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+	}
+
+
+	// 15. Page links under a long category: real links without JavaScript, Load more with it.
+	{
+		let r = await open(browser, 'paged1', { js: false });
+		const hrefs = await r.page.$$eval('.twd-ap-articles-pager a', (a) => a.map((x) => x.getAttribute('href')));
+		t('paging, no JavaScript: the page links are visible real links', (await r.page.locator('.twd-ap-articles-pager').isVisible()) && hrefs.includes('https://example.test/category/anxiety/?twd_page=2') && hrefs.includes('https://example.test/category/anxiety/?twd_page=4'), JSON.stringify(hrefs));
+		await r.ctx.close();
+
+		const reqs = [];
+		r = await open(browser, 'paged1', { delay: 50 });
+		r.page.on('request', (q) => { if (/\/articles\?/.test(q.url())) { reqs.push(q.url()); } });
+		await wait(800);
+		t('paging, page 1 with JavaScript: the page links hide and Load more takes over', !(await r.page.locator('.twd-ap-articles-pager').isVisible()) && await r.page.locator('.twd-ap-articles-loadmore').isVisible());
+		await r.page.click('.twd-ap-articles-loadmore');
+		await wait(500);
+		t('paging, page 1: Load more asks for the next 9 (offset 9)', reqs.some((u) => /offset=9/.test(u)), JSON.stringify(reqs));
+		t('paging, page 1: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+
+		reqs.length = 0;
+		r = await open(browser, 'paged2', { delay: 50, onRequest: (q) => { if (/\/articles\?/.test(q.url())) { reqs.push(q.url()); } } });
+		await wait(800);
+		t('paging, page 2 with JavaScript: the first fetch starts at offset 9, not 0', reqs.length > 0 && /offset=9/.test(reqs[0]), JSON.stringify(reqs));
+		const visible = await r.page.$$eval('.twd-ap-articles-pager li', (l) => l.filter((x) => x.getBoundingClientRect().height > 0).map((x) => x.className));
+		t('paging, page 2: only the Previous link stays visible', JSON.stringify(visible) === JSON.stringify(['twd-ap-pager-prev']), JSON.stringify(visible));
+		await r.page.click('.twd-ap-articles-loadmore');
+		await wait(500);
+		t('paging, page 2: Load more continues from offset 18 and the Previous link goes', reqs.some((u) => /offset=18/.test(u)) && !(await r.page.locator('.twd-ap-articles-pager').isVisible()), JSON.stringify(reqs));
+		t('paging, page 2: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
 		await r.ctx.close();
 	}
 
