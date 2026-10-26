@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.37.4
+Stable tag: 1.38.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,21 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.38.0): four things, all set in Customise this grid (the gear icon on
+your resources page). (1) Article look: choose the text, heading, link and
+quote colours, the font (the plugin's own, a serif, or your theme's), the
+text size and the line spacing for published articles, with a live
+preview. Untouched, articles look exactly as before. (2) Call to action: a
+heading, some text and a button, shown where you tick: under the resources
+grid, under a category page's grid, under the article index, and at the
+end of every article. Nothing shows until you fill it in. (3) Category
+intro: a category page now shows the category's own description above its
+articles, and anyone who can edit the category gets an "Edit intro" button
+on the page to write or change it without going into wp-admin. (4) Long
+category and list pages get real page links (Previous, 1, 2, 3, Next) for
+search engines and visitors without JavaScript; everyone else keeps Load
+more.
 
 NEW (1.37.4): small improvements to the grid and the index. (1) The link
 to the full index is now a rounded button, "Browse all articles", in your
