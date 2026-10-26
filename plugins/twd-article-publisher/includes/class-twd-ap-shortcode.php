@@ -218,6 +218,44 @@ class TWD_AP_Shortcode {
 						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Tick the categories to list as links under the grid. Leave them all ticked to list every category, including new ones. Untick them all to hide the row.', 'twd-article-publisher' ); ?></p>
 						<div id="twd-ap-gs-topics" class="twd-ap-gs-topics"></div>
 
+						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-look-details">
+							<summary><?php esc_html_e( 'Article look', 'twd-article-publisher' ); ?></summary>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'How a published article reads on this site. Leave everything as it is to keep the plugin\'s own look; change what you want to match your site.', 'twd-article-publisher' ); ?></p>
+							<div class="twd-ap-gs-look-grid">
+								<label class="twd-ap-label" for="twd-ap-gs-look-text"><?php esc_html_e( 'Text colour', 'twd-article-publisher' ); ?></label>
+								<input type="color" id="twd-ap-gs-look-text" class="twd-ap-gs-color-input" data-look="look_text_color" data-default="#1f2937" />
+								<label class="twd-ap-label" for="twd-ap-gs-look-heading"><?php esc_html_e( 'Heading colour', 'twd-article-publisher' ); ?></label>
+								<input type="color" id="twd-ap-gs-look-heading" class="twd-ap-gs-color-input" data-look="look_heading_color" data-default="#1f2937" />
+								<label class="twd-ap-label" for="twd-ap-gs-look-link"><?php esc_html_e( 'Link colour', 'twd-article-publisher' ); ?></label>
+								<input type="color" id="twd-ap-gs-look-link" class="twd-ap-gs-color-input" data-look="look_link_color" data-default="#2563eb" />
+								<label class="twd-ap-label" for="twd-ap-gs-look-quote"><?php esc_html_e( 'Quote colour', 'twd-article-publisher' ); ?></label>
+								<input type="color" id="twd-ap-gs-look-quote" class="twd-ap-gs-color-input" data-look="look_quote_color" data-default="#6b7280" />
+							</div>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-look-font"><?php esc_html_e( 'Font', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-look-font" class="twd-ap-input" data-look="look_font">
+								<option value="system"><?php esc_html_e( 'Plain (the plugin default)', 'twd-article-publisher' ); ?></option>
+								<option value="serif"><?php esc_html_e( 'Serif (Georgia)', 'twd-article-publisher' ); ?></option>
+								<option value="theme"><?php esc_html_e( 'Use my theme\'s own font', 'twd-article-publisher' ); ?></option>
+							</select>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-look-size"><?php esc_html_e( 'Text size', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-look-size" class="twd-ap-input" data-look="look_size">
+								<option value="medium"><?php esc_html_e( 'Medium (default)', 'twd-article-publisher' ); ?></option>
+								<option value="large"><?php esc_html_e( 'Large', 'twd-article-publisher' ); ?></option>
+							</select>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-look-spacing"><?php esc_html_e( 'Line spacing', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-look-spacing" class="twd-ap-input" data-look="look_spacing">
+								<option value="compact"><?php esc_html_e( 'Compact', 'twd-article-publisher' ); ?></option>
+								<option value="normal"><?php esc_html_e( 'Normal (default)', 'twd-article-publisher' ); ?></option>
+								<option value="relaxed"><?php esc_html_e( 'Relaxed', 'twd-article-publisher' ); ?></option>
+							</select>
+							<div class="twd-ap-gs-look-preview" id="twd-ap-gs-look-preview" aria-hidden="true">
+								<h4><?php esc_html_e( 'A sample heading', 'twd-article-publisher' ); ?></h4>
+								<p><?php esc_html_e( 'This is how the text of an article will read, with a', 'twd-article-publisher' ); ?> <a href="#" tabindex="-1"><?php esc_html_e( 'link inside it', 'twd-article-publisher' ); ?></a>.</p>
+								<blockquote><?php esc_html_e( 'And this is how a quotation will look.', 'twd-article-publisher' ); ?></blockquote>
+							</div>
+							<button type="button" id="twd-ap-gs-look-reset" class="twd-ap-btn-text"><?php esc_html_e( 'Reset to the plugin default', 'twd-article-publisher' ); ?></button>
+						</details>
+
 						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-swipebook-color"><?php esc_html_e( '"View as a swipe book" button colour', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-swipebook-color" class="twd-ap-gs-color-input" />
 

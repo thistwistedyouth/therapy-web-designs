@@ -49,7 +49,7 @@ async function open(browser, name, o) {
 		if (/\/articles\/grouped/.test(url)) { body = DUMP[name].grouped; }
 		else if (/\/articles\/facets/.test(url)) { body = { categories: [{ name: 'Anxiety', slug: 'anxiety' }, { name: 'Sleep', slug: 'sleep' }], tags: [] }; }
 		else if (/\/articles\?/.test(url)) { body = o.empty ? { items: [], has_more: false } : DUMP[name].list; }
-		else if (/\/grid-settings/.test(url)) { if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics }; }
+		else if (/\/grid-settings/.test(url)) { if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal' }; }
 		return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 	});
 	await page.goto('https://example.test/page');
@@ -234,6 +234,38 @@ async function open(browser, name, o) {
 		await again.page.waitForSelector('#twd-ap-gs-topics input');
 		t('topics setting: a saved list shows only those ticked', JSON.stringify(await again.page.$$eval('#twd-ap-gs-topics input', (b) => b.map((x) => x.checked))) === '[true,true,false]');
 		await again.ctx.close();
+	}
+
+
+	// 11. The gear popup: Article look, with a live preview, saving only what was changed.
+	{
+		const { ctx, page, errors } = await open(browser, 'admin', { delay: 50 });
+		await page.click('.twd-ap-articles-settings-btn');
+		await page.waitForSelector('#twd-ap-gs-look-details');
+		await page.click('#twd-ap-gs-look-details > summary');
+		const pc = (sel) => page.locator('#twd-ap-gs-look-preview ' + sel).evaluate((el) => getComputedStyle(el).color);
+		t('look setting: opens with the plugin defaults and a sample', (await page.locator('#twd-ap-gs-look-text').inputValue()) === '#1f2937' && (await page.locator('#twd-ap-gs-look-font').inputValue()) === 'system' && (await pc('p')) === 'rgb(31, 41, 55)');
+		await page.locator('#twd-ap-gs-look-text').evaluate((el) => { el.value = '#aa0000'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+		await page.locator('#twd-ap-gs-look-link').evaluate((el) => { el.value = '#00aa00'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+		t('look setting: the preview changes as the colours change', (await pc('p')) === 'rgb(170, 0, 0)' && (await pc('a')) === 'rgb(0, 170, 0)' && (await pc('h4')) === 'rgb(170, 0, 0)');
+		await page.selectOption('#twd-ap-gs-look-font', 'serif');
+		t('look setting: choosing serif changes the preview font', /Georgia/.test(await page.locator('#twd-ap-gs-look-preview').evaluate((el) => getComputedStyle(el).fontFamily)));
+		await page.selectOption('#twd-ap-gs-look-font', 'theme');
+		t('look setting: choosing the theme font makes the preview inherit', !/Georgia/.test(await page.locator('#twd-ap-gs-look-preview').evaluate((el) => getComputedStyle(el).fontFamily)));
+		await page.selectOption('#twd-ap-gs-look-size', 'large');
+		t('look setting: large text size shows in the preview', (await page.locator('#twd-ap-gs-look-preview').evaluate((el) => getComputedStyle(el).fontSize)) === '19px');
+		await page.click('#twd-ap-gs-save');
+		await wait(300);
+		const body = saved[saved.length - 1];
+		t('look setting: saving sends exactly what was changed and the plugin default for the rest', body.look_text_color === '#aa0000' && body.look_link_color === '#00aa00' && body.look_heading_color === '' && body.look_quote_color === '' && body.look_font === 'theme' && body.look_size === 'large' && body.look_spacing === 'normal', JSON.stringify(body));
+		await page.click('#twd-ap-gs-look-reset');
+		t('look setting: reset puts back the defaults and the preview', (await page.locator('#twd-ap-gs-look-text').inputValue()) === '#1f2937' && (await pc('p')) === 'rgb(31, 41, 55)' && (await page.locator('#twd-ap-gs-look-size').inputValue()) === 'medium');
+		await page.click('#twd-ap-gs-save');
+		await wait(300);
+		const cleared = saved[saved.length - 1];
+		t('look setting: saving after a reset clears every choice', cleared.look_text_color === '' && cleared.look_link_color === '' && cleared.look_font === 'system' && cleared.look_size === 'medium');
+		t('look setting: no JavaScript errors', errors.length === 0, errors.join(' | '));
+		await ctx.close();
 	}
 
 	await browser.close();

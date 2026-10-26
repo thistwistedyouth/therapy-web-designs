@@ -597,3 +597,60 @@
     height: 170px !important;
   }
 }
+
+/* Customise this grid: collapsible sections (Article look and so on). */
+.twd-ap-gs-details {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  padding: 0 14px 14px !important;
+  background: #fff !important;
+}
+.twd-ap-gs-details > summary {
+  margin: 0 -14px !important;
+  padding: 12px 14px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #1f2937 !important;
+  cursor: pointer !important;
+}
+.twd-ap-gs-look-grid {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  gap: 10px 16px !important;
+  align-items: center !important;
+}
+.twd-ap-gs-look-grid .twd-ap-label {
+  margin: 0 !important;
+}
+.twd-ap-gs-look-preview {
+  margin: 16px 0 8px !important;
+  padding: 14px 16px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  font-family: var(--twd-ap-content-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif) !important;
+  font-size: var(--twd-ap-content-size, 17px) !important;
+  line-height: var(--twd-ap-content-leading, 1.75) !important;
+  color: var(--twd-ap-content-text, #1f2937) !important;
+}
+.twd-ap-gs-look-preview h4 {
+  margin: 0 0 6px !important;
+  font-size: 1.1em !important;
+  font-weight: 700 !important;
+  color: var(--twd-ap-content-heading, var(--twd-ap-content-text, #1f2937)) !important;
+}
+.twd-ap-gs-look-preview p {
+  margin: 0 0 8px !important;
+  color: var(--twd-ap-content-text, #1f2937) !important;
+}
+.twd-ap-gs-look-preview a {
+  color: var(--twd-ap-content-link, #2563eb) !important;
+  text-decoration: underline !important;
+}
+.twd-ap-gs-look-preview blockquote {
+  margin: 0 !important;
+  padding: 2px 0 2px 12px !important;
+  border-left: 3px solid var(--twd-ap-content-quote, var(--twd-ap-content-link, #2563eb)) !important;
+  color: var(--twd-ap-content-quote, #6b7280) !important;
+  font-style: italic !important;
+}

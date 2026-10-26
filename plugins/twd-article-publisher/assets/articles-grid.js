@@ -471,6 +471,63 @@
 		var sbExportBrandingBox = overlay.querySelector('#twd-ap-gs-sb-export-branding');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var topicsBox  = overlay.querySelector('#twd-ap-gs-topics');
+		var lookInputs = overlay.querySelectorAll('[data-look]');
+		var lookPreview = overlay.querySelector('#twd-ap-gs-look-preview');
+		var lookReset  = overlay.querySelector('#twd-ap-gs-look-reset');
+		// Article look: '' means "not changed, use the plugin default". Only
+		// what the owner actually changes is stored, so an untouched site
+		// keeps the plugin's own typography.
+		var lookState = {};
+		var LOOK_SERIF = 'Georgia, "Times New Roman", Times, serif';
+		var LOOK_LEADING = { compact: '1.55', relaxed: '1.95' };
+
+		function applyLookPreview() {
+			var p = lookPreview;
+			if (!p) { return; }
+			var map = {
+				look_text_color: '--twd-ap-content-text',
+				look_heading_color: '--twd-ap-content-heading',
+				look_link_color: '--twd-ap-content-link',
+				look_quote_color: '--twd-ap-content-quote'
+			};
+			Object.keys(map).forEach(function (key) {
+				if (lookState[key]) { p.style.setProperty(map[key], lookState[key]); } else { p.style.removeProperty(map[key]); }
+			});
+			p.style.removeProperty('--twd-ap-content-font');
+			p.style.removeProperty('font-family');
+			if (lookState.look_font === 'serif') { p.style.setProperty('--twd-ap-content-font', LOOK_SERIF); }
+			if (lookState.look_font === 'theme') { p.style.setProperty('font-family', 'inherit', 'important'); }
+			if (lookState.look_size === 'large') { p.style.setProperty('--twd-ap-content-size', '19px'); } else { p.style.removeProperty('--twd-ap-content-size'); }
+			if (LOOK_LEADING[lookState.look_spacing]) { p.style.setProperty('--twd-ap-content-leading', LOOK_LEADING[lookState.look_spacing]); } else { p.style.removeProperty('--twd-ap-content-leading'); }
+		}
+		function fillLookInputs() {
+			Array.prototype.forEach.call(lookInputs, function (el) {
+				var key = el.getAttribute('data-look');
+				if (el.type === 'color') {
+					el.value = lookState[key] || el.getAttribute('data-default');
+				} else {
+					// selects fall back to their plain default option
+					el.value = lookState[key] || (key === 'look_font' ? 'system' : (key === 'look_size' ? 'medium' : 'normal'));
+				}
+			});
+			applyLookPreview();
+		}
+		Array.prototype.forEach.call(lookInputs, function (el) {
+			el.addEventListener('input', function () {
+				lookState[el.getAttribute('data-look')] = el.value;
+				applyLookPreview();
+			});
+			el.addEventListener('change', function () {
+				lookState[el.getAttribute('data-look')] = el.value;
+				applyLookPreview();
+			});
+		});
+		if (lookReset) {
+			lookReset.addEventListener('click', function () {
+				lookState = { look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal' };
+				fillLookInputs();
+			});
+		}
 		var saveBtn    = overlay.querySelector('#twd-ap-gs-save');
 		var statusEl   = overlay.querySelector('#twd-ap-grid-settings-status');
 
@@ -646,6 +703,16 @@
 				renderSbLogoPreview(data.swipebook_logo_url || '');
 				renderOrderList(data.categories || []);
 				renderTopics(data.categories || [], data.topic_category_ids);
+				lookState = {
+					look_text_color: data.look_text_color || '',
+					look_heading_color: data.look_heading_color || '',
+					look_link_color: data.look_link_color || '',
+					look_quote_color: data.look_quote_color || '',
+					look_font: data.look_font || 'system',
+					look_size: data.look_size || 'medium',
+					look_spacing: data.look_spacing || 'normal'
+				};
+				fillLookInputs();
 				profilePhotoId = data.profile_photo_id || 0;
 				renderPhotoPreview(data.profile_photo_url || '');
 				nameInput.value = data.profile_name || '';
@@ -676,6 +743,13 @@
 				swipebook_export_branding: !!sbExportBrandingBox.checked,
 				category_order: order,
 				topic_category_ids: topicsValue(),
+				look_text_color: lookState.look_text_color || '',
+				look_heading_color: lookState.look_heading_color || '',
+				look_link_color: lookState.look_link_color || '',
+				look_quote_color: lookState.look_quote_color || '',
+				look_font: lookState.look_font || 'system',
+				look_size: lookState.look_size || 'medium',
+				look_spacing: lookState.look_spacing || 'normal',
 				profile_photo_id: profilePhotoId,
 				profile_name: nameInput.value,
 				profile_bio: bioInput.value,
