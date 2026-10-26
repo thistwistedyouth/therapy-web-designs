@@ -21,6 +21,11 @@ function is_tag() { return $GLOBALS['ctx']['tag']; }
 function wp_is_block_theme() { return $GLOBALS['ctx']['block']; }
 function get_queried_object() { return $GLOBALS['term']; }
 function locate_template( $names ) { foreach ( (array) $names as $n ) { if ( in_array( $n, $GLOBALS['ctx']['own_templates'], true ) ) { return '/theme/' . $n; } } return ''; }
+function is_wp_error( $x ) { return $x instanceof WP_Error; }
+class WP_Error {}
+function is_paged() { return ! empty( $GLOBALS['ctx']['paged'] ); }
+function get_term_link( $t ) { return 'https://example.test/category/' . $t->slug . '/'; }
+function wp_safe_redirect( $u, $c ) { $GLOBALS['redirect'] = array( $u, $c ); throw new RuntimeException( 'redirected' ); }
 function esc_html( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES ); }
 function single_term_title( $p = '', $echo = true ) { return $GLOBALS['term']->name; }
 function get_header() { echo "[HEADER]\n"; }
@@ -40,6 +45,18 @@ t( 'default: on for a category page with a plain theme (no setup, no template)',
 t( 'it hands back the plugin template instead of the theme archive', $plugin . 'templates/archive-grid.php' === $arch->maybe_take_over( '/theme/archive.php' ) );
 ctx( array( 'cat' => false, 'tag' => true ) );
 t( 'a tag page too', take() );
+
+// ---------- WordPress's own page 2, 3 ... of a category ----------
+ctx( array( 'paged' => true ) );
+$GLOBALS['redirect'] = null;
+try { $arch->maybe_take_over( '/theme/archive.php' ); $redirected = false; } catch ( RuntimeException $e ) { $redirected = true; }
+t( '/category/x/page/2/ is sent permanently (301) to the category page, not shown as a duplicate of page 1', $redirected && array( 'https://example.test/category/anxiety/', 301 ) === $GLOBALS['redirect'] );
+$GLOBALS['redirect'] = null;
+$GLOBALS['opt']['twd_ap_grid_settings'] = array( 'archive_takeover' => false );
+t( 'with the takeover switched off page 2 is left to the theme, no redirect', '/theme/archive.php' === $arch->maybe_take_over( '/theme/archive.php' ) && null === $GLOBALS['redirect'] );
+$GLOBALS['opt'] = array();
+ctx( array( 'paged' => true, 'own_templates' => array( 'category.php' ) ) );
+t( 'where the theme has its own category template page 2 is left alone too', '/theme/archive.php' === $arch->maybe_take_over( '/theme/archive.php' ) && null === $GLOBALS['redirect'] );
 
 // ---------- when it steps aside ----------
 ctx( array( 'cat' => false ) );

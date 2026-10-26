@@ -40,6 +40,16 @@ class TWD_AP_Archive {
 		if ( ! self::should_take_over() ) {
 			return $template;
 		}
+		// WordPress's own /category/x/page/2/ would print this same grid again
+		// (the grid pages itself with ?twd_page=N and Load more), a duplicate
+		// page for search engines. Send those addresses to the category page.
+		if ( is_paged() ) {
+			$url = get_term_link( get_queried_object() );
+			if ( ! is_wp_error( $url ) && '' !== $url ) {
+				wp_safe_redirect( $url, 301 );
+				exit;
+			}
+		}
 		return TWD_AP_PATH . 'templates/archive-grid.php';
 	}
 
