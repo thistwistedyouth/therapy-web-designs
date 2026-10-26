@@ -24,6 +24,7 @@ const REST = 'https://example.test/wp-json/twd-publisher/v1';
 let pass = 0, fail = 0;
 const saved = [];
 let window_topics = 'all';
+let window_cta = {};
 function t(name, ok, extra) { if (ok) { pass++; console.log('PASS  ' + name); } else { fail++; console.log('FAIL  ' + name + (extra ? '  ' + extra : '')); } }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -49,7 +50,8 @@ async function open(browser, name, o) {
 		if (/\/articles\/grouped/.test(url)) { body = DUMP[name].grouped; }
 		else if (/\/articles\/facets/.test(url)) { body = { categories: [{ name: 'Anxiety', slug: 'anxiety' }, { name: 'Sleep', slug: 'sleep' }], tags: [] }; }
 		else if (/\/articles\?/.test(url)) { body = o.empty ? { items: [], has_more: false } : DUMP[name].list; }
-		else if (/\/grid-settings/.test(url)) { if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal' }; }
+		else if (/\/grid-settings/.test(url)) { if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal', cta_heading: '', cta_text: '', cta_button_label: '', cta_button_url: '', cta_show_grid: false, cta_show_categories: false, cta_show_index: false, cta_show_articles: false };
+			Object.assign(body, window_cta); }
 		return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 	});
 	await page.goto('https://example.test/page');
@@ -266,6 +268,50 @@ async function open(browser, name, o) {
 		t('look setting: saving after a reset clears every choice', cleared.look_text_color === '' && cleared.look_link_color === '' && cleared.look_font === 'system' && cleared.look_size === 'medium');
 		t('look setting: no JavaScript errors', errors.length === 0, errors.join(' | '));
 		await ctx.close();
+	}
+
+
+	// 12. The call to action: a centred box with an accent pill button, untouched by the grid's JS.
+	{
+		const { ctx, page, errors } = await open(browser, 'cta', { delay: 50 });
+		await wait(700);
+		const box = page.locator('.twd-ap-cta-grid');
+		t('cta: the box is on the page after the JS has taken over', await box.isVisible());
+		t('cta: it has the heading, the text and the button', (await box.innerText()).includes('Ready to talk?') && (await box.innerText()).includes('A short chat is free.') && (await box.locator('a.twd-ap-cta-button').innerText()) === 'Book a call');
+		const style = await box.locator('a.twd-ap-cta-button').evaluate((el) => { const c = getComputedStyle(el); return { bg: c.backgroundColor, color: c.color, radius: parseFloat(c.borderTopLeftRadius) }; });
+		t('cta: the button is an accent coloured pill with white text', style.bg === 'rgb(37, 99, 235)' && style.color === 'rgb(255, 255, 255)' && style.radius >= 20, JSON.stringify(style));
+		const bb = await box.boundingBox();
+		const gb = await page.locator('.twd-ap-articles').boundingBox();
+		t('cta: the box is centred under the grid and no wider than 720px', Math.abs((bb.x + bb.width / 2) - (gb.x + gb.width / 2)) < 2 && bb.width <= 721, JSON.stringify([bb, gb]));
+		t('cta: the box sits below the grid, not over it', bb.y > (await page.locator('.twd-ap-articles-grid').first().boundingBox()).y);
+		t('cta: no JavaScript errors', errors.length === 0, errors.join(' | '));
+		await ctx.close();
+		const phone = await browser.newContext({ viewport: { width: 375, height: 800 } });
+		const pp = await phone.newPage();
+		await pp.route('https://example.test/page', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: pageHtml('cta', false) }));
+		await pp.goto('https://example.test/page');
+		t('cta: on a phone nothing scrolls sideways', !(await pp.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)));
+		await phone.close();
+	}
+
+	// 13. The gear popup: Call to action fields fill from the saved values and save as typed.
+	{
+		window_cta = { cta_heading: 'Hello', cta_text: 'Line one', cta_button_label: 'Go', cta_button_url: 'https://example.test/x', cta_show_grid: true, cta_show_articles: true };
+		const { ctx, page, errors } = await open(browser, 'admin', { delay: 50 });
+		await page.click('.twd-ap-articles-settings-btn');
+		await page.waitForSelector('#twd-ap-gs-cta-details');
+		await page.click('#twd-ap-gs-cta-details > summary');
+		t('cta setting: the fields fill from what was saved', (await page.inputValue('#twd-ap-gs-cta-heading')) === 'Hello' && (await page.inputValue('#twd-ap-gs-cta-label')) === 'Go' && (await page.inputValue('#twd-ap-gs-cta-url')) === 'https://example.test/x' && (await page.isChecked('#twd-ap-gs-cta-grid')) && !(await page.isChecked('#twd-ap-gs-cta-index')) && (await page.isChecked('#twd-ap-gs-cta-articles')));
+		await page.fill('#twd-ap-gs-cta-heading', 'Ready to talk?');
+		await page.check('#twd-ap-gs-cta-index');
+		await page.uncheck('#twd-ap-gs-cta-grid');
+		await page.click('#twd-ap-gs-save');
+		await wait(300);
+		const body = saved[saved.length - 1];
+		t('cta setting: saving sends the new values and ticks', body.cta_heading === 'Ready to talk?' && body.cta_text === 'Line one' && body.cta_show_index === true && body.cta_show_grid === false && body.cta_show_articles === true && body.cta_show_categories === false, JSON.stringify(body));
+		t('cta setting: no JavaScript errors', errors.length === 0, errors.join(' | '));
+		await ctx.close();
+		window_cta = {};
 	}
 
 	await browser.close();

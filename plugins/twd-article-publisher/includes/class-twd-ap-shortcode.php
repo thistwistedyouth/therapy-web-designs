@@ -87,11 +87,14 @@ class TWD_AP_Shortcode {
 			'twd_articles'
 		);
 
+		$on_archive = false;
 		if ( '' === $atts['category'] && '' === $atts['tag'] ) {
 			if ( is_category() ) {
 				$atts['category'] = get_queried_object()->slug;
+				$on_archive       = true;
 			} elseif ( is_tag() ) {
 				$atts['tag'] = get_queried_object()->slug;
+				$on_archive  = true;
 			}
 		}
 
@@ -187,6 +190,7 @@ class TWD_AP_Shortcode {
 			<?php if ( '' !== $index_url ) : ?>
 				<p class="twd-ap-articles-index-link"><a class="twd-ap-articles-index-pill" href="<?php echo esc_url( $index_url ); ?>"><?php esc_html_e( 'Browse all articles', 'twd-article-publisher' ); ?> <span aria-hidden="true">&rarr;</span></a></p>
 			<?php endif; ?>
+			<?php echo TWD_AP_Cta::html( $on_archive ? 'category' : 'grid' ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cta. ?>
 		</div>
 		<?php if ( $show_filters && $is_admin_user ) : ?>
 			<div class="twd-ap-overlay twd-ap-grid-settings-overlay" data-for="<?php echo esc_attr( $instance_id ); ?>" hidden>
@@ -217,6 +221,25 @@ class TWD_AP_Shortcode {
 						<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Categories listed under the grid ("Browse by topic")', 'twd-article-publisher' ); ?></label>
 						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Tick the categories to list as links under the grid. Leave them all ticked to list every category, including new ones. Untick them all to hide the row.', 'twd-article-publisher' ); ?></p>
 						<div id="twd-ap-gs-topics" class="twd-ap-gs-topics"></div>
+
+						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-cta-details">
+							<summary><?php esc_html_e( 'Call to action', 'twd-article-publisher' ); ?></summary>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'A short invitation, such as booking a call, shown in a box where you choose below. Nothing shows until you add a heading, some text or a button, and tick a place.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-label" for="twd-ap-gs-cta-heading"><?php esc_html_e( 'Heading', 'twd-article-publisher' ); ?></label>
+							<input type="text" id="twd-ap-gs-cta-heading" class="twd-ap-input" maxlength="120" placeholder="<?php esc_attr_e( 'e.g. Ready to talk?', 'twd-article-publisher' ); ?>" />
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-cta-text"><?php esc_html_e( 'Text', 'twd-article-publisher' ); ?></label>
+							<textarea id="twd-ap-gs-cta-text" class="twd-ap-textarea-small" maxlength="500" placeholder="<?php esc_attr_e( 'A line or two. Plain text only.', 'twd-article-publisher' ); ?>"></textarea>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-cta-label"><?php esc_html_e( 'Button text', 'twd-article-publisher' ); ?></label>
+							<input type="text" id="twd-ap-gs-cta-label" class="twd-ap-input" maxlength="40" placeholder="<?php esc_attr_e( 'e.g. Book a free call', 'twd-article-publisher' ); ?>" />
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-cta-url"><?php esc_html_e( 'Button link', 'twd-article-publisher' ); ?></label>
+							<input type="text" id="twd-ap-gs-cta-url" class="twd-ap-input" placeholder="https://" />
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'A web address, or mailto: or tel: for an email or phone link. The button shows only when it has both text and a link.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Show it', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-cta-grid" /> <?php esc_html_e( 'Under the resources grid', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-cta-categories" /> <?php esc_html_e( 'Under a category page\'s grid', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-cta-index" /> <?php esc_html_e( 'Under the article index', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-cta-articles" /> <?php esc_html_e( 'At the end of every article', 'twd-article-publisher' ); ?></label>
+						</details>
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-look-details">
 							<summary><?php esc_html_e( 'Article look', 'twd-article-publisher' ); ?></summary>

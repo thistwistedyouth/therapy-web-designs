@@ -31,6 +31,7 @@ require_once TWD_AP_PATH . 'includes/class-twd-ap-rest.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-frontend.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-shortcode.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-index.php';
+require_once TWD_AP_PATH . 'includes/class-twd-ap-cta.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-article-style.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-swipebook.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-summary-book.php';
@@ -55,6 +56,7 @@ final class TWD_Article_Publisher {
 		TWD_AP_Frontend::instance();
 		TWD_AP_Shortcode::instance();
 		TWD_AP_Index::instance();
+		TWD_AP_Cta::instance();
 		TWD_AP_Article_Style::instance();
 		TWD_AP_Swipebook::instance();
 		TWD_AP_Summary_Book::instance();

@@ -92,12 +92,13 @@ class WP_Query {
 	}
 }
 class TWD_AP_Grid_Settings {
-	static $s = array( 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
+	static $s = array( 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false, 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
 	static function get() { return self::$s; }
 }
 class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } }
 
 require $plugin . 'includes/class-twd-ap-cards.php';
+require $plugin . 'includes/class-twd-ap-cta.php';
 require $plugin . 'includes/class-twd-ap-index.php';
 require $plugin . 'includes/class-twd-ap-shortcode.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
@@ -247,6 +248,22 @@ t( 'index link: gone when the page is trashed', false === strpos( grid(), 'twd-a
 $GLOBALS['page_status'][77] = 'draft';
 t( 'index link: gone when the page is not published', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
 $GLOBALS['opts'] = array(); $GLOBALS['page_status'] = array();
+
+// ---------- the call to action under the grid ----------
+reset_site();
+add_post( 1, 'Some piece', array( 2 ), '2026-02-01' ); add_post( 2, 'Another', array( 3 ), '2026-02-02' );
+t( 'cta: nothing under the grid by default', false === strpos( grid(), 'twd-ap-cta' ) );
+TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => 'Ready to talk?', 'cta_text' => 'A short chat is free.', 'cta_button_label' => 'Book a call', 'cta_button_url' => 'https://example.test/book', 'cta_show_grid' => true ) );
+$html = grid();
+t( 'cta: shown under the grid once ticked, after the topics row and the index pill', 1 === preg_match( '/twd-ap-articles-topics.*twd-ap-cta twd-ap-cta-grid.*<\/div>\s*$/s', $html ) );
+snap( 'cta' );
+t( 'cta: on a category page it follows the category switch, not the grid one', ( $GLOBALS['archive'] = 3 ) && false === strpos( grid(), 'twd-ap-cta' ) );
+TWD_AP_Grid_Settings::$s['cta_show_categories'] = true;
+t( 'cta: ticked for category pages, it shows there with its own class', false !== strpos( grid(), 'twd-ap-cta twd-ap-cta-category' ) && false === strpos( grid(), 'twd-ap-cta-grid' ) );
+$GLOBALS['archive'] = 0;
+TWD_AP_Grid_Settings::$s['cta_show_grid'] = false;
+t( 'cta: unticked for the grid, a normal page shows none', false === strpos( grid(), 'twd-ap-cta' ) );
+TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_categories' => false ) );
 
 $GLOBALS['allowed'] = true; snap( 'admin' ); $GLOBALS['allowed'] = false;
 // ---------- the filter dropdown starts with All; the topic row follows the setting ----------

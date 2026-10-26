@@ -471,6 +471,14 @@
 		var sbExportBrandingBox = overlay.querySelector('#twd-ap-gs-sb-export-branding');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var topicsBox  = overlay.querySelector('#twd-ap-gs-topics');
+		var ctaHeading = overlay.querySelector('#twd-ap-gs-cta-heading');
+		var ctaText = overlay.querySelector('#twd-ap-gs-cta-text');
+		var ctaLabel = overlay.querySelector('#twd-ap-gs-cta-label');
+		var ctaUrl = overlay.querySelector('#twd-ap-gs-cta-url');
+		var ctaGrid = overlay.querySelector('#twd-ap-gs-cta-grid');
+		var ctaCategories = overlay.querySelector('#twd-ap-gs-cta-categories');
+		var ctaIndex = overlay.querySelector('#twd-ap-gs-cta-index');
+		var ctaArticles = overlay.querySelector('#twd-ap-gs-cta-articles');
 		var lookInputs = overlay.querySelectorAll('[data-look]');
 		var lookPreview = overlay.querySelector('#twd-ap-gs-look-preview');
 		var lookReset  = overlay.querySelector('#twd-ap-gs-look-reset');
@@ -713,6 +721,14 @@
 					look_spacing: data.look_spacing || 'normal'
 				};
 				fillLookInputs();
+				ctaHeading.value = data.cta_heading || '';
+				ctaText.value = data.cta_text || '';
+				ctaLabel.value = data.cta_button_label || '';
+				ctaUrl.value = data.cta_button_url || '';
+				ctaGrid.checked = !!data.cta_show_grid;
+				ctaCategories.checked = !!data.cta_show_categories;
+				ctaIndex.checked = !!data.cta_show_index;
+				ctaArticles.checked = !!data.cta_show_articles;
 				profilePhotoId = data.profile_photo_id || 0;
 				renderPhotoPreview(data.profile_photo_url || '');
 				nameInput.value = data.profile_name || '';
@@ -743,6 +759,14 @@
 				swipebook_export_branding: !!sbExportBrandingBox.checked,
 				category_order: order,
 				topic_category_ids: topicsValue(),
+				cta_heading: ctaHeading.value,
+				cta_text: ctaText.value,
+				cta_button_label: ctaLabel.value,
+				cta_button_url: ctaUrl.value,
+				cta_show_grid: !!ctaGrid.checked,
+				cta_show_categories: !!ctaCategories.checked,
+				cta_show_index: !!ctaIndex.checked,
+				cta_show_articles: !!ctaArticles.checked,
 				look_text_color: lookState.look_text_color || '',
 				look_heading_color: lookState.look_heading_color || '',
 				look_link_color: lookState.look_link_color || '',

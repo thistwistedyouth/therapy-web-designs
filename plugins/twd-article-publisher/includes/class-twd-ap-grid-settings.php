@@ -30,6 +30,16 @@ class TWD_AP_Grid_Settings {
 			// colours and the 'system' / 'medium' / 'normal' choices mean "the
 			// plugin's own typography", and then nothing is printed at all,
 			// so a site that never touches these looks exactly as before.
+			// Call to action (1.38.0): empty and switched off everywhere until
+			// the owner fills it in and ticks where it should show.
+			'cta_heading'        => '',
+			'cta_text'           => '',
+			'cta_button_label'   => '',
+			'cta_button_url'     => '',
+			'cta_show_grid'      => false,
+			'cta_show_categories' => false,
+			'cta_show_index'     => false,
+			'cta_show_articles'  => false,
 			'look_text_color'    => '',
 			'look_heading_color' => '',
 			'look_link_color'    => '',
@@ -67,6 +77,14 @@ class TWD_AP_Grid_Settings {
 			'read_more_color'    => $current['read_more_color'],
 			'accent_color'       => $current['accent_color'],
 			'topic_category_ids' => $current['topic_category_ids'],
+			'cta_heading'        => $current['cta_heading'],
+			'cta_text'           => $current['cta_text'],
+			'cta_button_label'   => $current['cta_button_label'],
+			'cta_button_url'     => $current['cta_button_url'],
+			'cta_show_grid'      => $current['cta_show_grid'],
+			'cta_show_categories' => $current['cta_show_categories'],
+			'cta_show_index'     => $current['cta_show_index'],
+			'cta_show_articles'  => $current['cta_show_articles'],
 			'look_text_color'    => $current['look_text_color'],
 			'look_heading_color' => $current['look_heading_color'],
 			'look_link_color'    => $current['look_link_color'],
@@ -123,6 +141,24 @@ class TWD_AP_Grid_Settings {
 				// An empty value clears the colour back to the plugin default.
 				$color            = '' === $input[ $key ] ? '' : sanitize_hex_color( $input[ $key ] );
 				$output[ $key ]   = $color ? $color : ( '' === $input[ $key ] ? '' : $output[ $key ] );
+			}
+		}
+		if ( isset( $input['cta_heading'] ) ) {
+			$output['cta_heading'] = mb_substr( sanitize_text_field( $input['cta_heading'] ), 0, 120 );
+		}
+		if ( isset( $input['cta_text'] ) ) {
+			$output['cta_text'] = mb_substr( sanitize_textarea_field( $input['cta_text'] ), 0, 500 );
+		}
+		if ( isset( $input['cta_button_label'] ) ) {
+			$output['cta_button_label'] = mb_substr( sanitize_text_field( $input['cta_button_label'] ), 0, 40 );
+		}
+		if ( isset( $input['cta_button_url'] ) ) {
+			// http, https, mailto and tel only; anything else becomes empty.
+			$output['cta_button_url'] = esc_url_raw( trim( (string) $input['cta_button_url'] ), array( 'http', 'https', 'mailto', 'tel' ) );
+		}
+		foreach ( array( 'cta_show_grid', 'cta_show_categories', 'cta_show_index', 'cta_show_articles' ) as $key ) {
+			if ( isset( $input[ $key ] ) ) {
+				$output[ $key ] = (bool) $input[ $key ];
 			}
 		}
 		$choices = array(

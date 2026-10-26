@@ -10,9 +10,13 @@ function is_wp_error( $x ) { return $x instanceof WP_Error; }
 function __( $s ) { return $s; }
 function esc_html__( $s ) { return htmlspecialchars( $s, ENT_QUOTES ); }
 function esc_attr__( $s ) { return htmlspecialchars( $s, ENT_QUOTES ); }
+function is_singular() { return false; }
+function in_the_loop() { return false; }
+function is_main_query() { return false; }
 function esc_html( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES ); }
 function esc_attr( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES ); }
 function esc_url( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES ); }
+function add_filter() {}
 function add_action() {}
 function add_shortcode() {}
 function wp_unslash( $s ) { return $s; }
@@ -50,8 +54,9 @@ function wp_insert_post( $a ) {
 	return $id;
 }
 
-class TWD_AP_Grid_Settings { static $s = array( 'accent_color' => '#2563eb', 'topic_category_ids' => 'all' ); static function get() { return self::$s; } }
+class TWD_AP_Grid_Settings { static $s = array( 'accent_color' => '#2563eb', 'topic_category_ids' => 'all', 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false ); static function get() { return self::$s; } }
 require $plugin . 'includes/class-twd-ap-cards.php';
+require $plugin . 'includes/class-twd-ap-cta.php';
 require $plugin . 'includes/class-twd-ap-index.php';
 
 $pass = 0; $fail = 0;
@@ -122,6 +127,15 @@ t( 'dropdown: every section is still in the HTML, none hidden', 3 === substr_cou
 reset_site();
 add_post( 1, 'A one', array( 2 ) ); add_post( 2, 'B two', array( 3 ) );
 t( 'dropdown: not shown for a site with only two topics', false === strpos( render_index(), 'twd-ap-index-filter' ) );
+
+// ---------- the call to action under the index ----------
+reset_site();
+add_post( 1, 'A one', array( 2 ), '2026-02-01' );
+t( 'cta: nothing under the index by default', false === strpos( render_index(), 'twd-ap-cta' ) );
+TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => 'Ready?', 'cta_show_index' => true ) );
+$html = render_index();
+t( 'cta: shown inside the index, after the last section, when ticked', 1 === preg_match( '/<\/section><aside class="twd-ap-cta twd-ap-cta-index".*<\/aside><\/div>$/s', $html ) );
+TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => '', 'cta_show_index' => false ) );
 
 // ---------- escaping and entities ----------
 reset_site();
