@@ -275,7 +275,7 @@ class TWD_AP_Cards {
 	public static function topic_categories() {
 		$uncat_id = self::uncategorized_id();
 		$cats     = get_categories( array( 'hide_empty' => true ) );
-		return array_values(
+		$cats     = array_values(
 			array_filter(
 				$cats,
 				function ( $c ) use ( $uncat_id ) {
@@ -283,6 +283,21 @@ class TWD_AP_Cards {
 				}
 			)
 		);
+		// The owner can choose which categories the row lists (Customise
+		// this grid). 'all' is the default and includes future categories.
+		$settings = TWD_AP_Grid_Settings::get();
+		$chosen   = isset( $settings['topic_category_ids'] ) ? $settings['topic_category_ids'] : 'all';
+		if ( is_array( $chosen ) ) {
+			$cats = array_values(
+				array_filter(
+					$cats,
+					function ( $c ) use ( $chosen ) {
+						return in_array( (int) $c->term_id, array_map( 'intval', $chosen ), true );
+					}
+				)
+			);
+		}
+		return $cats;
 	}
 
 	// -- Markup. Mirrors articles-grid.js; every value is escaped here. ------

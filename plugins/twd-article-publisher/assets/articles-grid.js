@@ -31,7 +31,25 @@
 	document.addEventListener('DOMContentLoaded', function () {
 		var containers = document.querySelectorAll('.twd-ap-articles');
 		Array.prototype.forEach.call(containers, initGrid);
+		Array.prototype.forEach.call(document.querySelectorAll('.twd-ap-index'), initIndex);
 	});
+
+	// [twd_articles_index]: the topic dropdown is printed hidden and only
+	// switched on here, so without JavaScript the plain jump links stay and
+	// every section shows. Choosing a topic shows just that section.
+	function initIndex(root) {
+		var filter = root.querySelector('.twd-ap-index-filter');
+		var select = filter ? filter.querySelector('select') : null;
+		if (!select) { return; }
+		filter.hidden = false;
+		root.classList.add('twd-ap-index-enhanced');
+		select.addEventListener('change', function () {
+			var id = select.value;
+			Array.prototype.forEach.call(root.querySelectorAll('.twd-ap-index-section'), function (section) {
+				section.hidden = !!id && section.id !== id;
+			});
+		});
+	}
 
 	function initGrid(root) {
 		var config;
@@ -251,11 +269,12 @@
 		}
 
 		function renderCategorySelect(categories) {
-			var html = '';
+			// "All" first, then the categories, so the default view and the way
+			// back to it are the first thing in the list.
+			var html = '<option value="">All</option>';
 			categories.forEach(function (cat) {
 				html += '<option value="' + escapeHtml(cat.slug) + '">' + escapeHtml(cat.name) + '</option>';
 			});
-			html += '<option value="">Show all</option>';
 			selectEl.innerHTML = html;
 			selectEl.value = state.category;
 		}
@@ -451,6 +470,7 @@
 		var sbLogoBgSelect = overlay.querySelector('#twd-ap-gs-sb-logo-bg');
 		var sbExportBrandingBox = overlay.querySelector('#twd-ap-gs-sb-export-branding');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
+		var topicsBox  = overlay.querySelector('#twd-ap-gs-topics');
 		var saveBtn    = overlay.querySelector('#twd-ap-gs-save');
 		var statusEl   = overlay.querySelector('#twd-ap-grid-settings-status');
 
@@ -540,6 +560,28 @@
 			statusEl.classList.toggle('twd-ap-status-ok', !!ok);
 		}
 
+		// Checkboxes for the "Browse by topic" row. 'all' (the default) shows
+		// every box ticked; once some are unticked the saved list is used.
+		function renderTopics(categories, chosen) {
+			topicsBox.innerHTML = '';
+			categories.forEach(function (cat) {
+				var on = !Array.isArray(chosen) || chosen.indexOf(parseInt(cat.id, 10)) !== -1;
+				var label = document.createElement('label');
+				label.className = 'twd-ap-checkbox-label';
+				label.innerHTML = '<input type="checkbox" value="' + parseInt(cat.id, 10) + '"' + (on ? ' checked' : '') + ' /> ' + escapeHtml(cat.name);
+				topicsBox.appendChild(label);
+			});
+		}
+		function topicsValue() {
+			var boxes = topicsBox.querySelectorAll('input[type="checkbox"]');
+			var ids = [];
+			var all = true;
+			Array.prototype.forEach.call(boxes, function (b) {
+				if (b.checked) { ids.push(parseInt(b.value, 10)); } else { all = false; }
+			});
+			return all ? 'all' : ids;
+		}
+
 		function renderOrderList(categories) {
 			orderList.innerHTML = '';
 			categories.forEach(function (cat) {
@@ -603,6 +645,7 @@
 				sbLogoId = data.swipebook_logo_id || 0;
 				renderSbLogoPreview(data.swipebook_logo_url || '');
 				renderOrderList(data.categories || []);
+				renderTopics(data.categories || [], data.topic_category_ids);
 				profilePhotoId = data.profile_photo_id || 0;
 				renderPhotoPreview(data.profile_photo_url || '');
 				nameInput.value = data.profile_name || '';
@@ -632,6 +675,7 @@
 				swipebook_logo_bg: sbLogoBgSelect.value,
 				swipebook_export_branding: !!sbExportBrandingBox.checked,
 				category_order: order,
+				topic_category_ids: topicsValue(),
 				profile_photo_id: profilePhotoId,
 				profile_name: nameInput.value,
 				profile_bio: bioInput.value,

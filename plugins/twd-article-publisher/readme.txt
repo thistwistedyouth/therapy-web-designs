@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.37.3
+Stable tag: 1.37.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,19 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.37.4): small improvements to the grid and the index. (1) The link
+to the full index is now a rounded button, "Browse all articles", in your
+accent colour. (2) In Customise this grid you can now tick which
+categories are listed as links under the grid ("Browse by topic"); leave
+them all ticked to list every category, or untick them all to hide the
+row. (3) The category dropdown at the top now starts with All, then the
+categories. (4) The index page has a topic dropdown that shows one topic at
+a time (without JavaScript it shows everything), and it uses your accent
+colour like the grid. (5) A category or list with only one or two articles
+now shows a wide card, or two across, instead of leaving gaps in a
+three-column row. The accent colour picker is now labelled "Accent colour
+(links, buttons and search focus)".
 
 NEW (1.37.3): a plain, alphabetical index of every article. The new
 [twd_articles_index] shortcode lists every published article as a simple

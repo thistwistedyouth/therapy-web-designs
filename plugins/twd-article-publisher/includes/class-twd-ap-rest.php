@@ -782,6 +782,7 @@ class TWD_AP_REST {
 				'show_thumbnails'     => (bool) $settings['show_thumbnails'],
 				'read_more_color'     => $settings['read_more_color'],
 				'accent_color'        => $settings['accent_color'],
+				'topic_category_ids'  => $settings['topic_category_ids'],
 				'swipebook_color'     => $settings['swipebook_color'],
 				'swipebook_heading'   => $settings['swipebook_heading'],
 				'swipebook_label'     => $settings['swipebook_label'],

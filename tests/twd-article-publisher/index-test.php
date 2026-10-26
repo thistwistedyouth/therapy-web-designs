@@ -50,6 +50,7 @@ function wp_insert_post( $a ) {
 	return $id;
 }
 
+class TWD_AP_Grid_Settings { static $s = array( 'accent_color' => '#2563eb', 'topic_category_ids' => 'all' ); static function get() { return self::$s; } }
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-index.php';
 
@@ -107,6 +108,20 @@ t( 'a Featured Articles primary yields to a real topic', false !== strpos( rende
 reset_site();
 add_post( 1, 'Only featured', array( 4 ) );
 t( 'an article only in Featured Articles still appears (under it)', false !== strpos( render_index(), 'Featured Articles' ) );
+
+// ---------- the accent colour and the topic dropdown ----------
+reset_site();
+add_post( 1, 'A one', array( 2 ) ); add_post( 2, 'B two', array( 3 ) ); add_post( 3, 'C three', array( 5 ) );
+TWD_AP_Grid_Settings::$s['accent_color'] = '#7a9b76';
+$html = render_index();
+t( 'accent: the index page carries the saved accent colour', false !== strpos( $html, 'style="--twd-ap-accent-color:#7a9b76;"' ) );
+TWD_AP_Grid_Settings::$s['accent_color'] = '#2563eb';
+t( 'dropdown: printed hidden, with All topics first then each topic and its count', 1 === preg_match( '/<div class="twd-ap-index-filter" hidden><select[^>]*><option value="">All topics<\/option><option value="twd-ap-index-anxiety">anxiety \(1\)<\/option><option value="twd-ap-index-boundaries">Boundaries \(1\)<\/option><option value="twd-ap-index-sleep">Sleep \(1\)<\/option>/', $html ) );
+t( 'dropdown: the plain jump links stay in the HTML for crawlers', false !== strpos( $html, 'class="twd-ap-index-jump"' ) );
+t( 'dropdown: every section is still in the HTML, none hidden', 3 === substr_count( $html, '<section class="twd-ap-index-section"' ) );
+reset_site();
+add_post( 1, 'A one', array( 2 ) ); add_post( 2, 'B two', array( 3 ) );
+t( 'dropdown: not shown for a site with only two topics', false === strpos( render_index(), 'twd-ap-index-filter' ) );
 
 // ---------- escaping and entities ----------
 reset_site();

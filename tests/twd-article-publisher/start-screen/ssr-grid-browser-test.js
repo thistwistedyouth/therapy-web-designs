@@ -14,11 +14,16 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'twd-ssr-'));
 const dumpFile = path.join(tmp, 'dump.json');
 execFileSync('php', [path.join(root, 'tests/twd-article-publisher/ssr-grid-test.php')], { env: Object.assign({}, process.env, { TWD_SSR_DUMP: dumpFile }) });
 const DUMP = JSON.parse(fs.readFileSync(dumpFile, 'utf8'));
+const indexFile = path.join(tmp, 'index.html');
+execFileSync('php', [path.join(root, 'tests/twd-article-publisher/index-test.php')], { env: Object.assign({}, process.env, { TWD_INDEX_DUMP: indexFile }) });
+const INDEX_HTML = fs.readFileSync(indexFile, 'utf8');
 const CSS = fs.readFileSync(path.join(plugin, 'assets/articles-grid.css'), 'utf8');
 const JS = fs.readFileSync(path.join(plugin, 'assets/articles-grid.js'), 'utf8');
 const REST = 'https://example.test/wp-json/twd-publisher/v1';
 
 let pass = 0, fail = 0;
+const saved = [];
+let window_topics = 'all';
 function t(name, ok, extra) { if (ok) { pass++; console.log('PASS  ' + name); } else { fail++; console.log('FAIL  ' + name + (extra ? '  ' + extra : '')); } }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -42,9 +47,9 @@ async function open(browser, name, o) {
 		if (o.fail) { return route.abort(); }
 		let body = {};
 		if (/\/articles\/grouped/.test(url)) { body = DUMP[name].grouped; }
-		else if (/\/articles\/facets/.test(url)) { body = { categories: [], tags: [] }; }
+		else if (/\/articles\/facets/.test(url)) { body = { categories: [{ name: 'Anxiety', slug: 'anxiety' }, { name: 'Sleep', slug: 'sleep' }], tags: [] }; }
 		else if (/\/articles\?/.test(url)) { body = o.empty ? { items: [], has_more: false } : DUMP[name].list; }
-		else if (/\/grid-settings/.test(url)) { body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total }; }
+		else if (/\/grid-settings/.test(url)) { if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics }; }
 		return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 	});
 	await page.goto('https://example.test/page');
@@ -121,6 +126,114 @@ async function open(browser, name, o) {
 		t('a search with no matches shows the filter message', text.includes('No articles match your filters.'));
 		t('a search with no matches does not show the friendly empty-site line', !(await page.locator('.twd-ap-articles-none').isVisible()));
 		await ctx.close();
+	}
+
+	// 6. The top filter starts with All, then the categories; choosing All goes back.
+	{
+		const requests = [];
+		const { ctx, page } = await open(browser, 'small', { delay: 50 });
+		page.on('request', (r) => { if (/\/articles\?/.test(r.url())) { requests.push(r.url()); } });
+		await wait(700);
+		const opts = await page.$$eval('.twd-ap-articles-category-select option', (o) => o.map((x) => x.textContent));
+		t('filter: All first, then the categories in order, no Show all', JSON.stringify(opts) === JSON.stringify(['All', 'Anxiety', 'Sleep']), JSON.stringify(opts));
+		t('filter: All is selected to start with', (await page.locator('.twd-ap-articles-category-select').inputValue()) === '');
+		await page.selectOption('.twd-ap-articles-category-select', 'sleep');
+		await wait(500);
+		t('filter: choosing a category asks for just that category', requests.some((u) => /category=sleep/.test(u)));
+		const before = requests.length;
+		await page.selectOption('.twd-ap-articles-category-select', '');
+		await wait(500);
+		t('filter: choosing All asks for the unfiltered list again', requests.length > before && !/category=/.test(requests[requests.length - 1]));
+		await ctx.close();
+	}
+
+	// 7. The index link is a pill in the accent colour.
+	{
+		const { ctx, page } = await open(browser, 'indexlink', { js: false });
+		const pill = page.locator('a.twd-ap-articles-index-pill');
+		const style = await pill.evaluate((el) => { const c = getComputedStyle(el); return { bg: c.backgroundColor, radius: parseFloat(c.borderTopLeftRadius), color: c.color }; });
+		t('pill: the index link is a pill button with the accent colour', style.bg === 'rgb(37, 99, 235)' && style.radius >= 20 && style.color === 'rgb(255, 255, 255)', JSON.stringify(style));
+		t('pill: it reads Browse all articles', (await pill.innerText()).includes('Browse all articles'));
+		await ctx.close();
+	}
+
+	// 8. Few articles: one is a wide card, two sit two across, five stay three across.
+	{
+		const { ctx, page } = await open(browser, 'small', { js: false });
+		const grid = page.locator('.twd-ap-articles-grid').first();
+		const widths = async () => ({ g: (await grid.boundingBox()).width, c: (await page.locator('.twd-ap-article-card').first().boundingBox()).width });
+		let w = await widths();
+		t('few articles: five cards stay three across', w.c < w.g * 0.4, JSON.stringify(w));
+		await page.evaluate(() => { document.querySelectorAll('.twd-ap-article-card').forEach((c, i) => { if (i > 1) { c.remove(); } }); });
+		w = await widths();
+		t('few articles: two cards sit two across', w.c > w.g * 0.45 && w.c < w.g * 0.55, JSON.stringify(w));
+		await page.evaluate(() => { document.querySelectorAll('.twd-ap-article-card').forEach((c, i) => { if (i > 0) { c.remove(); } }); });
+		w = await widths();
+		const dir = await page.locator('.twd-ap-article-card').first().evaluate((el) => getComputedStyle(el).flexDirection);
+		t('few articles: one card is a wide card, image beside the text', w.c > w.g * 0.95 && dir === 'row', JSON.stringify(w) + ' ' + dir);
+		await ctx.close();
+		const phone = await browser.newContext({ viewport: { width: 375, height: 800 }, javaScriptEnabled: false });
+		const pp = await phone.newPage();
+		await pp.route('https://example.test/page', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: pageHtml('small', false) }));
+		await pp.goto('https://example.test/page');
+		await pp.evaluate(() => { document.querySelectorAll('.twd-ap-article-card').forEach((c, i) => { if (i > 0) { c.remove(); } }); });
+		const pdir = await pp.locator('.twd-ap-article-card').first().evaluate((el) => getComputedStyle(el).flexDirection);
+		const over = await pp.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+		t('few articles: on a phone the wide card stacks and nothing scrolls sideways', pdir === 'column' && !over, pdir + ' overflow=' + over);
+		await phone.close();
+	}
+
+	// 9. The index page: the dropdown shows one topic at a time; without JavaScript everything shows.
+	{
+		const open2 = async (js) => {
+			const ctx = await browser.newContext({ viewport: { width: 900, height: 800 }, javaScriptEnabled: js });
+			const page = await ctx.newPage();
+			const errors = [];
+			page.on('pageerror', (e) => errors.push(String(e)));
+			await page.route('https://example.test/index', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html><head><meta charset="utf-8"><style>' + CSS + '</style></head><body><h1>Article index</h1>' + INDEX_HTML + (js ? '<script>' + JS + '</script>' : '') + '</body></html>' }));
+			await page.goto('https://example.test/index');
+			return { ctx, page, errors };
+		};
+		let r = await open2(false);
+		t('index without JavaScript: every section shows, the jump links show, the dropdown does not',
+			(await r.page.locator('.twd-ap-index-section:visible').count()) === 4 && await r.page.locator('.twd-ap-index-jump').isVisible() && !(await r.page.locator('.twd-ap-index-filter').isVisible()));
+		await r.ctx.close();
+		r = await open2(true);
+		t('index with JavaScript: the dropdown shows and replaces the jump links', await r.page.locator('.twd-ap-index-filter select').isVisible() && !(await r.page.locator('.twd-ap-index-jump').isVisible()));
+		const opts = await r.page.$$eval('.twd-ap-index-filter option', (o) => o.map((x) => x.textContent));
+		t('index dropdown: All topics first, then each topic', opts[0] === 'All topics' && opts.length === 5, JSON.stringify(opts));
+		await r.page.selectOption('.twd-ap-index-filter select', 'twd-ap-index-sleep');
+		const visible = await r.page.$$eval('.twd-ap-index-section', (s) => s.filter((x) => x.getBoundingClientRect().height > 0).map((x) => x.id));
+		t('index dropdown: choosing a topic shows only that topic', JSON.stringify(visible) === JSON.stringify(['twd-ap-index-sleep']), JSON.stringify(visible));
+		await r.page.selectOption('.twd-ap-index-filter select', '');
+		t('index dropdown: All topics shows everything again', (await r.page.locator('.twd-ap-index-section:visible').count()) === 4);
+		t('index: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+	}
+
+	// 10. The gear popup: pick which categories the Browse by topic row lists.
+	{
+		const { ctx, page, errors } = await open(browser, 'admin', { delay: 50 });
+		await page.click('.twd-ap-articles-settings-btn');
+		await page.waitForSelector('#twd-ap-gs-topics input');
+		const boxes = () => page.$$eval('#twd-ap-gs-topics input', (b) => b.map((x) => x.checked));
+		t('topics setting: with the default (all) every category is ticked', JSON.stringify(await boxes()) === '[true,true,true]');
+		await page.uncheck('#twd-ap-gs-topics input[value="5"]');
+		await page.click('#twd-ap-gs-save');
+		await wait(300);
+		t('topics setting: unticking one saves the list of the others', JSON.stringify(saved[saved.length - 1].topic_category_ids) === '[2,3]', JSON.stringify(saved[saved.length - 1] && saved[saved.length - 1].topic_category_ids));
+		await page.check('#twd-ap-gs-topics input[value="5"]');
+		await page.click('#twd-ap-gs-save');
+		await wait(300);
+		t('topics setting: ticking them all again saves all (new categories included)', saved[saved.length - 1].topic_category_ids === 'all');
+		t('topics setting: no JavaScript errors', errors.length === 0, errors.join(' | '));
+		await ctx.close();
+		window_topics = [2, 3];
+		const again = await open(browser, 'admin', { delay: 50 });
+		await again.page.click('.twd-ap-articles-settings-btn');
+		await again.page.waitForSelector('#twd-ap-gs-topics input');
+		t('topics setting: a saved list shows only those ticked', JSON.stringify(await again.page.$$eval('#twd-ap-gs-topics input', (b) => b.map((x) => x.checked))) === '[true,true,false]');
+		await again.ctx.close();
 	}
 
 	await browser.close();

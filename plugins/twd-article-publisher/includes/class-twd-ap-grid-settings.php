@@ -22,6 +22,10 @@ class TWD_AP_Grid_Settings {
 			'show_thumbnails'    => true,
 			'read_more_color'    => '#1d4ed8',
 			'accent_color'       => '#2563eb',
+			// Which categories the "Browse by topic" row under the grid lists:
+			// 'all' (every real, non-empty category, the default, so new
+			// categories appear on their own) or an array of category IDs.
+			'topic_category_ids' => 'all',
 			'swipebook_color'    => '#5b8a72',
 			'swipebook_heading'  => '',
 			'swipebook_label'    => 'Swipe Book',
@@ -51,6 +55,7 @@ class TWD_AP_Grid_Settings {
 			'show_thumbnails'    => $current['show_thumbnails'],
 			'read_more_color'    => $current['read_more_color'],
 			'accent_color'       => $current['accent_color'],
+			'topic_category_ids' => $current['topic_category_ids'],
 			'swipebook_color'    => $current['swipebook_color'],
 			'swipebook_heading'  => $current['swipebook_heading'],
 			'swipebook_label'    => $current['swipebook_label'],
@@ -86,6 +91,13 @@ class TWD_AP_Grid_Settings {
 			$color = sanitize_hex_color( $input['accent_color'] );
 			if ( $color ) {
 				$output['accent_color'] = $color;
+			}
+		}
+		if ( isset( $input['topic_category_ids'] ) ) {
+			if ( 'all' === $input['topic_category_ids'] ) {
+				$output['topic_category_ids'] = 'all';
+			} elseif ( is_array( $input['topic_category_ids'] ) ) {
+				$output['topic_category_ids'] = array_values( array_unique( array_filter( array_map( 'absint', $input['topic_category_ids'] ) ) ) );
 			}
 		}
 		if ( isset( $input['swipebook_color'] ) ) {

@@ -24,6 +24,7 @@ function add_action() {}
 function add_filter() {}
 function add_shortcode() {}
 function nocache_headers() {}
+function get_bloginfo() { return 'Example Site'; }
 function rest_ensure_response( $x ) { return $x; }
 function rest_url( $p = '' ) { return 'https://example.test/wp-json/' . $p; }
 function wp_create_nonce() { return 'nonce123'; }
@@ -91,10 +92,10 @@ class WP_Query {
 	}
 }
 class TWD_AP_Grid_Settings {
-	static $s = array( 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
+	static $s = array( 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
 	static function get() { return self::$s; }
 }
-class TWD_AP_Frontend { static function current_user_allowed() { return false; } }
+class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } }
 
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-index.php';
@@ -124,6 +125,7 @@ function reset_site() {
 	);
 	TWD_AP_Grid_Settings::$s['show_thumbnails'] = true;
 	TWD_AP_Grid_Settings::$s['posts_per_category'] = 6;
+	TWD_AP_Grid_Settings::$s['topic_category_ids'] = 'all';
 }
 function add_post( $id, $title, $cats, $date, $extra = array() ) {
 	$GLOBALS['posts'][ $id ] = (object) array_merge( array(
@@ -236,14 +238,30 @@ reset_site();
 add_post( 1, 'Some piece', array( 2 ), '2026-02-01' );
 t( 'index link: absent when no index page exists yet', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
 $GLOBALS['opts']['twd_ap_index_page_id'] = 77; $GLOBALS['page_status'][77] = 'publish';
+snap( 'indexlink' );
 $html = grid();
-t( 'index link: present on the grid once the index page is published', false !== strpos( $html, '<a href="https://example.test/page-77/">See the full index of articles</a>' ) );
+t( 'index link: a pill button on the grid once the index page is published', false !== strpos( $html, '<a class="twd-ap-articles-index-pill" href="https://example.test/page-77/">Browse all articles' ) );
 t( 'index link: also on a curated category list', false !== strpos( grid( array( 'category' => 'anxiety' ) ), 'twd-ap-articles-index-link' ) );
 $GLOBALS['page_status'][77] = 'trash';
 t( 'index link: gone when the page is trashed', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
 $GLOBALS['page_status'][77] = 'draft';
 t( 'index link: gone when the page is not published', false === strpos( grid(), 'twd-ap-articles-index-link' ) );
 $GLOBALS['opts'] = array(); $GLOBALS['page_status'] = array();
+
+$GLOBALS['allowed'] = true; snap( 'admin' ); $GLOBALS['allowed'] = false;
+// ---------- the filter dropdown starts with All; the topic row follows the setting ----------
+reset_site();
+add_post( 1, 'Some piece', array( 2 ), '2026-02-01' ); add_post( 2, 'Another', array( 3 ), '2026-02-02' );
+$html = grid();
+t( 'filter: the dropdown starts with All (no Loading text, no Show all at the end)', 1 === preg_match( '/<select class="twd-ap-articles-category-select"[^>]*>\s*<option value="">All<\/option>/', $html ) && false === strpos( $html, 'Show all' ) );
+t( 'topics: every real category is listed by default', false !== strpos( $html, '/category/anxiety/' ) && false !== strpos( $html, '/category/sleep/' ) );
+TWD_AP_Grid_Settings::$s['topic_category_ids'] = array( 3 );
+$html = grid();
+preg_match( '/<nav class="twd-ap-articles-topics".*?<\/nav>/s', $html, $nav );
+t( 'topics: only the chosen category is in the row', ! empty( $nav ) && false !== strpos( $nav[0], '/category/sleep/' ) && false === strpos( $nav[0], '/category/anxiety/' ) );
+TWD_AP_Grid_Settings::$s['topic_category_ids'] = array();
+t( 'topics: unticking every category hides the row', false === strpos( grid(), 'twd-ap-articles-topics' ) );
+TWD_AP_Grid_Settings::$s['topic_category_ids'] = 'all';
 
 if ( getenv( 'TWD_SSR_DUMP' ) ) { file_put_contents( getenv( 'TWD_SSR_DUMP' ), json_encode( $dump ) ); }
 echo "\n$pass passed, $fail failed\n";
