@@ -4,9 +4,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * [twd_articles] renders a self-contained, JS-driven grid that fetches from
- * the public /articles REST route (search, category, tag, pagination all
- * happen client-side with no page reload). When no category/tag attribute
+ * [twd_articles] renders a self-contained grid whose first batch of cards is
+ * printed into the page HTML (real links for crawlers and no-JavaScript
+ * visitors), then taken over by JS that fetches from the public /articles
+ * REST route (search, category, tag, pagination all happen client-side with
+ * no page reload). When no category/tag attribute
  * is given and the shortcode sits on a real category or tag archive page,
  * it auto-detects that term so the same shortcode works unmodified as a
  * per-category "resources" page.
@@ -107,20 +109,57 @@ class TWD_AP_Shortcode {
 		// the page itself is generated, same page load as everything else.
 		$total_articles = (int) wp_count_posts( 'post' )->publish;
 
+		$grid_settings  = TWD_AP_Grid_Settings::get();
+		$show_thumbs    = (bool) $grid_settings['show_thumbnails'];
+		$many_articles  = $total_articles > 12;
+		$category       = sanitize_title( $atts['category'] );
+		$tag            = sanitize_title( $atts['tag'] );
+		$count          = max( 1, (int) $atts['count'] );
+		// A site with 12 or fewer articles shows every one of them in a single
+		// flat list with no Load more (articles-grid.js applies the same rule
+		// once its settings reply lands). Doing it here means the first batch
+		// printed below and the JS's first fetch agree, so nothing changes
+		// when the JS takes over.
+		if ( ! $many_articles ) {
+			$count = max( $count, min( 24, $total_articles ) );
+		}
+
+		// The first view is printed into the page itself, in the same markup
+		// the JS draws, so crawlers and visitors without JavaScript get real
+		// links. The JS replaces it with identical markup when it loads. Large
+		// sites on the bare shortcode start grouped by category, everything
+		// else starts as one flat list (see canGroup() in articles-grid.js).
+		$grouped     = $show_filters && $many_articles;
+		$groups_html = '';
+		$cards_html  = '';
+		if ( $grouped ) {
+			$grouped_data = TWD_AP_Cards::grouped();
+			$groups_html  = TWD_AP_Cards::groups_html( $grouped_data['groups'], $show_thumbs );
+		} else {
+			$first      = TWD_AP_Cards::fetch( $count, 0, '', $category, $tag );
+			$cards_html = TWD_AP_Cards::cards_html( $first['posts'], $show_thumbs );
+		}
+		$has_items = ( '' !== $groups_html || '' !== $cards_html );
+
 		$config = array(
 			'restUrl'      => esc_url_raw( rest_url( 'twd-publisher/v1' ) ),
 			'nonce'        => wp_create_nonce( 'wp_rest' ),
-			'category'     => sanitize_title( $atts['category'] ),
-			'tag'          => sanitize_title( $atts['tag'] ),
-			'count'        => max( 1, (int) $atts['count'] ),
+			'category'     => $category,
+			'tag'          => $tag,
+			'count'        => $count,
 			'showFilters'  => $show_filters,
 			'isAdmin'      => $is_admin_user,
-			'manyArticles' => $total_articles > 12,
+			'manyArticles' => $many_articles,
 		);
+
+		$root_classes = 'twd-ap-articles' . ( $show_thumbs ? '' : ' twd-ap-no-thumbnails' );
+		// Same custom properties the JS sets once /grid-settings replies, set
+		// here so the colours are right from the first paint.
+		$root_style = '--twd-ap-readmore-color:' . $grid_settings['read_more_color'] . ';--twd-ap-accent-color:' . $grid_settings['accent_color'] . ';';
 
 		ob_start();
 		?>
-		<div id="<?php echo esc_attr( $instance_id ); ?>" class="twd-ap-articles" data-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
+		<div id="<?php echo esc_attr( $instance_id ); ?>" class="<?php echo esc_attr( $root_classes ); ?>" style="<?php echo esc_attr( $root_style ); ?>" data-ssr="1" data-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
 			<?php if ( $show_filters ) : ?>
 				<div class="twd-ap-articles-toolbar">
 					<select class="twd-ap-articles-category-select" aria-label="<?php esc_attr_e( 'Jump to a category', 'twd-article-publisher' ); ?>">
@@ -132,14 +171,16 @@ class TWD_AP_Shortcode {
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
-			<div class="twd-ap-articles-groups"></div>
-			<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: <?php echo esc_attr( $columns ); ?>;">
-				<p class="twd-ap-muted"><?php esc_html_e( 'Loading articles…', 'twd-article-publisher' ); ?></p>
-			</div>
-			<p class="twd-ap-articles-empty" hidden><?php esc_html_e( 'No articles match your filters.', 'twd-article-publisher' ); ?></p>
+			<div class="twd-ap-articles-groups"><?php echo $groups_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?></div>
+			<div class="twd-ap-articles-grid" style="--twd-ap-articles-columns: <?php echo esc_attr( $columns ); ?>;"<?php echo ( $grouped || ! $has_items ) ? ' hidden' : ''; ?>><?php echo $cards_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?></div>
+			<p class="twd-ap-articles-empty" hidden></p>
+			<p class="twd-ap-articles-none"<?php echo $has_items ? ' hidden' : ''; ?>><?php esc_html_e( 'No articles yet. Please check back soon.', 'twd-article-publisher' ); ?></p>
 			<div class="twd-ap-articles-loadmore-row">
 				<button type="button" class="twd-ap-articles-loadmore" hidden><?php esc_html_e( 'Load more', 'twd-article-publisher' ); ?></button>
 			</div>
+			<?php if ( $show_filters ) : ?>
+				<?php echo TWD_AP_Cards::topics_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?>
+			<?php endif; ?>
 		</div>
 		<?php if ( $show_filters && $is_admin_user ) : ?>
 			<div class="twd-ap-overlay twd-ap-grid-settings-overlay" data-for="<?php echo esc_attr( $instance_id ); ?>" hidden>
