@@ -131,6 +131,13 @@ Two server-side WordPress filters, registered by `TWD_AP_AI_Generate::init()` (c
 - **The automatic link.** `TWD_AP_Index::index_url()` returns the page's permalink only while that page is published; every `[twd_articles]` grid then prints a quiet text link: "All articles" as the last item of the Browse by topic row (`li.twd-ap-topics-all`), or, on a view without that row, a small "Browse all articles" paragraph (`.twd-ap-articles-index-link`). It is a real link for search engines, deliberately not a prominent button (changed in 1.39.0; it was a pill in 1.37.4 to 1.38.0). Trash the page and the link disappears. It sits outside the grouped/flat containers, so the JS never touches it.
 - Tests: `php tests/twd-article-publisher/index-test.php` (38 checks: both sort orders, one link per article, primary category rule, escaping, published only, empty site, pagination, page creation and adoption) plus five link checks in `ssr-grid-test.php`.
 
+## Related articles (v1.40.0)
+
+- **`TWD_AP_Related`** (`includes/class-twd-ap-related.php`) appends `<aside class="twd-ap-related">` to every single article on `the_content` at **priority 22** (after the article wrapper at 20, before the call to action at 25), once, main loop only: `<h2>More in <a>{category}</a></h2>` and a plain list of up to `related_count` (1 to 8, default 4) other published articles from the same category, each a title link and a date. Nothing is printed when the setting is off, the article has no topic, or the topic has no other articles.
+- **Topic** = `TWD_AP_Related::topic_for()`: the primary category (`_twd_ap_primary_category`, else the first), ignoring the default category, and a "Featured Articles" primary yields to a real topic (the same rules as the grid's card label and the index). The articles come from `TWD_AP_Cards::fetch()` for that category slug, so order is the grid's (featured first, then newest) and child categories are included, as everywhere else.
+- **Setting:** `related_show` (**on by default**) and `related_count`, in Customise this grid > Related articles. On by default is a deliberate choice (owner asked for the SEO benefit); the hint in the popup tells the owner to turn it off if the theme or another plugin already shows related posts.
+- Tests: `related-test.php` (27) and the layout checks in `article-look-browser-test.js` (22: below the article, centred under 720px, accent links, no bullets, no sideways scroll); the popup tick and count are checked in `ssr-grid-browser-test.js`.
+
 ## Category and tag pages out of the box (v1.39.0)
 
 - **`TWD_AP_Archive`** (`includes/class-twd-ap-archive.php`) hooks `template_include` at priority 99 and, on a category or tag page, returns `templates/archive-grid.php`: the theme's own `get_header()`, a `<main class="twd-ap-archive">` with the category name as the one H1 (no "Category:" prefix, entities decoded), `[twd_articles intro="force"]` (intro, grid, page links, call to action, all from the shortcode), then `get_footer()`. So a site needs no page-builder template. `intro="force"` shows the description even when the `intro_show` setting is off (that setting is only for a grid the owner places themselves).
@@ -208,6 +215,7 @@ includes/class-twd-ap-sanitizer.php      TWD_AP_Sanitizer::clean() — the one p
 includes/class-twd-ap-rest.php           REST routes: /categories, /tags, /posts, /posts/{id}, /media, /articles, /articles/facets
 includes/class-twd-ap-frontend.php       Enqueues editor assets, decides which buttons show, capability gate
 includes/class-twd-ap-cards.php          TWD_AP_Cards: the one query, card formatter, grouped view and card markup shared by the REST routes and the shortcode
+includes/class-twd-ap-related.php        TWD_AP_Related: "More in {category}" links at the end of every article
 includes/class-twd-ap-archive.php        TWD_AP_Archive: the plugin's own category and tag page (template_include), steps aside for theme or Elementor Pro templates
 includes/class-twd-ap-index.php          [twd_articles_index] alphabetical index shortcode, its auto-created page and the grid's link to it
 includes/class-twd-ap-shortcode.php      [twd_articles] shortcode -- grid/group container with the first batch of cards printed in, dropdown, admin "Customise this grid" popup markup
@@ -281,6 +289,7 @@ php tests/twd-article-publisher/grid-settings-test.php                          
 php tests/twd-article-publisher/article-look-test.php                               # Article look settings and the wrapper style
 php tests/twd-article-publisher/cta-test.php                                        # the call to action box
 php tests/twd-article-publisher/archive-test.php                                    # the plugin's own category page: when it takes over and when it steps aside
+php tests/twd-article-publisher/related-test.php                                    # More in {category} at the end of every article
 php tests/twd-article-publisher/intro-test.php                                      # saving a category intro
 NODE_PATH="$(npm root -g)" node tests/twd-article-publisher/start-screen/article-look-browser-test.js   # Article look in real Chromium
 php tests/twd-article-publisher/index-test.php                                      # the alphabetical index, pagination, the Article index page

@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.39.1
+Stable tag: 1.40.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,15 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.40.0): every article now ends with a short "More in {category}"
+list: plain links to other articles from the same category (newest first,
+featured first), with the heading linking to the category page. It helps
+readers keep reading and gives search engines real links between your
+articles. It sits after the article and before your call to action. Switch
+it off, or change how many links (1 to 8), under Related articles in
+Customise this grid. It is on by default; turn it off if your theme or
+another plugin already shows related posts.
 
 NEW (1.39.1): category and tag pages now end with the same "Browse by topic"
 row as the resources page, so every topic page links to every other one and

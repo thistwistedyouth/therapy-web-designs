@@ -274,6 +274,14 @@ class TWD_AP_Shortcode {
 							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-intro-show" /> <?php esc_html_e( 'Also show the category description above a grid you place yourself (leave off if your theme already shows it)', 'twd-article-publisher' ); ?></label>
 						</details>
 
+						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-related-details">
+							<summary><?php esc_html_e( 'Related articles', 'twd-article-publisher' ); ?></summary>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'At the end of every article, a short list of links to more articles from the same category, with a link to the category page. It helps readers keep reading and helps search engines find your articles. Leave it off if your theme or another plugin already shows related posts.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-related-show" /> <?php esc_html_e( 'Show "More in this category" at the end of every article', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-related-count"><?php esc_html_e( 'How many links', 'twd-article-publisher' ); ?></label>
+							<input type="number" id="twd-ap-gs-related-count" class="twd-ap-input" min="1" max="8" />
+						</details>
+
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-cta-details">
 							<summary><?php esc_html_e( 'Call to action', 'twd-article-publisher' ); ?></summary>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'A short invitation, such as booking a call, shown in a box where you choose below. Nothing shows until you add a heading, some text or a button, and tick a place.', 'twd-article-publisher' ); ?></p>

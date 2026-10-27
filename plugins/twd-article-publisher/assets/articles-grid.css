@@ -841,3 +841,55 @@
   justify-content: flex-end !important;
   margin-bottom: 8px !important;
 }
+
+/* "More in {category}" at the end of every article. */
+.twd-ap-related {
+  max-width: 720px !important;
+  margin: 40px auto 0 !important;
+  padding: 24px 0 0 !important;
+  border-top: 1px solid #e5e7eb !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+.twd-ap-related-title {
+  margin: 0 0 12px !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  color: #1f2937 !important;
+}
+.twd-ap-related-title a {
+  color: var(--twd-ap-accent-color, #2563eb) !important;
+  text-decoration: none !important;
+}
+.twd-ap-related-title a:hover {
+  text-decoration: underline !important;
+}
+.twd-ap-related-list {
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+.twd-ap-related-list li {
+  margin: 0 !important;
+  padding: 8px 0 !important;
+  font-size: 16px !important;
+  line-height: 1.45 !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+.twd-ap-related-list li:last-child {
+  border-bottom: 0 !important;
+}
+.twd-ap-related-list a {
+  color: var(--twd-ap-accent-color, #2563eb) !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+.twd-ap-related-list a:hover {
+  text-decoration: underline !important;
+}
+.twd-ap-related-date {
+  margin-left: 8px !important;
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  white-space: nowrap !important;
+}
