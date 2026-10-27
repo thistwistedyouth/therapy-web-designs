@@ -153,14 +153,55 @@ async function open(browser, name, o) {
 		await ctx.close();
 	}
 
-	// 7. The index link is a pill in the accent colour.
+	// 7. The index link is a quiet text link at the end of the Browse by topic row.
 	{
 		const { ctx, page } = await open(browser, 'indexlink', { js: false });
-		const pill = page.locator('a.twd-ap-articles-index-pill');
-		const style = await pill.evaluate((el) => { const c = getComputedStyle(el); return { bg: c.backgroundColor, radius: parseFloat(c.borderTopLeftRadius), color: c.color }; });
-		t('pill: the index link is a pill button with the accent colour', style.bg === 'rgb(37, 99, 235)' && style.radius >= 20 && style.color === 'rgb(255, 255, 255)', JSON.stringify(style));
-		t('pill: it reads Browse all articles', (await pill.innerText()).includes('Browse all articles'));
+		const link = page.locator('.twd-ap-articles-topics .twd-ap-topics-all a');
+		const style = await link.evaluate((el) => { const c = getComputedStyle(el); return { bg: c.backgroundColor, color: c.color, size: parseFloat(c.fontSize) }; });
+		t('index link: a plain grey text link, no button background', style.bg === 'rgba(0, 0, 0, 0)' && style.color === 'rgb(107, 114, 128)' && style.size <= 15, JSON.stringify(style));
+		t('index link: it reads All articles and sits on the same row as the topics', (await link.innerText()) === 'All articles' && (await page.locator('.twd-ap-articles-topics li').count()) >= 2);
+		const rows = await page.$$eval('.twd-ap-articles-topics li', (l) => new Set(l.map((x) => Math.round(x.getBoundingClientRect().top))).size);
+		t('index link: it does not drop onto a line of its own on a desktop', rows === 1, 'rows=' + rows);
+		t('index link: there is no pill button on the page', (await page.locator('.twd-ap-articles-index-pill').count()) === 0);
 		await ctx.close();
+	}
+
+	// 7b. The plugin's own category page, with a theme header and footer around it.
+	{
+		let r = await open(browser, 'archivepage', { js: false, delay: 50 });
+		const bb = async (sel) => (await r.page.locator(sel).first().boundingBox());
+		const title = await bb('.twd-ap-archive-title');
+		const intro = await bb('.twd-ap-articles-intro');
+		const grid = await bb('.twd-ap-articles-grid');
+		const wrap = await bb('.twd-ap-archive');
+		t('archive page: title, then intro, then cards, in that order down the page', title.y < intro.y && intro.y < grid.y);
+		t('archive page: the intro is visible without any setting ticked', (await r.page.locator('.twd-ap-articles-intro-text').innerText()).includes('Anxiety can feel huge.'));
+		t('archive page: the content is centred and no wider than 1140px', wrap.width <= 1141 && Math.abs((wrap.x + wrap.width / 2) - 550) < 2, JSON.stringify(wrap));
+		t('archive page: the heading is large and the three cards sit in one row', (await r.page.locator('.twd-ap-archive-title').evaluate((el) => parseFloat(getComputedStyle(el).fontSize))) >= 34 && (await r.page.$$eval('.twd-ap-article-card', (c) => new Set(c.map((x) => Math.round(x.getBoundingClientRect().top))).size)) === 1);
+		await r.ctx.close();
+		const phone = await browser.newContext({ viewport: { width: 375, height: 800 }, javaScriptEnabled: false });
+		const pp = await phone.newPage();
+		await pp.route('https://example.test/page', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: pageHtml('archivepage', false) }));
+		await pp.goto('https://example.test/page');
+		t('archive page: on a phone nothing scrolls sideways and the title is smaller', !(await pp.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)) && (await pp.locator('.twd-ap-archive-title').evaluate((el) => parseFloat(getComputedStyle(el).fontSize))) === 28);
+		await phone.close();
+	}
+
+	// 7c. On the plugin's own category page the owner still has the gear, so the switch can always be reached.
+	{
+		const r = await open(browser, 'archiveadmin', { delay: 50 });
+		await wait(500);
+		t('archive page owner: the gear is on the page, right aligned, and opens Customise this grid', await r.page.locator('.twd-ap-articles-settings-btn').isVisible());
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.click('#twd-ap-gs-intro-details > summary');
+		t('archive page owner: the Use this grid on category and tag pages tick is there and on', await r.page.isChecked('#twd-ap-gs-archive-takeover'));
+		await r.page.uncheck('#twd-ap-gs-archive-takeover');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		t('archive page owner: unticking it from the category page saves it as off', saved[saved.length - 1].archive_takeover === false);
+		t('archive page owner: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
 	}
 
 	// 8. Few articles: one is a wide card, two sit two across, five stay three across.
@@ -429,6 +470,14 @@ async function open(browser, name, o) {
 		await r.page.click('#twd-ap-gs-save');
 		await wait(300);
 		t('popup: ticking the intro saves intro_show true', saved[saved.length - 1].intro_show === true);
+		t('popup: the category pages option is on to start with (it works out of the box)', (await r.page.isChecked('#twd-ap-gs-archive-takeover')) && saved[saved.length - 1].archive_takeover === true);
+		await wait(1000);
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.uncheck('#twd-ap-gs-archive-takeover');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		t('popup: unticking the category pages option saves it as off', saved[saved.length - 1].archive_takeover === false);
 		await r.ctx.close();
 	}
 

@@ -443,7 +443,7 @@ class TWD_AP_Cards {
 	/**
 	 * Plain links to every real category archive page.
 	 */
-	public static function topics_html() {
+	public static function topics_html( $index_url = '' ) {
 		$items = '';
 		foreach ( self::topic_categories() as $cat ) {
 			$link = get_category_link( $cat->term_id );
@@ -454,6 +454,11 @@ class TWD_AP_Cards {
 		}
 		if ( '' === $items ) {
 			return '';
+		}
+		// The full alphabetical index sits at the end of the row as a quiet
+		// text link: a real link for search engines, not a prominent button.
+		if ( '' !== $index_url ) {
+			$items .= '<li class="twd-ap-topics-all"><a href="' . esc_url( $index_url ) . '">' . esc_html__( 'All articles', 'twd-article-publisher' ) . '</a></li>';
 		}
 		return '<nav class="twd-ap-articles-topics" aria-label="' . esc_attr__( 'Browse by topic', 'twd-article-publisher' ) . '">' .
 			'<p class="twd-ap-articles-topics-title">' . esc_html__( 'Browse by topic', 'twd-article-publisher' ) . '</p>' .

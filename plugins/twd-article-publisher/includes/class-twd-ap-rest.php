@@ -811,6 +811,7 @@ class TWD_AP_REST {
 				'accent_color'        => $settings['accent_color'],
 				'topic_category_ids'  => $settings['topic_category_ids'],
 				'intro_show'          => (bool) $settings['intro_show'],
+				'archive_takeover'    => (bool) $settings['archive_takeover'],
 				'cta_heading'         => $settings['cta_heading'],
 				'cta_text'            => $settings['cta_text'],
 				'cta_button_label'    => $settings['cta_button_label'],

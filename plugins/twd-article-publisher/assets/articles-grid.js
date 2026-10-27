@@ -568,6 +568,7 @@
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var topicsBox  = overlay.querySelector('#twd-ap-gs-topics');
 		var introShow = overlay.querySelector('#twd-ap-gs-intro-show');
+		var archiveTakeover = overlay.querySelector('#twd-ap-gs-archive-takeover');
 		var ctaHeading = overlay.querySelector('#twd-ap-gs-cta-heading');
 		var ctaText = overlay.querySelector('#twd-ap-gs-cta-text');
 		var ctaLabel = overlay.querySelector('#twd-ap-gs-cta-label');
@@ -825,6 +826,7 @@
 				};
 				if (lookInputs.length) { fillLookInputs(); }
 				if (introShow) { introShow.checked = !!data.intro_show; }
+				if (archiveTakeover) { archiveTakeover.checked = false !== data.archive_takeover; }
 				// A page cached before an update can carry an older popup without
 				// some of these fields; they are skipped here and on save.
 				if (ctaHeading) {
@@ -879,6 +881,7 @@
 			// popup can never clear a setting it does not show.
 			if (topicsBox) { payload.topic_category_ids = topicsValue(); }
 			if (introShow) { payload.intro_show = !!introShow.checked; }
+			if (archiveTakeover) { payload.archive_takeover = !!archiveTakeover.checked; }
 			if (ctaHeading) {
 				payload.cta_heading = ctaHeading.value;
 				payload.cta_text = ctaText.value;

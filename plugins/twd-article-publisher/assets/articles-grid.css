@@ -428,15 +428,16 @@
 
 /* Link from every grid to the full alphabetical index page. */
 .twd-ap-articles-index-link {
-  margin: 14px 0 0 !important;
-  font-size: 14px !important;
+  margin: 22px 0 0 !important;
+  font-size: 13px !important;
 }
 .twd-ap-articles-index-link a {
-  color: var(--twd-ap-accent-color, #2563eb) !important;
-  font-weight: 600 !important;
+  color: #6b7280 !important;
+  font-weight: 500 !important;
   text-decoration: none !important;
 }
 .twd-ap-articles-index-link a:hover {
+  color: var(--twd-ap-accent-color, #2563eb) !important;
   text-decoration: underline !important;
 }
 
@@ -537,26 +538,14 @@
   border-color: var(--twd-ap-accent-color, #2563eb) !important;
 }
 
-/* The link from every grid to the index page, as a pill button. */
-.twd-ap-articles-index-link {
-  margin: 28px 0 0 !important;
-  text-align: center !important;
+/* The link to the full article index: a quiet text link (real, crawlable,
+   not prominent), at the end of the Browse by topic row or on its own. */
+.twd-ap-topics-all a {
+  color: #6b7280 !important;
+  font-weight: 500 !important;
 }
-.twd-ap-articles-index-link a.twd-ap-articles-index-pill {
-  display: inline-block !important;
-  padding: 11px 26px !important;
-  border-radius: 999px !important;
-  background: var(--twd-ap-accent-color, #2563eb) !important;
-  color: #fff !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  text-decoration: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
-  transition: filter 0.2s ease, transform 0.2s ease !important;
-}
-.twd-ap-articles-index-link a.twd-ap-articles-index-pill:hover {
-  filter: brightness(0.9) !important;
-  transform: translateY(-1px) !important;
+.twd-ap-topics-all a:hover {
+  color: var(--twd-ap-accent-color, #2563eb) !important;
 }
 
 /* Small categories: one article is a wide card (image left, text right),
@@ -821,4 +810,29 @@
 }
 .twd-ap-articles-pager[data-js][data-deep] li:not(.twd-ap-pager-prev) {
   display: none !important;
+}
+
+/* The plugin's own category and tag page (templates/archive-grid.php). */
+.twd-ap-archive {
+  max-width: 1140px !important;
+  margin: 0 auto !important;
+  padding: 32px 20px 56px !important;
+  box-sizing: border-box !important;
+}
+.twd-ap-archive-title {
+  margin: 0 0 20px !important;
+  font-size: 36px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+@media (max-width: 600px) {
+  .twd-ap-archive-title {
+    font-size: 28px !important;
+  }
+}
+
+/* On the plugin's own category page the toolbar holds only the gear. */
+.twd-ap-articles-toolbar-gear {
+  justify-content: flex-end !important;
+  margin-bottom: 8px !important;
 }

@@ -167,6 +167,10 @@ class TWD_AP_Shortcode {
 		// The automatic link to the full alphabetical index page (1.37.3), on
 		// every grid, so a crawler can reach every article from any of them.
 		$index_url = TWD_AP_Index::index_url();
+		// "Browse by topic" (the categories the owner chose, then a quiet "All
+		// articles" link) on the default view; a view without that row gets
+		// the same quiet link on its own.
+		$topics_html = $show_filters ? TWD_AP_Cards::topics_html( $index_url ) : '';
 
 		$config = array(
 			'restUrl'      => esc_url_raw( rest_url( 'twd-publisher/v1' ) ),
@@ -188,13 +192,20 @@ class TWD_AP_Shortcode {
 		// The category's own Description above the grid, on a category or tag
 		// archive (switch off with intro="no" or in Customise this grid).
 		$intro_html = '';
-		if ( $on_archive && $grid_settings['intro_show'] && 'no' !== strtolower( trim( (string) $atts['intro'] ) ) ) {
+		$intro_attr = strtolower( trim( (string) $atts['intro'] ) );
+		if ( $on_archive && 'no' !== $intro_attr && ( 'force' === $intro_attr || $grid_settings['intro_show'] ) ) {
 			$intro_html = TWD_AP_Intro::html( get_queried_object() );
 		}
 
 		ob_start();
 		?>
 		<div id="<?php echo esc_attr( $instance_id ); ?>" class="<?php echo esc_attr( $root_classes ); ?>" style="<?php echo esc_attr( $root_style ); ?>" data-ssr="1" data-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
+			<?php if ( ! $show_filters && $on_archive && $is_admin_user ) : ?>
+				<?php // The plugin's own category page has no filters, but the owner still needs the gear to reach Customise this grid (including the switch for this page). ?>
+				<div class="twd-ap-articles-toolbar twd-ap-articles-toolbar-gear">
+					<button type="button" class="twd-ap-articles-settings-btn" aria-label="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>">&#9881;</button>
+				</div>
+			<?php endif; ?>
 			<?php if ( $show_filters ) : ?>
 				<div class="twd-ap-articles-toolbar">
 					<select class="twd-ap-articles-category-select" aria-label="<?php esc_attr_e( 'Jump to a category', 'twd-article-publisher' ); ?>">
@@ -215,15 +226,13 @@ class TWD_AP_Shortcode {
 				<button type="button" class="twd-ap-articles-loadmore" hidden><?php esc_html_e( 'Load more', 'twd-article-publisher' ); ?></button>
 			</div>
 			<?php echo $pager_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?>
-			<?php if ( $show_filters ) : ?>
-				<?php echo TWD_AP_Cards::topics_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?>
-			<?php endif; ?>
-			<?php if ( '' !== $index_url ) : ?>
-				<p class="twd-ap-articles-index-link"><a class="twd-ap-articles-index-pill" href="<?php echo esc_url( $index_url ); ?>"><?php esc_html_e( 'Browse all articles', 'twd-article-publisher' ); ?> <span aria-hidden="true">&rarr;</span></a></p>
+			<?php echo $topics_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cards. ?>
+			<?php if ( '' !== $index_url && '' === $topics_html ) : ?>
+				<p class="twd-ap-articles-index-link"><a href="<?php echo esc_url( $index_url ); ?>"><?php esc_html_e( 'Browse all articles', 'twd-article-publisher' ); ?></a></p>
 			<?php endif; ?>
 			<?php echo TWD_AP_Cta::html( $on_archive ? 'category' : 'grid' ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cta. ?>
 		</div>
-		<?php if ( $show_filters && $is_admin_user ) : ?>
+		<?php if ( ( $show_filters || $on_archive ) && $is_admin_user ) : ?>
 			<div class="twd-ap-overlay twd-ap-grid-settings-overlay" data-for="<?php echo esc_attr( $instance_id ); ?>" hidden>
 				<div class="twd-ap-modal twd-ap-grid-settings-modal">
 					<div class="twd-ap-modal-header">
@@ -254,9 +263,11 @@ class TWD_AP_Shortcode {
 						<div id="twd-ap-gs-topics" class="twd-ap-gs-topics"></div>
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-intro-details">
-							<summary><?php esc_html_e( 'Category intro', 'twd-article-publisher' ); ?></summary>
-							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'When this is ticked, a category page shows the category\'s own description above its articles (leave it off if your theme already shows the description). Open a category page while logged in and use "Edit intro" to write or change it, or edit it under Posts, Categories.', 'twd-article-publisher' ); ?></p>
-							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-intro-show" /> <?php esc_html_e( 'Show the category description above the grid on category pages', 'twd-article-publisher' ); ?></label>
+							<summary><?php esc_html_e( 'Category pages', 'twd-article-publisher' ); ?></summary>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'A category page shows the category\'s own description above its articles. Open a category page while logged in and use "Edit intro" to write or change it, or edit it under Posts, Categories.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-archive-takeover" /> <?php esc_html_e( 'Use this grid on category and tag pages (no page-builder template needed)', 'twd-article-publisher' ); ?></label>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'The plugin shows the category name, its description with an Edit intro button, the grid and your call to action. It steps aside if your theme or page builder already has its own category template.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-intro-show" /> <?php esc_html_e( 'Also show the category description above a grid you place yourself (leave off if your theme already shows it)', 'twd-article-publisher' ); ?></label>
 						</details>
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-cta-details">

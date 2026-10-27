@@ -36,6 +36,11 @@ class TWD_AP_Grid_Settings {
 			// its grid. Off until the owner ticks it, because many themes already
 			// print the description themselves and it would show twice.
 			'intro_show'         => false,
+			// Category pages (1.39.0): use the plugin's own category and tag page
+			// (title, intro, grid, call to action) so no page-builder template is
+			// needed. On by default; it steps aside for a theme or page-builder
+			// template that already applies (see TWD_AP_Archive).
+			'archive_takeover'   => true,
 			'cta_heading'        => '',
 			'cta_text'           => '',
 			'cta_button_label'   => '',
@@ -82,6 +87,7 @@ class TWD_AP_Grid_Settings {
 			'accent_color'       => $current['accent_color'],
 			'topic_category_ids' => $current['topic_category_ids'],
 			'intro_show'         => $current['intro_show'],
+			'archive_takeover'   => $current['archive_takeover'],
 			'cta_heading'        => $current['cta_heading'],
 			'cta_text'           => $current['cta_text'],
 			'cta_button_label'   => $current['cta_button_label'],
@@ -147,6 +153,9 @@ class TWD_AP_Grid_Settings {
 				$color            = '' === $input[ $key ] ? '' : sanitize_hex_color( $input[ $key ] );
 				$output[ $key ]   = $color ? $color : ( '' === $input[ $key ] ? '' : $output[ $key ] );
 			}
+		}
+		if ( isset( $input['archive_takeover'] ) ) {
+			$output['archive_takeover'] = (bool) $input['archive_takeover'];
 		}
 		if ( isset( $input['intro_show'] ) ) {
 			$output['intro_show'] = (bool) $input['intro_show'];
