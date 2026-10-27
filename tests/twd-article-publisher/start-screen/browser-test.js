@@ -65,7 +65,7 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 
 (async () => {
 	const browser = await chromium.launch({ executablePath: fs.existsSync('/opt/pw-browsers/chromium-1194/chrome-linux/chrome') ? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' : undefined });
-	const cfgOn = { aiKeyConfigured: 1, aiLimit: 30, aiRemaining: 30, aiMaxChars: 20000 };
+	const cfgOn = { aiKeyConfigured: 1, aiLimit: 30, aiRemaining: 30, aiMaxChars: 25000 };
 
 	// ---------- A. key on: New Article shows the start screen only ----------
 	let s = await open(browser, 'key-on', cfgOn);
@@ -93,7 +93,7 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	// ---------- B. improve: request, fill, original bar ----------
 	const draft = 'First paragraph of my draft.\n\nSecond paragraph, with <b>odd</b> & chars.';
 	await page.fill('#twd-ap-start-input', draft);
-	t('B: counter shows characters', (await page.locator('#twd-ap-start-count').innerText()).includes('of 20,000 characters'));
+	t('B: counter shows characters', (await page.locator('#twd-ap-start-count').innerText()).includes('of 25,000 characters'));
 	await page.check('input[value="improve"]');
 	s.replies.generate = GEN();
 	await page.click('#twd-ap-start-generate');
@@ -169,11 +169,11 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	// ---------- I. over the limit ----------
 	await page.evaluate(() => { window.confirm = () => true; document.getElementById('twd-ap-close-btn').click(); });
 	await page.click('#twd-ap-new-btn');
-	await page.fill('#twd-ap-start-input', 'x'.repeat(20001));
+	await page.fill('#twd-ap-start-input', 'x'.repeat(25001));
 	t('I: Generate disabled over the limit', await page.locator('#twd-ap-start-generate').isDisabled());
 	t('I: count explains and turns red', (await page.locator('#twd-ap-start-count').innerText()).includes('Too long') && (await page.locator('#twd-ap-start-count').evaluate((e) => getComputedStyle(e).color)) === 'rgb(179, 69, 46)');
-	await page.fill('#twd-ap-start-input', 'x'.repeat(20000));
-	t('I: exactly 20,000 is allowed', await page.locator('#twd-ap-start-generate').isEnabled());
+	await page.fill('#twd-ap-start-input', 'x'.repeat(25000));
+	t('I: exactly 25,000 is allowed', await page.locator('#twd-ap-start-generate').isEnabled());
 	await page.fill('#twd-ap-start-input', '');
 	await page.click('#twd-ap-start-generate');
 	t('I: empty text gives a message, no request', (await page.locator('#twd-ap-status').innerText()).includes('idea or topic') && s.calls.length === 4);
@@ -520,7 +520,7 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	const pageRM = await ctxRM.newPage();
 	await pageRM.route(REST + '/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
 	await pageRM.goto('file://' + render('key-on'));
-	await pageRM.evaluate(() => { window.TWD_AP = { restUrl: 'https://example.test/wp-json/twd-publisher/v1', nonce: 'n', currentPostId: 5, aiKeyConfigured: 1, aiLimit: 30, aiRemaining: 30, aiMaxChars: 20000, i18n: { confirmClose: 'x' } }; });
+	await pageRM.evaluate(() => { window.TWD_AP = { restUrl: 'https://example.test/wp-json/twd-publisher/v1', nonce: 'n', currentPostId: 5, aiKeyConfigured: 1, aiLimit: 30, aiRemaining: 30, aiMaxChars: 25000, i18n: { confirmClose: 'x' } }; });
 	await pageRM.addScriptTag({ path: path.join(plugin, 'assets/publisher.js') });
 	await pageRM.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
 	await pageRM.evaluate(() => { document.getElementById('twd-ap-working').hidden = false; });

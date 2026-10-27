@@ -1044,7 +1044,7 @@
 	}
 
 	function updateStartCount() {
-		var max = parseInt(TWD_AP.aiMaxChars, 10) || 20000;
+		var max = parseInt(TWD_AP.aiMaxChars, 10) || 25000;
 		var len = els.startInput.value.length;
 		var over = len > max;
 		els.startCount.textContent = 0 === len ? '' : formatNumber(len) + ' of ' + formatNumber(max) + ' characters' + (over ? '. Too long: please shorten it or split it into two articles.' : '');
@@ -1063,7 +1063,7 @@
 	}
 
 	function refreshStartGenerate() {
-		var max = parseInt(TWD_AP.aiMaxChars, 10) || 20000;
+		var max = parseInt(TWD_AP.aiMaxChars, 10) || 25000;
 		var tooLong = els.startInput.value.length > max;
 		els.startGenerate.disabled = state.aiGenerating || tooLong || state.aiRemaining <= 0;
 	}
@@ -1166,7 +1166,7 @@
 		}
 		var mode = getStartMode();
 		var text = els.startInput.value.trim();
-		var max = parseInt(TWD_AP.aiMaxChars, 10) || 20000;
+		var max = parseInt(TWD_AP.aiMaxChars, 10) || 25000;
 		if (!text) {
 			showStatus('idea' === mode ? 'Please add an idea or topic first.' : 'Please add your article text first.', false);
 			return;
@@ -1183,8 +1183,8 @@
 		showWorking(
 			'improve' === mode ? 'Improving your draft' : ('format' === mode ? 'Formatting your article' : 'Writing your article'),
 			'idea' === mode
-				? ['Reading your idea…', 'Shaping the article…', 'Writing the headings and summary…', 'Adding a title, tags and details…', 'Nearly there, this can take up to a minute…']
-				: ['Reading your text…', 'Tidying the structure…', 'Adding a title, summary and tags…', 'Nearly there, this can take up to a minute…']
+				? ['Reading your idea…', 'Shaping the article…', 'Writing the headings and summary…', 'Adding a title, tags and details…', 'Nearly there, this can take a minute or two…']
+				: ['Reading your text…', 'Tidying the structure…', 'Adding a title, summary and tags…', 'Nearly there, a long text can take a few minutes…']
 		);
 
 		function finish() {
