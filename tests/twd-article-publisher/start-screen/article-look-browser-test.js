@@ -121,6 +121,13 @@ const css = (page, sel, prop) => page.locator(sel).first().evaluate((el, p) => g
 		t('swipe top: it looks like the pill (sage colour, rounded, no underline) whatever the theme does to links', style.color === 'rgb(91, 138, 114)' && style.radius >= 20 && style.deco === 'none', JSON.stringify(style));
 		t('swipe both: the same button is also after the text', (await page.locator('.twd-ap-swipebook-btn').count()) === 4 && (await page.locator('.twd-ap-swipebook-btn').nth(2).boundingBox()).y > (await page.locator('.twd-ap-article-content p').first().boundingBox()).y);
 		t('swipe top: no JavaScript errors', errors.length === 0, errors.join(' | '));
+		// The button at the end of the article: "Share as a swipe book", on the right.
+		const endBtn = page.locator('.twd-ap-swipebook-row-end a.twd-ap-swipebook-btn').first();
+		const endBox = await endBtn.boundingBox();
+		const wrapBox = await page.locator('.twd-ap-article-content').boundingBox();
+		t('swipe end: it reads "Share as a swipe book" (the one under the title still reads "View as a swipe book")', (await endBtn.innerText()).startsWith('Share as a swipe book') && (await page.locator('.twd-ap-swipebook-top a.twd-ap-swipebook-btn').first().innerText()).startsWith('View as a swipe book'));
+		t('swipe end: it sits on the right edge of the article column', Math.abs((endBox.x + endBox.width) - (wrapBox.x + wrapBox.width)) <= 2 && endBox.x > wrapBox.x + wrapBox.width / 2, JSON.stringify([endBox, wrapBox]));
+		t('swipe end: the Summary Book button there is on the right too', (await page.$$eval('.twd-ap-swipebook-row-end a', (a) => a.map((x) => Math.round(x.getBoundingClientRect().right)))).every((r, _i, arr) => Math.abs(r - arr[0]) <= 2));
 		await page.close();
 		({ page } = await openSwipe('top'));
 		t('swipe, top only: two buttons at the top and none after the text', (await page.locator('.twd-ap-swipebook-btn').count()) === 2 && (await page.locator('.twd-ap-swipebook-top .twd-ap-swipebook-btn').count()) === 2);
@@ -130,6 +137,9 @@ const css = (page, sel, prop) => page.locator(sel).first().evaluate((el, p) => g
 		await page.close();
 		({ page } = await openSwipe('both', 375));
 		t('swipe top: on a phone the buttons wrap and nothing scrolls sideways', !(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)));
+		const pEnd = await page.locator('.twd-ap-swipebook-row-end a.twd-ap-swipebook-btn').first().boundingBox();
+		const pWrap = await page.locator('.twd-ap-article-content').boundingBox();
+		t('swipe end: on a phone it is still on the right edge', Math.abs((pEnd.x + pEnd.width) - (pWrap.x + pWrap.width)) <= 2, JSON.stringify([pEnd, pWrap]));
 		await page.close();
 	}
 

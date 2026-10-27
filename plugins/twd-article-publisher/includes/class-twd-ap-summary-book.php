@@ -99,12 +99,12 @@ class TWD_AP_Summary_Book {
 	 * The "View Summary Book" button for one article, or '' when it has no
 	 * published deck, is not published, or has the swipe book switched off.
 	 */
-	public static function button_html( $post ) {
+	public static function button_html( $post, $end = false ) {
 		if ( ! $post || 'publish' !== $post->post_status || ! self::is_published( $post->ID ) || ! TWD_AP_Swipebook::is_enabled( $post->ID ) ) {
 			return '';
 		}
 		$url = esc_url( self::url_for( $post ) );
-		return '<p class="twd-ap-swipebook-row twd-ap-summary-book-row"><a class="twd-ap-swipebook-btn twd-ap-summary-book-btn" href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '" data-twd-ap-book-variant="summary-book">'
+		return '<p class="twd-ap-swipebook-row twd-ap-summary-book-row' . ( $end ? ' twd-ap-swipebook-row-end' : '' ) . '"><a class="twd-ap-swipebook-btn twd-ap-summary-book-btn" href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '" data-twd-ap-book-variant="summary-book">'
 			. esc_html__( 'View Summary Book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
 	}
 
@@ -120,7 +120,7 @@ class TWD_AP_Summary_Book {
 		if ( 'top' === TWD_AP_Swipebook::button_position() ) {
 			return $content;
 		}
-		return $content . self::button_html( get_post() );
+		return $content . self::button_html( get_post(), true );
 	}
 
 	/**

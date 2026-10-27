@@ -286,7 +286,14 @@ class TWD_AP_Shortcode {
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-related-details">
 							<summary><?php esc_html_e( 'Related articles', 'twd-article-publisher' ); ?></summary>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'At the end of every article, a short list of links to more articles from the same category, with a link to the category page. It helps readers keep reading and helps search engines find your articles. Leave it off if your theme or another plugin already shows related posts.', 'twd-article-publisher' ); ?></p>
-							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-related-show" /> <?php esc_html_e( 'Show "More in this category" at the end of every article', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-label" for="twd-ap-gs-related-place"><?php esc_html_e( 'Where it goes', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-related-place" class="twd-ap-input">
+								<option value="auto"><?php esc_html_e( 'Automatically at the end of every article', 'twd-article-publisher' ); ?></option>
+								<option value="shortcode"><?php esc_html_e( 'Only where I place the shortcode [twd_related]', 'twd-article-publisher' ); ?></option>
+								<option value="off"><?php esc_html_e( 'Nowhere', 'twd-article-publisher' ); ?></option>
+							</select>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'With the shortcode you can put it anywhere, for example in your own single article template. [twd_related count="3"] changes how many links for that one place.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-related-show" /> <?php esc_html_e( 'Show "More in this category"', 'twd-article-publisher' ); ?></label>
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-related-count"><?php esc_html_e( 'How many links', 'twd-article-publisher' ); ?></label>
 							<input type="number" id="twd-ap-gs-related-count" class="twd-ap-input" min="1" max="8" />
 							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-related-topics" /> <?php esc_html_e( 'Also show the "Browse by topic" links under it (the categories you chose above, and All articles)', 'twd-article-publisher' ); ?></label>
@@ -341,6 +348,8 @@ class TWD_AP_Shortcode {
 								<option value="normal"><?php esc_html_e( 'Normal (default)', 'twd-article-publisher' ); ?></option>
 								<option value="relaxed"><?php esc_html_e( 'Relaxed', 'twd-article-publisher' ); ?></option>
 							</select>
+							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-look-tidy" /> <?php esc_html_e( 'Tidy line endings: keep a short word (a, so, we, an) with the word after it', 'twd-article-publisher' ); ?></label>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Stops a line ending on a one or two letter word. Headings are also balanced and paragraphs avoid a lonely last word in browsers that support it.', 'twd-article-publisher' ); ?></p>
 							<div class="twd-ap-gs-look-preview" id="twd-ap-gs-look-preview" aria-hidden="true">
 								<h4><?php esc_html_e( 'A sample heading', 'twd-article-publisher' ); ?></h4>
 								<p><?php esc_html_e( 'This is how the text of an article will read, with a', 'twd-article-publisher' ); ?> <a href="#" tabindex="-1"><?php esc_html_e( 'link inside it', 'twd-article-publisher' ); ?></a>.</p>
@@ -358,6 +367,8 @@ class TWD_AP_Shortcode {
 							<option value="top"><?php esc_html_e( 'Under the title only', 'twd-article-publisher' ); ?></option>
 							<option value="bottom"><?php esc_html_e( 'At the end only', 'twd-article-publisher' ); ?></option>
 						</select>
+						<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-sb-top-shortcode" /> <?php esc_html_e( 'Place the button under the title with a shortcode instead of automatically', 'twd-article-publisher' ); ?></label>
+						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Tick this if your theme or page builder has its own single article template. Put the shortcode [twd_swipebook_button] where you want the button (and the Summary Book button, when the article has one) to appear. The button at the end is not affected.', 'twd-article-publisher' ); ?></p>
 
 						<div class="twd-ap-section twd-ap-spaced">
 							<p class="twd-ap-section-heading"><?php esc_html_e( 'Swipe Book', 'twd-article-publisher' ); ?></p>

@@ -24,12 +24,25 @@ class TWD_AP_Article_Style {
 	private function __construct() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue' ) );
 		add_filter( 'the_content', array( $this, 'wrap_content' ), 20 );
+		// After WordPress's own paragraph and quote tidying (also priority 10,
+		// registered earlier) and before the swipe book buttons are added (11
+		// and 15), so the buttons' own words are left alone.
+		add_filter( 'the_content', array( $this, 'tidy_content' ), 10 );
 	}
 
 	public function maybe_enqueue() {
 		if ( is_admin() || ! is_singular( 'post' ) ) {
 			return;
 		}
+		self::enqueue();
+	}
+
+	/**
+	 * The article stylesheet and script. Also called by the shortcodes that
+	 * print article furniture (the related block, the swipe book button), so
+	 * they are styled on a page that is not a single article too.
+	 */
+	public static function enqueue() {
 		wp_enqueue_style(
 			'twd-ap-article-style',
 			TWD_AP_URL . 'assets/article-content.css',
@@ -44,6 +57,60 @@ class TWD_AP_Article_Style {
 			TWD_AP_VERSION,
 			true
 		);
+	}
+
+	/**
+	 * "Tidy line endings" (Article look): keeps a one or two letter word with
+	 * the word after it, so a line never ends on "so", "we" or "an". Only the
+	 * article being shown on its own page, and only when the owner has left it
+	 * ticked (it is, by default). The stored article is never touched.
+	 */
+	public function tidy_content( $content ) {
+		if ( is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
+			return $content;
+		}
+		if ( empty( TWD_AP_Grid_Settings::get()['look_tidy_lines'] ) ) {
+			return $content;
+		}
+		return self::tidy_lines( $content );
+	}
+
+	/**
+	 * The text of an HTML string with a non-breaking space after every word
+	 * of one or two letters that is followed by a space. Tags and their
+	 * attributes are left exactly as they are, and so is everything inside
+	 * pre, code, kbd, samp, script, style and textarea. A word counts only if
+	 * it stands alone (not the end of a longer word, not after an apostrophe
+	 * or hyphen). If the text is not valid UTF-8 it is returned unchanged.
+	 */
+	public static function tidy_lines( $html ) {
+		$parts = preg_split( '/(<[^>]*>)/', (string) $html, -1, PREG_SPLIT_DELIM_CAPTURE );
+		if ( ! is_array( $parts ) ) {
+			return $html;
+		}
+		$skip = 0;
+		foreach ( $parts as $i => $part ) {
+			if ( '' === $part ) {
+				continue;
+			}
+			if ( '<' === $part[0] ) {
+				if ( preg_match( '/^<(\/?)(pre|code|kbd|samp|script|style|textarea)\b/i', $part, $m ) && '/>' !== substr( $part, -2 ) ) {
+					$skip = max( 0, $skip + ( '/' === $m[1] ? -1 : 1 ) );
+				}
+				continue;
+			}
+			if ( $skip > 0 ) {
+				continue;
+			}
+			// The apostrophe entities too: wptexturize has already turned "it's" into
+			// "it&#8217;s" by the time this runs, and the "s" is not a word of its own.
+			$done = preg_replace( '/(?<![\p{L}\p{N}\'\x{2019}\-])(?<!&#8217;)(?<!&#8216;)(?<!&#039;)(?<!&#x2019;)(?<!&rsquo;)(?<!&lsquo;)(?<!&apos;)(\p{L}{1,2}) (?=\S|$)/u', '$1&nbsp;', $part );
+			if ( null === $done ) {
+				return $html; // not valid UTF-8: leave the whole article as it is
+			}
+			$parts[ $i ] = $done;
+		}
+		return implode( '', $parts );
 	}
 
 	public function wrap_content( $content ) {
