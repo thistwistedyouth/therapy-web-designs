@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.44.0
+Stable tag: 1.45.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,7 +24,7 @@ The popup lets you:
 * Write an excerpt
 * Set the Yoast SEO title and meta description, if Yoast SEO is active
 * Save as a draft, publish immediately, or schedule for a future date and time
-* Tick "Feature this article" to pin it to the top of the `[twd_articles]` grid, ahead of newest-first
+* Tick "Feature this article" to pin it to the top of the `[twd_articles]` grid, ahead of newest-first, and give it a grid number (1 is first) to put the featured articles in your own order
 * Reopen and edit any article you have permission to edit, in the same popup
 * While editing, an "Edit in WordPress" link opens the normal wp-admin post editor for that article in a new tab. Deliberately no "Edit with Elementor" link: switching a post into Elementor's builder mode can make it render from Elementor's own saved layout instead of post_content, which would silently stop reflecting future edits made through this popup.
 * A third "Paste JSON" tab alongside Visual and HTML: paste a JSON block (e.g. from TRD's Article Assist tool) with title, seo_title, meta_description, category, tags and html fields, then click Fill fields from JSON to bring in the title, excerpt, Yoast fields, category (matched or created), tags and body in one go. Everything else in the popup stays out of the way until you do, then it switches you to the Visual tab so you can review and edit everything before saving. Nothing is locked: imported fields are exactly as editable as if you'd typed them.
@@ -55,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.45.0): featured articles come first, in your order. On the Resources
+grid the featured articles now sit in a "Featured" row at the very top, from
+every category, instead of only rising inside their own category section. When
+you tick "Feature this article" in the editor a "Grid number" box appears: 1
+shows first, 2 next, and so on. Featured articles with no number come after the
+numbered ones, newest first. An article shows once on the page: in the Featured
+row, or in its own section if the row is full. Lists (a category page, search
+results) also put the featured articles first, in the same order. The grid
+number only affects featured articles (up to the 100 newest featured
+articles are ranked).
 
 NEW (1.44.0): paste a Book Maker style book into the New Article popup. Open
 the Paste JSON tab, paste a JSON with a "title" and a list of "cards"

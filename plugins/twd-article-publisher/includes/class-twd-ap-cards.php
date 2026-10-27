@@ -24,42 +24,69 @@ class TWD_AP_Cards {
 		return (int) get_option( 'default_category' );
 	}
 
+	/** Post meta holding a featured article's place among the featured ones (1 is first). */
+	const ORDER_META = '_twd_ap_grid_order';
+
+	/** The most featured articles the grid will rank; a site has a handful, not hundreds. */
+	const FEATURED_CAP = 100;
+
+	/** A saved grid number: a whole number from 1 to 9999, or 0 for none. */
+	public static function clean_grid_order( $value ) {
+		if ( ! is_scalar( $value ) || ! preg_match( '/^\s*\d{1,6}\s*$/', (string) $value ) ) {
+			return 0;
+		}
+		return max( 0, min( 9999, (int) $value ) );
+	}
+
+	/** The grid number saved on a post, or 0 when it has none. */
+	public static function grid_order( $post_id ) {
+		return self::clean_grid_order( get_post_meta( $post_id, self::ORDER_META, true ) );
+	}
+
 	/**
-	 * WP_Query args for the flat list: featured first, then newest. One
-	 * extra post is fetched beyond what is shown, purely to answer "is
-	 * there a next page" from what came back (see fetch()).
+	 * Posts (WP_Post objects or post IDs) in "featured order": lowest grid
+	 * number first, articles without a number after the numbered ones, and the
+	 * given order (newest first) kept between equals. Sorted by hand with the
+	 * original position as tie-break, since PHP 7.4's usort is not stable.
 	 */
-	public static function query_args( $per_page, $offset, $search = '', $category = '', $tag = '' ) {
+	private static function featured_order( $items ) {
+		$keyed = array();
+		foreach ( array_values( $items ) as $i => $item ) {
+			$id      = is_object( $item ) ? $item->ID : (int) $item;
+			$n       = self::grid_order( $id );
+			$keyed[] = array( 'rank' => $n > 0 ? $n : PHP_INT_MAX, 'pos' => $i, 'item' => $item );
+		}
+		usort(
+			$keyed,
+			function ( $a, $b ) {
+				return $a['rank'] === $b['rank'] ? $a['pos'] - $b['pos'] : ( $a['rank'] < $b['rank'] ? -1 : 1 );
+			}
+		);
+		return array_map(
+			function ( $k ) {
+				return $k['item'];
+			},
+			$keyed
+		);
+	}
+
+	/**
+	 * WP_Query args for a list of published articles, newest first, narrowed by
+	 * search, category or tag. $limit is exactly how many to return.
+	 */
+	public static function query_args( $limit, $offset, $search = '', $category = '', $tag = '' ) {
 		$query_args = array(
 			'post_type'      => 'post',
 			'post_status'    => 'publish',
-			// offset (not paged) keeps every page's items lined up exactly
-			// count apart regardless of the +1. no_found_rows since
-			// found_posts/max_num_pages are never read.
-			'posts_per_page' => $per_page + 1,
+			// no_found_rows since found_posts/max_num_pages are never read.
+			'posts_per_page' => max( 1, (int) $limit ),
 			'offset'         => $offset,
 			'no_found_rows'  => true,
-			// A bare 'meta_key' query var is NOT a LEFT JOIN: WP_Query turns
-			// it into an implicit meta_query clause that INNER JOINs
-			// postmeta, which excludes every post that has no such row at
-			// all (and _twd_ap_featured only exists on posts someone
-			// featured). The explicit OR between "has the key" and "does
-			// not have the key", a named clause, makes every post match
-			// one branch or the other while staying orderable.
-			'meta_query'     => array(
-				'relation'        => 'OR',
-				'featured_clause' => array(
-					'key'     => '_twd_ap_featured',
-					'compare' => 'EXISTS',
-				),
-				array(
-					'key'     => '_twd_ap_featured',
-					'compare' => 'NOT EXISTS',
-				),
-			),
+			// ID as the tie-break, so articles with the same date come back in the
+			// same order from both queries and from one page to the next.
 			'orderby'        => array(
-				'featured_clause' => 'DESC',
-				'date'            => 'DESC',
+				'date' => 'DESC',
+				'ID'   => 'DESC',
 			),
 		);
 
@@ -76,15 +103,60 @@ class TWD_AP_Cards {
 	}
 
 	/**
-	 * Runs the flat-list query. Returns array( 'posts' => WP_Post[],
-	 * 'has_more' => bool ). Used by the REST route and the shortcode alike.
+	 * Every featured published article that matches, in featured order (grid
+	 * number, then newest). A plain "has the key" meta query, nothing clever;
+	 * the order is done here in PHP because "numbered first, blanks after" is
+	 * not something a meta query can say (a missing value sorts as the
+	 * smallest). The key counts only if its value is truthy, as everywhere else.
+	 */
+	public static function featured_posts( $search = '', $category = '', $tag = '' ) {
+		$args               = self::query_args( self::FEATURED_CAP, 0, $search, $category, $tag );
+		$args['meta_query'] = array(
+			array(
+				'key'     => '_twd_ap_featured',
+				'compare' => 'EXISTS',
+			),
+		);
+		$query = new WP_Query( $args );
+
+		$featured = array();
+		foreach ( $query->posts as $post ) {
+			if ( get_post_meta( $post->ID, '_twd_ap_featured', true ) ) {
+				$featured[] = $post;
+			}
+		}
+		return self::featured_order( $featured );
+	}
+
+	/**
+	 * Runs the flat-list query: featured articles first (by grid number), then
+	 * the rest newest first. Returns array( 'posts' => WP_Post[], 'has_more'
+	 * => bool ). Used by the REST route and the shortcode alike. One extra
+	 * article is read beyond what is shown, purely to answer "is there a next
+	 * page" from what came back.
 	 */
 	public static function fetch( $per_page, $offset = 0, $search = '', $category = '', $tag = '' ) {
 		$per_page = max( 1, min( 24, (int) $per_page ) );
 		$offset   = max( 0, (int) $offset );
+		$limit    = $per_page + 1;
 
-		$query = new WP_Query( self::query_args( $per_page, $offset, $search, $category, $tag ) );
-		$posts = $query->posts;
+		$featured = self::featured_posts( $search, $category, $tag );
+		$posts    = array_slice( $featured, $offset, $limit );
+
+		$need = $limit - count( $posts );
+		if ( $need > 0 ) {
+			$args = self::query_args( $need, max( 0, $offset - count( $featured ) ), $search, $category, $tag );
+			if ( $featured ) {
+				$args['post__not_in'] = array_map(
+					function ( $p ) {
+						return $p->ID;
+					},
+					$featured
+				);
+			}
+			$query = new WP_Query( $args );
+			$posts = array_merge( $posts, $query->posts );
+		}
 
 		$has_more = count( $posts ) > $per_page;
 		if ( $has_more ) {
@@ -225,6 +297,17 @@ class TWD_AP_Cards {
 		// grouped view; a search still finds it by text.
 		unset( $by_category[ self::uncategorized_id() ] );
 
+		// The Featured row: the featured articles of the whole site, whatever
+		// their category, at the very top, lowest grid number first. Each
+		// appears once on the page: here, not again in its own section below.
+		$groups = array();
+		$in_row = array();
+		$row    = array();
+		foreach ( array_slice( self::featured_posts(), 0, (int) $settings['posts_per_category'] ) as $post ) {
+			$in_row[ $post->ID ] = true;
+			$row[]               = self::format( $post );
+		}
+
 		$ordered_cat_ids = array();
 		foreach ( $settings['category_order'] as $cat_id ) {
 			if ( isset( $by_category[ $cat_id ] ) ) {
@@ -239,28 +322,57 @@ class TWD_AP_Cards {
 			}
 		);
 		$ordered_cat_ids = array_merge( $ordered_cat_ids, $remaining );
+		// A category whose every article is up in the row has no section, so it
+		// must not take one of the "how many categories" places either.
+		$ordered_cat_ids = array_values(
+			array_filter(
+				$ordered_cat_ids,
+				function ( $cat_id ) use ( $by_category, $in_row ) {
+					return (bool) array_diff( $by_category[ $cat_id ], array_keys( $in_row ) );
+				}
+			)
+		);
 		$ordered_cat_ids = array_slice( $ordered_cat_ids, 0, $settings['categories_count'] );
 
-		$groups = array();
+		if ( $row ) {
+			$groups[] = array(
+				'category' => array(
+					'id'   => 0,
+					'name' => __( 'Featured', 'twd-article-publisher' ),
+					'slug' => '',
+					'link' => '',
+				),
+				'posts'    => $row,
+				'total'    => count( $row ),
+				'featured' => true,
+			);
+		}
+
 		foreach ( $ordered_cat_ids as $cat_id ) {
 			$term = get_category( $cat_id );
 			if ( ! $term || is_wp_error( $term ) ) {
 				continue;
 			}
 
-			// Featured first, otherwise the newest-first order already in
-			// the list is kept as-is (array_merge, not usort, so this stays
-			// stable regardless of PHP version).
+			// Featured articles that are not already in the Featured row come
+			// first in their own section, in featured order; the rest keep the
+			// newest-first order of the list.
 			$featured = array();
 			$rest     = array();
 			foreach ( $by_category[ $cat_id ] as $id ) {
+				if ( isset( $in_row[ $id ] ) ) {
+					continue;
+				}
 				if ( get_post_meta( $id, '_twd_ap_featured', true ) ) {
 					$featured[] = $id;
 				} else {
 					$rest[] = $id;
 				}
 			}
-			$ids = array_slice( array_merge( $featured, $rest ), 0, $settings['posts_per_category'] );
+			$ids = array_slice( array_merge( self::featured_order( $featured ), $rest ), 0, $settings['posts_per_category'] );
+			if ( empty( $ids ) ) {
+				continue; // every article of this section is up in the Featured row
+			}
 
 			$items = array();
 			foreach ( $ids as $id ) {

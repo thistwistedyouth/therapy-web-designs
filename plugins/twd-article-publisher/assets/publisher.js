@@ -72,6 +72,8 @@
 		els.featuredSelect = document.getElementById('twd-ap-featured-select');
 		els.featuredRemove = document.getElementById('twd-ap-featured-remove');
 		els.featuredToggle = document.getElementById('twd-ap-featured-toggle');
+		els.gridOrderWrap = document.getElementById('twd-ap-grid-order-wrap');
+		els.gridOrder = document.getElementById('twd-ap-grid-order');
 		els.includeBioToggle = document.getElementById('twd-ap-include-bio-toggle');
 		els.swipebookToggle = document.getElementById('twd-ap-swipebook-toggle');
 		els.relatedPicker = document.getElementById('twd-ap-related-picker');
@@ -301,7 +303,11 @@
 		window.addEventListener('scroll', repositionImgUi, true);
 		window.addEventListener('resize', repositionImgUi);
 
-		els.featuredToggle.addEventListener('change', markDirty);
+		els.featuredToggle.addEventListener('change', function () {
+			refreshGridOrder();
+			markDirty();
+		});
+		if (els.gridOrder) { els.gridOrder.addEventListener('input', markDirty); }
 		els.includeBioToggle.addEventListener('change', markDirty);
 
 		if (els.relatedPicker) {
@@ -411,6 +417,18 @@
 			sel.removeAllRanges();
 			sel.addRange(savedRange);
 		}
+	}
+
+	// The grid number only matters for a featured article, so its field shows
+	// only while "Feature this article" is ticked. The typed number is kept
+	// when the tick is taken off and put back on.
+	function refreshGridOrder() {
+		if (els.gridOrderWrap) { els.gridOrderWrap.hidden = !els.featuredToggle.checked; }
+	}
+
+	function setGridOrder(value) {
+		if (els.gridOrder) { els.gridOrder.value = value; }
+		refreshGridOrder();
 	}
 
 	function openFeaturedImageFrame() {
@@ -1418,6 +1436,7 @@
 		els.tags.value = '';
 		els.catAddInput.value = '';
 		els.featuredToggle.checked = false;
+		setGridOrder('');
 		els.includeBioToggle.checked = false;
 		els.swipebookToggle.checked = true;
 		state.relatedIds = [];
@@ -1526,6 +1545,7 @@
 				els.excerpt.value = data.excerpt || '';
 				els.tags.value = data.tags || '';
 				els.featuredToggle.checked = !!data.featured;
+				setGridOrder(data.grid_order > 0 ? String(data.grid_order) : '');
 				els.includeBioToggle.checked = !!data.include_bio;
 				els.swipebookToggle.checked = false !== data.swipebook_enabled;
 				state.featuredMediaId = data.featured_media || 0;
@@ -1640,6 +1660,20 @@
 			return;
 		}
 
+		// The grid number must be a whole number from 1 to 9999 (or blank). A box
+		// that is not inside a form never checks itself, so say so here rather
+		// than save without it. On an article that is not featured the box is
+		// hidden and the number is not used, so a bad one is just dropped.
+		var gridOrder = els.gridOrder ? els.gridOrder.value.trim() : '';
+		if ('' !== gridOrder && !/^[1-9]\d{0,3}$/.test(gridOrder)) {
+			if (els.featuredToggle.checked) {
+				showStatus('The grid number must be a whole number from 1 to 9999, or left blank.', false);
+				els.gridOrder.focus();
+				return;
+			}
+			gridOrder = '';
+		}
+
 		// Whether this was already an existing article before this save, not
 		// whether it still is after (state.editingId gets set either way once
 		// the response comes back) -- that's what decides whether the button
@@ -1658,6 +1692,7 @@
 			excerpt: els.excerpt.value,
 			tags: els.tags.value,
 			featured: els.featuredToggle.checked,
+			grid_order: gridOrder,
 			include_bio: els.includeBioToggle.checked,
 			swipebook_enabled: els.swipebookToggle.checked,
 			related_ids: getCheckedRelatedIds(),

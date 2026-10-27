@@ -588,6 +588,18 @@ class TWD_AP_REST {
 			}
 		}
 
+		// Grid number: where this article sits among the featured ones (1 is
+		// first). Blank, zero or anything that is not a whole number clears it.
+		// A save that does not carry the field leaves the stored number alone.
+		if ( isset( $request['grid_order'] ) ) {
+			$grid_order = TWD_AP_Cards::clean_grid_order( $request['grid_order'] );
+			if ( $grid_order > 0 ) {
+				update_post_meta( $post_id, TWD_AP_Cards::ORDER_META, $grid_order );
+			} else {
+				delete_post_meta( $post_id, TWD_AP_Cards::ORDER_META );
+			}
+		}
+
 		// Include bio page at end (swipe book's closing slide).
 		if ( isset( $request['include_bio'] ) ) {
 			if ( $request['include_bio'] ) {
@@ -722,6 +734,7 @@ class TWD_AP_REST {
 			$post_tags            = wp_get_post_tags( $post_id, array( 'fields' => 'names' ) );
 			$data['tags']         = implode( ', ', $post_tags );
 			$data['featured']     = (bool) get_post_meta( $post_id, '_twd_ap_featured', true );
+			$data['grid_order']   = TWD_AP_Cards::grid_order( $post_id );
 			$data['include_bio']  = (bool) get_post_meta( $post_id, '_twd_ap_include_bio', true );
 			$data['swipebook_enabled'] = TWD_AP_Swipebook::is_enabled( $post_id );
 			$related_ids          = get_post_meta( $post_id, '_twd_ap_related_ids', true );

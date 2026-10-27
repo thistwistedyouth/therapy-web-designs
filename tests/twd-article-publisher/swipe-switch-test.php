@@ -207,5 +207,28 @@ if ( getenv( 'TWD_SWIPE_DUMP' ) ) {
 	}
 	file_put_contents( getenv( 'TWD_SWIPE_DUMP' ), json_encode( $out ) );
 }
+// ---------- the grid number (1.45.0): saving and loading ----------
+$GN = TWD_AP_Cards::ORDER_META;
+$m->invoke( $rest, 3, array( 'featured' => true, 'grid_order' => '2' ) );
+t( 'grid number: a number is stored', 2 === $GLOBALS['meta'][3][ $GN ] && 1 === $GLOBALS['meta'][3]['_twd_ap_featured'] );
+t( 'grid number: it comes back in the edit data', 2 === $fp->invoke( $rest, 3, true )['grid_order'] );
+$m->invoke( $rest, 3, array( 'title' => 'unrelated edit' ) );
+t( 'grid number: a save that does not carry it leaves it alone', 2 === $GLOBALS['meta'][3][ $GN ] );
+$m->invoke( $rest, 3, array( 'grid_order' => ' 7 ' ) );
+t( 'grid number: spaces are fine', 7 === $GLOBALS['meta'][3][ $GN ] );
+foreach ( array( '', '0', 'abc', '-3', '2.5', '12345678', array( 1 ) ) as $bad ) {
+	$m->invoke( $rest, 3, array( 'grid_order' => '4' ) );
+	$m->invoke( $rest, 3, array( 'grid_order' => $bad ) );
+	t( 'grid number: ' . json_encode( $bad ) . ' clears it', ! isset( $GLOBALS['meta'][3][ $GN ] ) && 0 === $fp->invoke( $rest, 3, true )['grid_order'] );
+}
+$m->invoke( $rest, 3, array( 'grid_order' => '4' ) );
+$m->invoke( $rest, 3, array( 'grid_order' => null ) );
+t( 'grid number: null counts as not sent (the popup sends a blank as an empty string)', 4 === $GLOBALS['meta'][3][ $GN ] );
+$m->invoke( $rest, 3, array( 'grid_order' => '99999' ) );
+t( 'grid number: held at 9999', 9999 === $GLOBALS['meta'][3][ $GN ] );
+$m->invoke( $rest, 3, array( 'featured' => false ) );
+t( 'grid number: taking the feature tick off keeps the number (it only matters while featured)', 9999 === $GLOBALS['meta'][3][ $GN ] && ! isset( $GLOBALS['meta'][3]['_twd_ap_featured'] ) );
+t( 'grid number: clean_grid_order edge cases', 0 === TWD_AP_Cards::clean_grid_order( '' ) && 1 === TWD_AP_Cards::clean_grid_order( 1 ) && 0 === TWD_AP_Cards::clean_grid_order( 0 ) && 5 === TWD_AP_Cards::clean_grid_order( '005' ) && 0 === TWD_AP_Cards::clean_grid_order( new stdClass() ) );
+
 echo "\n$pass passed, $fail failed\n";
 exit( $fail ? 1 : 0 );

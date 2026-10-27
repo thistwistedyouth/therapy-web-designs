@@ -32,9 +32,21 @@ class WP_Query {
 		if ( ! empty( $a['category_name'] ) ) {
 			$p = array_filter( $p, function ( $x ) use ( $a ) { foreach ( $x->cats as $c ) { if ( $GLOBALS['terms'][ $c ]->slug === $a['category_name'] ) { return true; } } return false; } );
 		}
-		usort( $p, function ( $x, $y ) {
-			$fx = ! empty( $GLOBALS['meta'][ $x->ID ]['_twd_ap_featured'] ) ? 1 : 0; $fy = ! empty( $GLOBALS['meta'][ $y->ID ]['_twd_ap_featured'] ) ? 1 : 0;
-			return $fy <=> $fx ?: strcmp( $y->post_date, $x->post_date );
+		if ( ! empty( $a['post__not_in'] ) ) { $p = array_filter( $p, function ( $x ) use ( $a ) { return ! in_array( $x->ID, $a['post__not_in'], true ); } ); }
+		foreach ( $a['meta_query'] ?? array() as $mq ) {
+			if ( isset( $mq['key'], $mq['compare'] ) && 'EXISTS' === $mq['compare'] ) { $p = array_filter( $p, function ( $x ) use ( $mq ) { return array_key_exists( $mq['key'], $GLOBALS['meta'][ $x->ID ] ?? array() ); } ); }
+		}
+		// Honour the ordering the code asks for (a string or an array of field => direction), so a lost or wrong
+		// orderby is caught; WordPress's default when none is given is date, newest first.
+		$ob   = $a['orderby'] ?? 'date';
+		$dirs = is_array( $ob ) ? $ob : array( $ob => $a['order'] ?? 'DESC' );
+		usort( $p, function ( $x, $y ) use ( $dirs ) {
+			foreach ( $dirs as $k => $dir ) {
+				$f = 'ID' === $k ? 'ID' : ( 'date' === $k ? 'post_date' : 'post_title' );
+				$c = $x->$f <=> $y->$f;
+				if ( 0 !== $c ) { return 'ASC' === strtoupper( $dir ) ? $c : -$c; }
+			}
+			return 0;
 		} );
 		$this->posts = array_slice( $p, $a['offset'] ?? 0, $a['posts_per_page'] );
 	}

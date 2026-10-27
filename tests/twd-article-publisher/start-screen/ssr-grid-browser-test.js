@@ -67,7 +67,7 @@ async function open(browser, name, o) {
 	const browser = await chromium.launch();
 
 	// 1. Small site: nothing flashes or moves when the JS takes over.
-	for (const name of ['small', 'large']) {
+	for (const name of ['small', 'large', 'featuredrow']) {
 		const { ctx, page, errors, done } = await open(browser, name);
 		const target = name === 'small' ? '.twd-ap-articles-grid' : '.twd-ap-articles-groups';
 		await page.waitForSelector('.twd-ap-article-card');
@@ -87,6 +87,14 @@ async function open(browser, name, o) {
 		t(name + ': the first card did not move', JSON.stringify(boxBefore) === JSON.stringify(boxAfter));
 		t(name + ': no JavaScript errors', errors.length === 0, errors.join(' | '));
 		t(name + ': the topic links are still there afterwards', (await page.locator('.twd-ap-articles-topics a').count()) >= 2);
+		if (name === 'featuredrow') {
+			const heads = await page.$$eval('.twd-ap-articles-group-title', (e) => e.map((x) => x.textContent));
+			const firstRow = await page.$$eval('.twd-ap-articles-group:first-child a.twd-ap-article-card', (a) => a.map((x) => x.getAttribute('href').replace(/\D/g, '')));
+			t('featured row: the page opens with the Featured row, then the categories', heads[0] === 'Featured' && heads.slice(1).join(',') === 'Anxiety,Sleep', heads.join(','));
+			t('featured row: its cards are the featured ones in grid-number order, from the server and after the JS', firstRow.join(',') === '24,26,21,28,30,27', firstRow.join(','));
+			t('featured row: it has no See all', (await page.locator('.twd-ap-articles-group:first-child .twd-ap-articles-group-more').count()) === 0);
+			t('featured row: no article appears twice on the page', await page.$$eval('a.twd-ap-article-card', (a) => { const h = a.map((x) => x.getAttribute('href')); return h.length === new Set(h).size; }));
+		}
 		await ctx.close();
 	}
 

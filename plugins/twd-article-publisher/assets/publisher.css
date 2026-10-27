@@ -430,6 +430,18 @@ body.admin-bar .twd-ap-edit-pencil {
   margin-bottom: 16px;
   font-weight: 600;
 }
+/* Grid number, shown only while "Feature this article" is ticked. */
+.twd-ap-grid-order {
+  margin: -6px 0 16px 26px !important;
+}
+.twd-ap-grid-order .twd-ap-grid-order-input {
+  width: 110px !important;
+  margin-bottom: 6px !important;
+}
+.twd-ap-grid-order .twd-ap-hint {
+  display: block !important;
+  margin: 0 !important;
+}
 
 .twd-ap-btn-secondary {
   border: 1px solid var(--twd-ap-border) !important;
