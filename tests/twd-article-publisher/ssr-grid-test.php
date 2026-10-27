@@ -3,7 +3,7 @@
 // HTML (real links for crawlers), shares one query and one card formatter with the REST route, and
 // escapes everything. Real plugin classes (TWD_AP_Cards, TWD_AP_Shortcode, TWD_AP_REST), WordPress
 // functions and WP_Query faked. The fake WP_Query sorts the way the real query is written to
-// (featured first, then newest), so these checks prove both callers use the same arguments and the same
+// (newest first; the featured-first order is done in PHP by TWD_AP_Cards), so these checks prove both callers use the same arguments and the same
 // card code; the real database ordering is checked on a live site.
 //   php tests/twd-article-publisher/ssr-grid-test.php
 define( 'ABSPATH', '/' );
@@ -90,11 +90,17 @@ class WP_Query {
 				return false;
 			} );
 		}
-		usort( $p, function ( $x, $y ) {
-			$fx = ! empty( $GLOBALS['meta'][ $x->ID ]['_twd_ap_featured'] ) ? 1 : 0;
-			$fy = ! empty( $GLOBALS['meta'][ $y->ID ]['_twd_ap_featured'] ) ? 1 : 0;
-			return $fy <=> $fx ?: strcmp( $y->post_date, $x->post_date );
-		} );
+		if ( ! empty( $a['post__not_in'] ) ) {
+			$p = array_filter( $p, function ( $x ) use ( $a ) { return ! in_array( $x->ID, $a['post__not_in'], true ); } );
+		}
+		// A plain "has this key" meta query (what the real WordPress does with compare EXISTS).
+		foreach ( $a['meta_query'] ?? array() as $mq ) {
+			if ( isset( $mq['key'], $mq['compare'] ) && 'EXISTS' === $mq['compare'] ) {
+				$p = array_filter( $p, function ( $x ) use ( $mq ) { return array_key_exists( $mq['key'], $GLOBALS['meta'][ $x->ID ] ?? array() ); } );
+			}
+		}
+		// Newest first, as asked. Featured first is NOT done by the database any more (PHP does it in TWD_AP_Cards).
+		usort( $p, function ( $x, $y ) { return strcmp( $y->post_date, $x->post_date ); } );
 		$this->found_posts = count( $p );
 		$this->posts = array_slice( $p, $a['offset'] ?? 0, $a['posts_per_page'] );
 	}
@@ -264,6 +270,100 @@ foreach ( $rest['groups'] as $g ) { foreach ( $g['posts'] as $p ) { $rest_links[
 t( 'large site: the grouped cards match the REST grouped route, in order', card_links( $html ) === $rest_links );
 t( 'large site: the config says many articles', false !== strpos( html_entity_decode( $html ), '"manyArticles":true' ) );
 t( 'large site: topic links are in the HTML', false !== strpos( $html, 'class="twd-ap-articles-topics"' ) && false !== strpos( $html, '/category/sleep/' ) );
+
+// ---------- featured articles and grid numbers (1.45.0) ----------
+reset_site();
+TWD_AP_Grid_Settings::$s['posts_per_category'] = 6;
+add_post( 20, 'Anx newest', array( 2 ), '2026-03-20' );
+add_post( 21, 'Anx featured three', array( 2 ), '2026-01-10' );
+add_post( 22, 'Anx featured no number older', array( 2 ), '2026-01-02' );
+add_post( 23, 'Anx old', array( 2 ), '2026-01-01' );
+add_post( 24, 'Sleep featured one', array( 3 ), '2026-02-01' );
+add_post( 25, 'Sleep newest', array( 3 ), '2026-03-01' );
+add_post( 26, 'Sleep featured two', array( 3 ), '2026-02-15' );
+add_post( 27, 'Sleep featured no number newer', array( 3 ), '2026-03-05' );
+add_post( 28, 'Loose featured', array( 1 ), '2026-02-20' );
+add_post( 29, 'Loose plain', array( 1 ), '2026-02-21' );
+add_post( 30, 'Only featured in its topic', array( 4 ), '2026-01-15' );
+foreach ( array( 21 => 3, 22 => 0, 24 => 1, 26 => 2, 27 => 0, 28 => 4, 30 => 5 ) as $fid => $gn ) {
+	$GLOBALS['meta'][ $fid ]['_twd_ap_featured'] = 1;
+	if ( $gn ) { $GLOBALS['meta'][ $fid ]['_twd_ap_grid_order'] = $gn; }
+}
+$ids = function ( $r ) { return array_map( function ( $p ) { return $p->ID; }, $r['posts'] ); };
+$want = array( 24, 26, 21, 28, 30, 27, 22, 20, 25, 29, 23 );
+$all = TWD_AP_Cards::fetch( 24, 0 );
+t( 'featured order: grid number first (1, 2, 3...), then featured with no number newest first, then the rest newest first', $want === $ids( $all ), json_encode( $ids( $all ) ) );
+t( 'featured order: nothing repeated, nothing missing', 11 === count( array_unique( $ids( $all ) ) ) );
+$walk = array();
+for ( $off = 0, $more = true; $more && $off < 30; $off += 3 ) { $r = TWD_AP_Cards::fetch( 3, $off ); $walk = array_merge( $walk, $ids( $r ) ); $more = $r['has_more']; }
+t( 'paging by 3: every page lines up, the whole list comes back in the same order', $want === $walk, json_encode( $walk ) );
+$r = TWD_AP_Cards::fetch( 4, 4 );
+t( 'paging: a page that starts among the featured and ends among the others', array( 30, 27, 22, 20 ) === $ids( $r ) && true === $r['has_more'], json_encode( $ids( $r ) ) );
+$r = TWD_AP_Cards::fetch( 5, 6 );
+t( 'paging: the last page has no next page', array( 22, 20, 25, 29, 23 ) === $ids( $r ) && false === $r['has_more'], json_encode( $ids( $r ) ) );
+$r = TWD_AP_Cards::fetch( 5, 11 );
+t( 'paging: past the end is empty', array() === $ids( $r ) && false === $r['has_more'] );
+$r = TWD_AP_Cards::fetch( 24, 0, '', 'anxiety' );
+t( 'category list: its own featured first (by number), then the rest', array( 21, 22, 20, 23 ) === $ids( $r ), json_encode( $ids( $r ) ) );
+$GLOBALS['meta'][26]['_twd_ap_grid_order'] = 1;
+$r = TWD_AP_Cards::fetch( 24, 0, '', 'sleep' );
+t( 'same grid number on two articles: the newer one first', array( 26, 24, 27, 25 ) === $ids( $r ), json_encode( $ids( $r ) ) );
+$GLOBALS['meta'][26]['_twd_ap_grid_order'] = 2;
+$GLOBALS['meta'][25]['_twd_ap_grid_order'] = 1; // a number on an article that is not featured does nothing
+$r = TWD_AP_Cards::fetch( 24, 0 );
+t( 'a grid number on an article that is not featured changes nothing', $want === $ids( $r ) );
+unset( $GLOBALS['meta'][25]['_twd_ap_grid_order'] );
+$GLOBALS['meta'][27]['_twd_ap_featured'] = 0; // a stray falsy value does not make it featured
+$r = TWD_AP_Cards::fetch( 24, 0 );
+t( 'a featured key with a false value is not featured (same rule as everywhere else)', array( 24, 26, 21, 28, 30, 22, 20, 27, 25, 29, 23 ) === $ids( $r ), json_encode( $ids( $r ) ) );
+$GLOBALS['meta'][27]['_twd_ap_featured'] = 1;
+$html  = grid();
+$links = card_links( $html );
+t( 'the page HTML shows the same order as the REST route', $links === rest_links( array( 'per_page' => 24, 'offset' => 0 ) ) && 'https://example.test/post-24/' === $links[0] && 'https://example.test/post-23/' === $links[10], json_encode( $links ) );
+
+// The grouped landing view: a Featured row first, each article once.
+$g     = TWD_AP_Cards::grouped();
+$names = array_map( function ( $x ) { return $x['category']['name']; }, $g['groups'] );
+$gids  = function ( $grp ) { return array_map( function ( $c ) { return $c['id']; }, $grp['posts'] ); };
+t( 'Featured row: the first group is "Featured", with no category link', 'Featured' === $names[0] && '' === $g['groups'][0]['category']['link'] && ! empty( $g['groups'][0]['featured'] ), json_encode( $names ) );
+t( 'Featured row: the six first in featured order, whatever their category', array( 24, 26, 21, 28, 30, 27 ) === $gids( $g['groups'][0] ), json_encode( $gids( $g['groups'][0] ) ) );
+t( 'Featured row: no "See all" for it (its total is what it shows)', $g['groups'][0]['total'] === count( $g['groups'][0]['posts'] ) );
+t( 'sections follow: Anxiety then Sleep, a topic whose only article is in the row is skipped', array( 'Featured', 'Anxiety', 'Sleep' ) === $names, json_encode( $names ) );
+t( 'sections: a featured article past the row is first in its own section', array( 22, 20, 23 ) === $gids( $g['groups'][1] ) && array( 25 ) === $gids( $g['groups'][2] ), json_encode( array( $gids( $g['groups'][1] ), $gids( $g['groups'][2] ) ) ) );
+$every = array();
+foreach ( $g['groups'] as $grp ) { $every = array_merge( $every, $gids( $grp ) ); }
+t( 'every article appears once on the page (the plain Uncategorized one is not on the grouped view)', 10 === count( $every ) && 10 === count( array_unique( $every ) ) && ! in_array( 29, $every, true ) );
+t( 'sections keep their own full count for See all', 4 === $g['groups'][1]['total'] );
+TWD_AP_Grid_Settings::$s['posts_per_category'] = 3;
+$g = TWD_AP_Cards::grouped();
+t( 'a smaller section size makes a smaller Featured row; the rest return to their sections', array( 24, 26, 21 ) === $gids( $g['groups'][0] ) && array( 22, 20, 23 ) === $gids( $g['groups'][1] ) && array( 27, 25 ) === $gids( $g['groups'][2] ), json_encode( array_map( $gids, $g['groups'] ) ) );
+// Two more featured articles past the row, in one section: ordered by grid number, not by date.
+add_post( 40, 'Sleep featured nine', array( 3 ), '2026-03-10' );
+add_post( 41, 'Sleep featured eight', array( 3 ), '2026-01-03' );
+$GLOBALS['meta'][40] = array( '_twd_ap_featured' => 1, '_twd_ap_grid_order' => 9 );
+$GLOBALS['meta'][41] = array( '_twd_ap_featured' => 1, '_twd_ap_grid_order' => 8 );
+$g = TWD_AP_Cards::grouped();
+$sleep = null;
+foreach ( $g['groups'] as $grp ) { if ( 'Sleep' === $grp['category']['name'] ) { $sleep = $grp; } }
+t( 'inside a section the featured ones past the row follow their grid numbers, then the unnumbered one, then the rest', null !== $sleep && array( 41, 40, 27 ) === $gids( $sleep ), json_encode( $sleep ? $gids( $sleep ) : null ) );
+unset( $GLOBALS['posts'][40], $GLOBALS['posts'][41], $GLOBALS['meta'][40], $GLOBALS['meta'][41] );
+TWD_AP_Grid_Settings::$s['posts_per_category'] = 12;
+$g = TWD_AP_Cards::grouped();
+$names = array_map( function ( $x ) { return $x['category']['name']; }, $g['groups'] );
+t( 'every featured article in the row: the sections carry only the others', array( 24, 26, 21, 28, 30, 27, 22 ) === $gids( $g['groups'][0] ) && array( 20, 23 ) === $gids( $g['groups'][1] ) && array( 'Featured', 'Anxiety', 'Sleep' ) === $names, json_encode( array_map( $gids, $g['groups'] ) ) );
+TWD_AP_Grid_Settings::$s['posts_per_category'] = 6;
+$html = TWD_AP_Cards::groups_html( TWD_AP_Cards::grouped()['groups'], true );
+t( 'Featured row markup: the first heading, no See all link on it', 1 === preg_match( '/^<div class="twd-ap-articles-group"><div class="twd-ap-articles-group-head"><h2 class="twd-ap-articles-group-title">Featured<\/h2><\/div>/', $html ) );
+foreach ( array( 21, 22, 24, 26, 27, 28, 30 ) as $fid ) { unset( $GLOBALS['meta'][ $fid ]['_twd_ap_featured'] ); }
+$g = TWD_AP_Cards::grouped();
+$names = array_map( function ( $x ) { return $x['category']['name']; }, $g['groups'] );
+t( 'no featured articles: no Featured row at all', array( 'Anxiety', 'Sleep' ) === array_slice( $names, 0, 2 ) && ! in_array( 'Featured', $names, true ), json_encode( $names ) );
+// The browser test reads this one: the Featured row must draw the same from the server and from the JS.
+foreach ( array( 21 => 3, 22 => 0, 24 => 1, 26 => 2, 27 => 0, 28 => 4, 30 => 5 ) as $fid => $gn ) { $GLOBALS['meta'][ $fid ]['_twd_ap_featured'] = 1; }
+for ( $i = 31; $i <= 36; $i++ ) { add_post( $i, 'Filler ' . $i, array( 2 ), sprintf( '2025-12-%02d', $i - 10 ) ); }
+snap( 'featuredrow' );
+$html = grid();
+t( 'large site with featured articles: the Featured row heads the page HTML', 1 === preg_match( '/<h2 class="twd-ap-articles-group-title">Featured<\/h2>.*<h2 class="twd-ap-articles-group-title">Anxiety<\/h2>/s', $html ) );
 
 // ---------- an empty site ----------
 reset_site();

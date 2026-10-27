@@ -398,6 +398,63 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	t('P: sites with no AI key also get the swipe book tick', await vis(page, '#twd-ap-swipebook-toggle') && await page.locator('#twd-ap-swipebook-toggle').isChecked());
 	await s.ctx.close();
 
+	// ---------- Q. grid number (1.45.0) ----------
+	s = await open(browser, 'key-off', { aiKeyConfigured: 0 }); page = s.page;
+	await page.click('#twd-ap-new-btn');
+	t('GN: the grid number box is hidden while the article is not featured', !(await vis(page, '#twd-ap-grid-order')));
+	await page.check('#twd-ap-featured-toggle');
+	t('GN: ticking Feature this article shows it, with its label and hint', await vis(page, '#twd-ap-grid-order') && (await page.locator('#twd-ap-grid-order-wrap').innerText()).includes('Grid number') && (await page.locator('#twd-ap-grid-order-wrap').innerText()).includes('1 shows first among the featured'));
+	t('GN: it is a whole-number box from 1 to 9999', (await page.locator('#twd-ap-grid-order').getAttribute('type')) === 'number' && (await page.locator('#twd-ap-grid-order').getAttribute('min')) === '1' && (await page.locator('#twd-ap-grid-order').getAttribute('max')) === '9999');
+	await page.fill('#twd-ap-grid-order', '3');
+	await page.uncheck('#twd-ap-featured-toggle');
+	t('GN: unticking hides it again', !(await vis(page, '#twd-ap-grid-order')));
+	await page.check('#twd-ap-featured-toggle');
+	t('GN: and the number is still there when the tick comes back', (await page.inputValue('#twd-ap-grid-order')) === '3');
+	await page.fill('#twd-ap-grid-order', '2');
+	await page.fill('#twd-ap-title', 'Grid number article');
+	await page.click('#twd-ap-publish-btn');
+	await waitSaves(s, 1);
+	t('GN: the save carries featured true and the grid number', s.saves[0].body.featured === true && s.saves[0].body.grid_order === '2', JSON.stringify(s.saves[0].body.grid_order));
+	await s.ctx.close();
+	s = await open(browser, 'key-off', { aiKeyConfigured: 0 }); page = s.page;
+	await page.click('#twd-ap-new-btn');
+	await page.check('#twd-ap-featured-toggle');
+	await page.fill('#twd-ap-title', 'No number');
+	await page.click('#twd-ap-publish-btn');
+	await waitSaves(s, 1);
+	t('GN: featured with the box left blank sends an empty grid number', s.saves[0].body.featured === true && s.saves[0].body.grid_order === '');
+	await s.ctx.close();
+	// editing: the saved number loads, shows, and can be changed
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.post = { featured: true, grid_order: 4 };
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	t('GN: edit page: a featured article shows its saved grid number', await vis(page, '#twd-ap-grid-order') && (await page.inputValue('#twd-ap-grid-order')) === '4');
+	await page.fill('#twd-ap-grid-order', '1');
+	await page.click('#twd-ap-publish-btn');
+	await waitSaves(s, 1);
+	t('GN: Update sends the changed number', s.saves[0].body.grid_order === '1' && s.saves[0].body.featured === true);
+	await s.ctx.close();
+	// a number kept on an article that is not featured: hidden, still sent so it is not lost
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.post = { featured: false, grid_order: 6 };
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	t('GN: edit page: an article that is not featured hides the box', !(await vis(page, '#twd-ap-grid-order')));
+	await page.check('#twd-ap-featured-toggle');
+	t('GN: ticking Feature brings back the number it already had', await vis(page, '#twd-ap-grid-order') && (await page.inputValue('#twd-ap-grid-order')) === '6');
+	await s.ctx.close();
+	// an older article with no number
+	s = await open(browser, 'key-on', cfgOn); page = s.page;
+	s.replies.post = { featured: true };
+	await page.evaluate(() => { window.confirm = () => true; });
+	await page.click('#twd-ap-edit-btn');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	t('GN: a featured article from before grid numbers shows an empty box', await vis(page, '#twd-ap-grid-order') && (await page.inputValue('#twd-ap-grid-order')) === '');
+	await s.ctx.close();
+
 	// ---------- Q. layout: order, one row, no scrolling, buttons ----------
 	for (const vp of [{ width: 1280, height: 800 }, { width: 1366, height: 768 }, { width: 1100, height: 820 }]) {
 		s = await open(browser, 'key-on', cfgOn, vp); page = s.page;

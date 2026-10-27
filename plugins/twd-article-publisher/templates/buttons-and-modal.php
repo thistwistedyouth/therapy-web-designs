@@ -139,6 +139,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<?php esc_html_e( 'Feature this article (shows first on the resources grid)', 'twd-article-publisher' ); ?>
 					</label>
 
+					<div id="twd-ap-grid-order-wrap" class="twd-ap-grid-order" hidden>
+						<label class="twd-ap-label" for="twd-ap-grid-order"><?php esc_html_e( 'Grid number', 'twd-article-publisher' ); ?></label>
+						<input type="number" id="twd-ap-grid-order" class="twd-ap-input twd-ap-grid-order-input" min="1" max="9999" step="1" inputmode="numeric" placeholder="<?php esc_attr_e( 'e.g. 1', 'twd-article-publisher' ); ?>" />
+						<span class="twd-ap-hint"><?php esc_html_e( '1 shows first among the featured articles. Leave blank to show after the numbered ones, newest first.', 'twd-article-publisher' ); ?></span>
+					</div>
+
 					<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
 						<input type="checkbox" id="twd-ap-include-bio-toggle" />
 						<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup)', 'twd-article-publisher' ); ?>

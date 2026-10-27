@@ -32,10 +32,11 @@ class WP_Query {
 		if ( ! empty( $a['category_name'] ) ) {
 			$p = array_filter( $p, function ( $x ) use ( $a ) { foreach ( $x->cats as $c ) { if ( $GLOBALS['terms'][ $c ]->slug === $a['category_name'] ) { return true; } } return false; } );
 		}
-		usort( $p, function ( $x, $y ) {
-			$fx = ! empty( $GLOBALS['meta'][ $x->ID ]['_twd_ap_featured'] ) ? 1 : 0; $fy = ! empty( $GLOBALS['meta'][ $y->ID ]['_twd_ap_featured'] ) ? 1 : 0;
-			return $fy <=> $fx ?: strcmp( $y->post_date, $x->post_date );
-		} );
+		if ( ! empty( $a['post__not_in'] ) ) { $p = array_filter( $p, function ( $x ) use ( $a ) { return ! in_array( $x->ID, $a['post__not_in'], true ); } ); }
+		foreach ( $a['meta_query'] ?? array() as $mq ) {
+			if ( isset( $mq['key'], $mq['compare'] ) && 'EXISTS' === $mq['compare'] ) { $p = array_filter( $p, function ( $x ) use ( $mq ) { return array_key_exists( $mq['key'], $GLOBALS['meta'][ $x->ID ] ?? array() ); } ); }
+		}
+		usort( $p, function ( $x, $y ) { return strcmp( $y->post_date, $x->post_date ); } );
 		$this->posts = array_slice( $p, $a['offset'] ?? 0, $a['posts_per_page'] );
 	}
 }
