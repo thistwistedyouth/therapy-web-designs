@@ -102,7 +102,9 @@ class TWD_AP_Article_Style {
 			if ( $skip > 0 ) {
 				continue;
 			}
-			$done = preg_replace( '/(?<![\p{L}\p{N}\'\x{2019}\-])(\p{L}{1,2}) (?=\S|$)/u', '$1&nbsp;', $part );
+			// The apostrophe entities too: wptexturize has already turned "it's" into
+			// "it&#8217;s" by the time this runs, and the "s" is not a word of its own.
+			$done = preg_replace( '/(?<![\p{L}\p{N}\'\x{2019}\-])(?<!&#8217;)(?<!&#8216;)(?<!&#039;)(?<!&#x2019;)(?<!&rsquo;)(?<!&lsquo;)(?<!&apos;)(\p{L}{1,2}) (?=\S|$)/u', '$1&nbsp;', $part );
 			if ( null === $done ) {
 				return $html; // not valid UTF-8: leave the whole article as it is
 			}

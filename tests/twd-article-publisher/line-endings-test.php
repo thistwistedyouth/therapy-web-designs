@@ -36,6 +36,8 @@ t( 'a short word at the end of a piece of text before a tag still keeps with wha
 // ---------- what it must leave alone ----------
 t( 'the end of a longer word is not a short word ("Plato", "ago", "banana")', 'Plato ago banana' === tidy( 'Plato ago banana' ) );
 t( 'after an apostrophe: don\'t, I\'m, it\'s', 'I\'m so' . $N . 'tired and it\'s late' === tidy( 'I\'m so tired and it\'s late' ) );
+t( 'after an apostrophe turned into an entity by WordPress: it&#8217;s a day', 'it&#8217;s a' . $N . 'day' === tidy( 'it&#8217;s a day' ), tidy( 'it&#8217;s a day' ) );
+t( 'the same for the other apostrophe entities, and for n\'t, \'m, \'re', 'don&#8217;t go' . $N . 'on, I&rsquo;m so' . $N . 'sure, they&#039;re at' . $N . 'it, dog&#x2019;s bone' === tidy( 'don&#8217;t go on, I&rsquo;m so sure, they&#039;re at it, dog&#x2019;s bone' ), tidy( 'don&#8217;t go on, I&rsquo;m so sure, they&#039;re at it, dog&#x2019;s bone' ) );
 t( 'after a curly apostrophe', "it\u{2019}s a" . $N . 'day' === tidy( "it\u{2019}s a day" ) );
 t( 'after a hyphen: re-do it', 're-do it' . $N . 'now' === tidy( 're-do it now' ) );
 t( 'digits are not words, the word after them is', '1 in' . $N . '3 people' === tidy( '1 in 3 people' ) );
