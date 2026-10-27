@@ -44,8 +44,8 @@ $gen = json_encode( array( 'title' => 'T', 'html' => '<p>Hi</p>', 'tags' => arra
 TWD_AP_Settings::$key = $SECRET;
 $cases = array(
 	'idea'    => array( 5000, 'from a topic or idea they give you', 'The idea or topic to write about' ),
-	'improve' => array( 8000, 'draft article a therapist has written themselves', 'Here is the draft article to improve and tag' ),
-	'format'  => array( 8000, 'article a therapist has already written themselves', 'Here is the article text to restructure and tag' ),
+	'improve' => array( 12000, 'draft article a therapist has written themselves', 'Here is the draft article to improve and tag' ),
+	'format'  => array( 12000, 'article a therapist has already written themselves', 'Here is the article text to restructure and tag' ),
 	'bogus'   => array( 5000, 'from a topic or idea they give you', 'The idea or topic to write about' ),
 );
 foreach ( $cases as $mode => $c ) {
@@ -57,7 +57,8 @@ foreach ( $cases as $mode => $c ) {
 	t( "generate($mode): right prompt", false !== strpos( $b['system'], $c[1] ) );
 	t( "generate($mode): right message prefix and text", 0 === strpos( $b['messages'][0]['content'], $c[2] ) && substr( $b['messages'][0]['content'], -7 ) === 'my text' );
 	t( "generate($mode): shared rules (no dashes, confidentiality, tags) present", false !== strpos( $b['system'], 'Confidentiality is not optional' ) && false !== strpos( $b['system'], 'Never use an em dash' ) && false !== strpos( $b['system'], 'Anxiety, Uncategorized' ) );
-	t( "generate($mode): same endpoint, model, timeout", 'https://api.anthropic.com/v1/messages' === end( $GLOBALS['sent'] )[0] && 'claude-sonnet-5-5' === $b['model'] && 120 === end( $GLOBALS['sent'] )[1]['timeout'] );
+	t( "generate($mode): same endpoint, model, timeout", 'https://api.anthropic.com/v1/messages' === end( $GLOBALS['sent'] )[0] && 'claude-sonnet-5-5' === $b['model'] );
+	t( "generate($mode): wait " . ( in_array( $mode, array( 'improve', 'format' ), true ) ? '240' : '120' ) . ' seconds', ( in_array( $mode, array( 'improve', 'format' ), true ) ? 240 : 120 ) === end( $GLOBALS['sent'] )[1]['timeout'], 'got ' . end( $GLOBALS['sent'] )[1]['timeout'] );
 	t( "generate($mode): result shape unchanged", array_keys( $r ) === array( 'title', 'seo_title', 'meta_description', 'category', 'tags', 'html', 'summary_book' ) );
 }
 $GLOBALS['resp'] = ok_resp( $gen ); TWD_AP_AI_Generate::generate( 'improve', 'x' ); $sys = body()['system'];
@@ -82,7 +83,7 @@ $rest = ( new ReflectionClass( 'TWD_AP_REST' ) )->newInstanceWithoutConstructor(
 function req( $mode, $input ) { return array( 'mode' => $mode, 'input' => $input ); }
 $GLOBALS['resp'] = ok_resp( $gen );
 $r = $rest->generate_article( req( 'improve', 'a draft' ) );
-t( 'rest: improve accepted and sent through', is_array( $r ) && 'improve' === ( json_decode( end( $GLOBALS['sent'] )[1]['body'], true )['max_tokens'] === 8000 ? 'improve' : '' ) );
+t( 'rest: improve accepted and sent through', is_array( $r ) && 'improve' === ( json_decode( end( $GLOBALS['sent'] )[1]['body'], true )['max_tokens'] === 12000 ? 'improve' : '' ) );
 t( 'rest: response carries ai_remaining (29)', 29 === $r['ai_remaining'] );
 $r = $rest->generate_article( req( 'idea', 'an idea' ) );
 t( 'rest: count goes down again (28)', 28 === $r['ai_remaining'] );
@@ -93,13 +94,15 @@ foreach ( array( 'idea' => 'idea or topic', 'improve' => 'article text', 'format
 	t( "rest: empty $mode input refused with a clear message", is_wp_error( $e ) && 'twd_ap_ai_empty_input' === $e->c && false !== strpos( $e->m, $word ) );
 }
 $before = count( $GLOBALS['sent'] );
-$e = $rest->generate_article( req( 'format', str_repeat( 'x', 20001 ) ) );
-t( 'rest: 20,001 characters refused, not cut', is_wp_error( $e ) && 'twd_ap_ai_too_long' === $e->c && false !== strpos( $e->m, '20,001' ) && false !== strpos( $e->m, '20,000' ) );
+$e = $rest->generate_article( req( 'format', str_repeat( 'x', 25001 ) ) );
+t( 'rest: 25,001 characters refused, not cut', is_wp_error( $e ) && 'twd_ap_ai_too_long' === $e->c && false !== strpos( $e->m, '25,001' ) && false !== strpos( $e->m, '25,000' ) );
 t( 'rest: too-long text never sent to the AI', count( $GLOBALS['sent'] ) === $before );
-$e = $rest->generate_article( req( 'format', str_repeat( 'x', 20000 ) ) );
+$e = $rest->generate_article( req( 'format', str_repeat( 'x', 20001 ) ) );
+t( 'rest: 20,001 characters is now accepted (the old limit)', is_array( $e ) );
+$e = $rest->generate_article( req( 'format', str_repeat( 'x', 25000 ) ) );
 $prefix = "Here is the article text to restructure and tag:\n\n";
-t( 'rest: exactly 20,000 characters accepted, sent whole', is_array( $e ) && $prefix . str_repeat( 'x', 20000 ) === body()['messages'][0]['content'] );
-$e = $rest->generate_article( req( 'format', str_repeat( "é", 20000 ) ) );
+t( 'rest: exactly 25,000 characters accepted, sent whole', is_array( $e ) && $prefix . str_repeat( 'x', 25000 ) === body()['messages'][0]['content'] );
+$e = $rest->generate_article( req( 'format', str_repeat( "é", 25000 ) ) );
 t( 'rest: multibyte text counted in characters, not bytes', is_array( $e ) );
 $GLOBALS['tr'] = array(); for ( $i = 0; $i < 30; $i++ ) { TWD_AP_AI_Generate::increment(); }
 $before = count( $GLOBALS['sent'] );

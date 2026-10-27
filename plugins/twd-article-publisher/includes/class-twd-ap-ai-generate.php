@@ -31,12 +31,20 @@ class TWD_AP_AI_Generate {
 
 	// 'improve' and 'format' hand back a whole existing article (plus the
 	// SEO fields and summary book draft), so they get a larger reply
-	// allowance than 'idea', which writes 600 to 900 words.
-	const LONG_MODE_TOKENS = 8000;
+	// allowance than 'idea', which writes 600 to 900 words. 25,000
+	// characters in is roughly 6,000 tokens, and the reply repeats all of it
+	// plus the SEO fields and up to 20 summary cards, so 8,000 (the allowance
+	// when the input limit was 20,000) would cut a full-length article off.
+	const LONG_MODE_TOKENS = 12000;
+
+	// How long to wait for those two modes (seconds). A reply that long takes
+	// minutes on a slow day. The twd_ai_complete filter keeps 120.
+	const LONG_MODE_TIMEOUT = 240;
+	const DEFAULT_TIMEOUT   = 120;
 
 	// The most text accepted in the start screen box. Longer is refused
 	// with a clear message, never silently cut.
-	const MAX_INPUT_CHARS = 20000;
+	const MAX_INPUT_CHARS = 25000;
 
 	// A safety backstop, not a real constraint -- this runs on the client's
 	// own key and their own bill, so there is no cost reason to limit it
@@ -276,6 +284,7 @@ PROMPT . self::shared_rules( $category_names );
 
 		$categories = self::category_names();
 		$tokens     = self::LONG_MODE_TOKENS;
+		$timeout    = self::LONG_MODE_TIMEOUT;
 		if ( 'format' === $mode ) {
 			$system  = self::system_prompt_format( $categories );
 			$message = "Here is the article text to restructure and tag:\n\n" . $input;
@@ -286,9 +295,10 @@ PROMPT . self::shared_rules( $category_names );
 			$system  = self::system_prompt_idea( $categories );
 			$message = "The idea or topic to write about:\n\n" . $input;
 			$tokens  = self::MAX_TOKENS;
+			$timeout = self::DEFAULT_TIMEOUT;
 		}
 
-		$reply = self::call_anthropic( $key, $system, $message, $tokens );
+		$reply = self::call_anthropic( $key, $system, $message, $tokens, $timeout );
 		if ( is_wp_error( $reply ) ) {
 			return $reply;
 		}
@@ -334,7 +344,7 @@ PROMPT . self::shared_rules( $category_names );
 		);
 	}
 
-	private static function call_anthropic( $key, $system, $message, $max_tokens = self::MAX_TOKENS ) {
+	private static function call_anthropic( $key, $system, $message, $max_tokens = self::MAX_TOKENS, $timeout = self::DEFAULT_TIMEOUT ) {
 		$body = array(
 			'model'         => self::MODEL,
 			'max_tokens'    => (int) $max_tokens,
@@ -345,13 +355,13 @@ PROMPT . self::shared_rules( $category_names );
 		);
 
 		if ( function_exists( 'set_time_limit' ) ) {
-			@set_time_limit( 150 );
+			@set_time_limit( (int) $timeout + 30 );
 		}
 
 		$response = wp_remote_post(
 			'https://api.anthropic.com/v1/messages',
 			array(
-				'timeout' => 120,
+				'timeout' => (int) $timeout,
 				'headers' => array(
 					'Content-Type'      => 'application/json',
 					'x-api-key'         => $key,
@@ -390,7 +400,7 @@ PROMPT . self::shared_rules( $category_names );
 			return new WP_Error( 'twd_ap_ai_refused', __( 'The AI declined this request. Try rephrasing the idea.', 'twd-article-publisher' ) );
 		}
 		if ( 'max_tokens' === $stop ) {
-			return new WP_Error( 'twd_ap_ai_cut_off', __( 'The AI ran out of room before finishing. Try a shorter idea.', 'twd-article-publisher' ) );
+			return new WP_Error( 'twd_ap_ai_cut_off', __( 'The AI ran out of room before finishing. Try a shorter text.', 'twd-article-publisher' ) );
 		}
 
 		$text = '';

@@ -8,7 +8,11 @@
 	 * (swipebook-inline.js, fetched via REST) -- one template, so the two
 	 * never drift apart.
 	 */
-	function buildMarkup(data) {
+	/**
+	 * The header (logo, site heading, "Swipe Book" label) that goes inside
+	 * every card. Built once per deck.
+	 */
+	function cardHeaderHtml(data) {
 		// Built once, then prepended into every card below -- the header
 		// (logo, site heading, "Swipe Book" label) is part of each card's
 		// own single element now, not a separate fixed piece above it, so it
@@ -30,66 +34,87 @@
 			? '<div class="twd-sb-sitename">' + headingOpen + escapeHtml(headingText) + headingClose + '</div>'
 			: '';
 		var logoBgClass = 'twd-sb-mast-bg-' + (data.logoBg || 'light');
-		var cardHeaderHtml = '<div class="twd-sb-card-header">' +
+		var html = '<div class="twd-sb-card-header">' +
 			'<div class="twd-sb-mast ' + logoBgClass + '">' + mastOpen + mastHtml + mastClose + '</div>' +
 			'<div class="twd-sb-header-text">' +
 				headingHtml +
 				'<div class="twd-sb-title">' + escapeHtml(data.label || 'Swipe Book') + '</div>' +
 			'</div>' +
 		'</div>';
+		return html;
+	}
 
+	/**
+	 * The inside of one card (everything under the header) for one slide.
+	 * Shared by buildMarkup() and the fit step, so a page that gets split
+	 * is drawn exactly the way the original would have been.
+	 */
+	function slideBodyHtml(slide) {
+		var body;
+		if ('bio' === slide.type) {
+			body = '<div class="twd-sb-bio">' +
+				(slide.photo ? '<img class="twd-sb-bio-photo" src="' + escapeAttr(slide.photo) + '" alt="">' : '') +
+				'<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' +
+				(slide.bio ? '<p class="twd-sb-bio-text">' + escapeHtml(slide.bio) + '</p>' : '') +
+				(slide.link_url && slide.link_label
+				? '<a class="twd-sb-bio-link" href="' + escapeAttr(slide.link_url) + '" target="_blank" rel="noopener">' + escapeHtml(slide.link_label) + '</a>'
+				: '') +
+				'</div>';
+		} else if ('related' === slide.type) {
+			// Plain <a> tags, not click handlers -- swipebook-inline.js's
+			// existing delegated click listener (the same one the main
+			// "View as a swipe book" button uses) opens these in the overlay
+			// when it's loaded, closing the current book first. On the
+			// standalone page, where that script never loads, they just
+			// navigate to the linked article's own swipe book normally.
+			body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
+				'<div class="twd-sb-related-list">' +
+				(slide.items || []).map(function (item) {
+				return '<a class="twd-sb-related-item" href="' + escapeAttr(item.shareUrl) + '" data-twd-ap-post-id="' + item.id + '">' +
+					'<span class="twd-sb-related-title">' + escapeHtml(item.title) + '</span>' +
+					'<span class="twd-sb-related-arrow" aria-hidden="true">&#8250;</span>' +
+				'</a>';
+				}).join('') +
+				'</div>';
+		} else if ('quote' === slide.type) {
+			body = '<div class="twd-sb-quote">' +
+				(slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
+				'<blockquote class="twd-sb-quote-text">' + slide.html + '</blockquote>' +
+				(slide.attribution ? '<div class="twd-sb-quote-attribution">' + escapeHtml(slide.attribution) + '</div>' : '') +
+				'</div>';
+		} else if ('question' === slide.type) {
+			body = '<div class="twd-sb-question">' +
+				(slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
+				'<div class="twd-sb-question-text">' + slide.html + '</div>' +
+				'</div>';
+		} else {
+			body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
+				'<div class="twd-sb-body-text">' + slide.html + '</div>';
+		}
+		return body;
+	}
+
+	/** One slide's section. src is the source slide it came from, scale the text size multiplier the fit step chose. */
+	function sectionHtml(headerHtml, body, i, src, scale) {
+		var style = scale && scale < 0.999 ? ' style="--twd-sb-s:' + scale.toFixed(3) + '"' : '';
+		return '<section class="twd-sb-slide' + (0 === i ? ' is-active' : '') + '" data-index="' + i + '" data-src="' + src + '"><div class="twd-sb-card">' +
+			headerHtml +
+			'<div class="twd-sb-card-body"' + style + '>' + body + '</div>' +
+		'</div></section>';
+	}
+
+	function segsMarkup(n) {
+		var out = '';
+		for (var i = 0; i < n; i++) { out += '<span class="twd-sb-seg" data-seg="' + i + '"></span>'; }
+		return out;
+	}
+
+	function buildMarkup(data) {
+		var cardHeader = cardHeaderHtml(data);
 		var slidesHtml = data.slides.map(function (slide, i) {
-			var active = 0 === i ? ' is-active' : '';
-			var body;
-			if ('bio' === slide.type) {
-				body = '<div class="twd-sb-bio">' +
-					(slide.photo ? '<img class="twd-sb-bio-photo" src="' + escapeAttr(slide.photo) + '" alt="">' : '') +
-					'<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' +
-					(slide.bio ? '<p class="twd-sb-bio-text">' + escapeHtml(slide.bio) + '</p>' : '') +
-					(slide.link_url && slide.link_label
-						? '<a class="twd-sb-bio-link" href="' + escapeAttr(slide.link_url) + '" target="_blank" rel="noopener">' + escapeHtml(slide.link_label) + '</a>'
-						: '') +
-					'</div>';
-			} else if ('related' === slide.type) {
-				// Plain <a> tags, not click handlers -- swipebook-inline.js's
-				// existing delegated click listener (the same one the main
-				// "View as a swipe book" button uses) opens these in the overlay
-				// when it's loaded, closing the current book first. On the
-				// standalone page, where that script never loads, they just
-				// navigate to the linked article's own swipe book normally.
-				body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
-					'<div class="twd-sb-related-list">' +
-					(slide.items || []).map(function (item) {
-						return '<a class="twd-sb-related-item" href="' + escapeAttr(item.shareUrl) + '" data-twd-ap-post-id="' + item.id + '">' +
-							'<span class="twd-sb-related-title">' + escapeHtml(item.title) + '</span>' +
-							'<span class="twd-sb-related-arrow" aria-hidden="true">&#8250;</span>' +
-						'</a>';
-					}).join('') +
-					'</div>';
-			} else if ('quote' === slide.type) {
-				body = '<div class="twd-sb-quote">' +
-					(slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
-					'<blockquote class="twd-sb-quote-text">' + slide.html + '</blockquote>' +
-					(slide.attribution ? '<div class="twd-sb-quote-attribution">' + escapeHtml(slide.attribution) + '</div>' : '') +
-					'</div>';
-			} else if ('question' === slide.type) {
-				body = '<div class="twd-sb-question">' +
-					(slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
-					'<div class="twd-sb-question-text">' + slide.html + '</div>' +
-					'</div>';
-			} else {
-				body = (slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
-					'<div class="twd-sb-body-text">' + slide.html + '</div>';
-			}
-			return '<section class="twd-sb-slide' + active + '" data-index="' + i + '"><div class="twd-sb-card">' +
-				cardHeaderHtml +
-				'<div class="twd-sb-card-body">' + body + '</div>' +
-			'</div></section>';
+			return sectionHtml(cardHeader, slideBodyHtml(slide), i, i, 1);
 		}).join('');
-
-		var segsHtml = data.slides.map(function (s, i) {
-			return '<span class="twd-sb-seg" data-seg="' + i + '"></span>';
-		}).join('');
+		var segsHtml = segsMarkup(data.slides.length);
 
 		// The cross-link to the article's other book (swipe book <-> Summary
 		// Book), only present when one's actually been published -- opened
@@ -153,6 +178,306 @@
 		document.head.appendChild(s);
 	}
 
+	// -- Fit: every page fits the screen without scrolling (1.43.0) -----------
+	//
+	// The server splits an article into slides by length, but it cannot know
+	// how tall the reader's screen is. So after the book is on screen the
+	// pages are measured, in a hidden copy of the card, and any page that
+	// would scroll is fixed in two steps: the text shrinks a little (never
+	// below FIT_FLOOR_PX), and if it still does not fit the page is split at
+	// a paragraph break (or, inside a long paragraph, a sentence) into more
+	// pages. The data the server sent is never changed; the fitted pages are
+	// worked out again whenever the screen changes size.
+	var FIT_FLOOR_PX = 15; // the smallest reading size the text is shrunk to
+	var FIT_STEP = 0.04;   // shrink in steps of 4%
+	var FIT_SLACK = 12;    // pixels kept free under the text, so a browser toolbar or a slightly different font does not tip a page over
+	var SPLITTABLE = { text: 1, quote: 1, question: 1, related: 1 };
+
+	function nodeHtml(n) {
+		return 3 === n.nodeType ? escapeHtml(n.nodeValue) : (1 === n.nodeType ? n.outerHTML : '');
+	}
+
+	function isBlankText(n) {
+		return 3 === n.nodeType && '' === n.nodeValue.replace(/\s+/g, '');
+	}
+
+	// A <p> holding blank lines (a Summary Book card keeps its paragraphs as
+	// <br><br> inside one <p>) becomes one <p> per paragraph. A single <br>
+	// stays where it is.
+	function splitAtDoubleBreaks(p) {
+		var groups = [[]];
+		var held = [];
+		var brs = 0;
+		Array.prototype.forEach.call(p.childNodes, function (n) {
+			var isBr = 1 === n.nodeType && 'BR' === n.tagName;
+			if (isBr) { held.push(n); brs++; return; }
+			if (isBlankText(n) && brs) { held.push(n); return; }
+			if (brs >= 2) {
+				groups.push([]);
+			} else {
+				held.forEach(function (h) { groups[groups.length - 1].push(h); });
+			}
+			held = [];
+			brs = 0;
+			groups[groups.length - 1].push(n);
+		});
+		return groups.filter(function (g) {
+			return g.some(function (n) { return 1 === n.nodeType || !isBlankText(n); });
+		}).map(function (g) {
+			return '<p>' + g.map(nodeHtml).join('') + '</p>';
+		});
+	}
+
+	// The first-level pieces of a slide's html: each block (paragraph, list,
+	// quote, heading, picture) is one piece that is never cut in the middle
+	// unless it will not fit a page on its own.
+	function blockUnits(html) {
+		var box = document.createElement('div');
+		box.innerHTML = html || '';
+		var out = [];
+		Array.prototype.forEach.call(box.childNodes, function (n) {
+			if (3 === n.nodeType) {
+				if (!isBlankText(n)) { out.push('<p>' + escapeHtml(n.nodeValue.trim()) + '</p>'); }
+				return;
+			}
+			if (1 !== n.nodeType) { return; }
+			if ('P' === n.tagName) {
+				splitAtDoubleBreaks(n).forEach(function (h) { out.push(h); });
+				return;
+			}
+			out.push(n.outerHTML);
+		});
+		return out;
+	}
+
+	var unitGroup = 0;
+	function textLength(html) {
+		var d = document.createElement('div');
+		d.innerHTML = html;
+		return (d.textContent || '').length;
+	}
+
+	// A block that is too big for a page by itself, as smaller pieces that
+	// join back up into one block when they share a page: a paragraph as its
+	// sentences, a list as its items. Anything else cannot be cut.
+	function subUnits(unit) {
+		var box = document.createElement('div');
+		box.innerHTML = unit.html;
+		var el = box.firstElementChild;
+		if (!el || unit.wrap) { return null; }
+		var group = ++unitGroup;
+		if ('P' === el.tagName) {
+			var atoms = [];
+			Array.prototype.forEach.call(el.childNodes, function (n) {
+				if (3 === n.nodeType) {
+					var parts = n.nodeValue.match(/[^.!?…]+[.!?…]+["'”’)\]]*\s*|[^.!?…]+$/g);
+					(parts || [n.nodeValue]).forEach(function (t) { if (t) { atoms.push(escapeHtml(t)); } });
+				} else {
+					atoms.push(nodeHtml(n));
+				}
+			});
+			if (atoms.length < 2) { return null; }
+			return atoms.map(function (a) { return { html: a, wrap: 'p', group: group, len: textLength(a) }; });
+		}
+		if ('UL' === el.tagName || 'OL' === el.tagName) {
+			var items = Array.prototype.filter.call(el.children, function (c) { return 'LI' === c.tagName; });
+			if (items.length < 2) { return null; }
+			var tag = el.tagName.toLowerCase();
+			return items.map(function (li, i) { return { html: li.outerHTML, wrap: tag, group: group, start: i + 1, len: textLength(li.outerHTML) }; });
+		}
+		return null;
+	}
+
+	// Units back into html, joining neighbours that came from one block.
+	function unitsHtml(units) {
+		var out = '';
+		var i = 0;
+		while (i < units.length) {
+			var u = units[i];
+			if (!u.wrap) { out += u.html; i++; continue; }
+			var inner = '';
+			var j = i;
+			while (j < units.length && units[j].wrap === u.wrap && units[j].group === u.group) { inner += units[j].html; j++; }
+			out += 'ol' === u.wrap ? '<ol start="' + u.start + '">' + inner + '</ol>' : '<' + u.wrap + '>' + inner + '</' + u.wrap + '>';
+			i = j;
+		}
+		return out;
+	}
+
+	function copySlide(slide, over) {
+		var c = {};
+		for (var k in slide) { if (Object.prototype.hasOwnProperty.call(slide, k)) { c[k] = slide[k]; } }
+		for (var o in over) { if (Object.prototype.hasOwnProperty.call(over, o)) { c[o] = over[o]; } }
+		return c;
+	}
+
+	// A hidden copy of a card, the same size as the real ones, to measure in.
+	function makeFitter(backdrop, headerHtml) {
+		var wrap = backdrop.querySelector('.twd-sb-slides');
+		var probe = document.createElement('section');
+		probe.className = 'twd-sb-slide twd-sb-probe';
+		probe.setAttribute('aria-hidden', 'true');
+		probe.innerHTML = '<div class="twd-sb-card">' + headerHtml + '<div class="twd-sb-card-body"></div></div>';
+		wrap.appendChild(probe);
+		var body = probe.querySelector('.twd-sb-card-body');
+		body.style.maxHeight = Math.max(60, body.clientHeight - FIT_SLACK) + 'px';
+
+		function overflows() { return body.scrollHeight > body.clientHeight + 1; }
+		var fitter = {
+			show: function (slide, scale) {
+				body.innerHTML = slideBodyHtml(slide);
+				body.style.setProperty('--twd-sb-s', String(scale || 1));
+			},
+			fits: function (slide, scale) { fitter.show(slide, scale); return !overflows(); },
+			// The reading size as a fraction of full size that keeps text at or above the floor.
+			minScale: function (slide) {
+				fitter.show(slide, 1);
+				var el = body.querySelector('.twd-sb-body-text, .twd-sb-quote-text, .twd-sb-question-text, .twd-sb-bio-text, .twd-sb-related-title');
+				var px = el ? parseFloat(window.getComputedStyle(el).fontSize) : 0;
+				return px ? Math.max(0.6, Math.min(1, FIT_FLOOR_PX / px)) : 0.8;
+			},
+			// The largest size, from full size down to min, at which the slide fits; 0 if none.
+			bestScale: function (slide, min) {
+				for (var s = 1; s > min + 0.001; s -= FIT_STEP) {
+					if (fitter.fits(slide, s)) { return s; }
+				}
+				return fitter.fits(slide, min) ? min : 0;
+			},
+			destroy: function () { if (probe.parentNode) { probe.parentNode.removeChild(probe); } },
+		};
+		return fitter;
+	}
+
+	// Cuts a list of units into pages, each of which fits at the smallest
+	// size, then (when there is more than one page) tries again to share the
+	// text out evenly so the last page is not a stray sentence.
+	function paginate(fitter, units, makePage, min) {
+		function fitsRange(a, b, first) { return fitter.fits(makePage(units.slice(a, b), first, b >= units.length), min); }
+
+		var pages = [];
+		var i = 0;
+		while (i < units.length) {
+			var j = i;
+			while (j < units.length && fitsRange(i, j + 1, 0 === pages.length)) { j++; }
+			if (j === i) {
+				var sub = subUnits(units[i]);
+				if (sub) { Array.prototype.splice.apply(units, [i, 1].concat(sub)); continue; }
+				j = i + 1; // cannot be cut any smaller: it keeps its own page and may scroll
+			}
+			pages.push([i, j]);
+			i = j;
+		}
+
+		if (pages.length > 1) {
+			var total = 0;
+			units.forEach(function (u) { total += u.len || 0; });
+			var even = [];
+			var from = 0;
+			var left = total;
+			var ok = true;
+			for (var p = 0; p < pages.length && ok; p++) {
+				var remainingPages = pages.length - p;
+				var to = from;
+				if (1 === remainingPages) {
+					to = units.length;
+				} else {
+					var target = left / remainingPages;
+					var got = 0;
+					while (to < units.length) {
+						var len = units[to].len || 0;
+						if (to > from && got + len / 2 > target) { break; }
+						if (!fitsRange(from, to + 1, 0 === p)) { break; }
+						got += len;
+						to++;
+					}
+				}
+				if (to === from || (1 === remainingPages && !fitsRange(from, to, 0 === p))) { ok = false; break; }
+				even.push([from, to]);
+				for (var q = from; q < to; q++) { left -= units[q].len || 0; }
+				from = to;
+			}
+			if (ok && from === units.length && even.length === pages.length) { pages = even; }
+		}
+		return { units: units, ranges: pages };
+	}
+
+	// How even a split is: the shortest page's text over the longest page's.
+	function evenness(result) {
+		var lens = result.ranges.map(function (r) {
+			var n = 0;
+			for (var k = r[0]; k < r[1]; k++) { n += result.units[k].len || 0; }
+			return n;
+		});
+		return Math.min.apply(null, lens) / Math.max(1, Math.max.apply(null, lens));
+	}
+
+	// One source slide as one or more fitted pages: [{ slide, scale }].
+	function fitSource(fitter, slide) {
+		var min = fitter.minScale(slide);
+		var best = fitter.bestScale(slide, min);
+		if (best) { return [{ slide: slide, scale: best }]; }
+		if (!SPLITTABLE[slide.type]) { return [{ slide: slide, scale: min }]; }
+
+		var units;
+		var makePage;
+		if ('related' === slide.type) {
+			units = (slide.items || []).map(function (it) { return { html: '', item: it, len: 1 }; });
+			makePage = function (us, first) { return copySlide(slide, { heading: first ? slide.heading : '', items: us.map(function (u) { return u.item; }) }); };
+		} else {
+			units = blockUnits(slide.html).map(function (h) { return { html: h, wrap: null, group: 0, len: textLength(h) }; });
+			makePage = function (us, first, last) {
+				var over = { html: unitsHtml(us), heading: first ? slide.heading : '' };
+				if ('quote' === slide.type) { over.attribution = last ? slide.attribution : ''; }
+				return copySlide(slide, over);
+			};
+		}
+		if (units.length < 2 && !(units[0] && subUnits(units[0]))) { return [{ slide: slide, scale: min }]; }
+
+		var result = paginate(fitter, units.slice(), makePage, min);
+		// A lopsided split (a big paragraph between two small ones, say) is tried
+		// again with every paragraph and list cut into sentences and items, and
+		// kept only if that gives fewer pages or a more even spread.
+		if (result.ranges.length > 1 && evenness(result) < 0.33) {
+			var finer = [];
+			units.forEach(function (u) {
+				var sub = subUnits(u);
+				if (sub) { sub.forEach(function (x) { finer.push(x); }); } else { finer.push(u); }
+			});
+			var again = paginate(fitter, finer, makePage, min);
+			if (again.ranges.length < result.ranges.length || (again.ranges.length === result.ranges.length && evenness(again) > evenness(result))) {
+				result = again;
+			}
+		}
+		var pages = result.ranges.map(function (r) { return makePage(result.units.slice(r[0], r[1]), r[0] === 0, r[1] >= result.units.length); });
+		// All the pages of one slide share a size, the largest that suits every page.
+		var scale = 1;
+		pages.forEach(function (pg) {
+			var b = fitter.bestScale(pg, min);
+			scale = Math.min(scale, b || min);
+		});
+		return pages.map(function (pg) { return { slide: pg, scale: scale }; });
+	}
+
+	// The whole deck as fitted pages: [{ slide, scale, src }].
+	function computePlan(backdrop, data) {
+		var fitter = makeFitter(backdrop, cardHeaderHtml(data));
+		var plan = [];
+		try {
+			data.slides.forEach(function (slide, i) {
+				fitSource(fitter, slide).forEach(function (pg) { plan.push({ slide: pg.slide, scale: pg.scale, src: i }); });
+			});
+		} finally {
+			fitter.destroy();
+		}
+		return plan;
+	}
+
+	function planSignature(plan) {
+		return plan.map(function (p) {
+			return p.src + ':' + p.scale.toFixed(2) + ':' + (p.slide.html || '').length + ':' + (p.slide.items ? p.slide.items.length : 0) + ':' + (p.slide.heading || '').length;
+		}).join('|');
+	}
+
 	/**
 	 * Wires navigation on an already-in-DOM backdrop element (built either
 	 * by the PHP-embedded data via buildMarkup(), or already present from
@@ -174,6 +499,16 @@
 		var total = slides.length;
 		var index = 0;
 		var closed = false;
+
+		// The fit step (see computePlan): needs the source slides, which the
+		// two callers pass in as opts.data. Without them the deck is shown
+		// exactly as built.
+		var fitData = opts.data || null;
+		var progressEl = backdrop.querySelector('.twd-sb-progress');
+		var fitSig = fitData ? planSignature(fitData.slides.map(function (sl, i) { return { slide: sl, scale: 1, src: i }; })) : '';
+		var lastW = 0;
+		var lastH = 0;
+		var resizeTimer = 0;
 
 		// Each slide parks off to whichever side it isn't showing on (is-past
 		// to the left, is-future to the right) and the active one sits at
@@ -441,6 +776,8 @@
 			if (closed) { return; }
 			closed = true;
 			document.removeEventListener('keydown', onKeydown);
+			window.removeEventListener('resize', onResize);
+			clearTimeout(resizeTimer);
 			if (opts.onClose) {
 				opts.onClose();
 			} else {
@@ -449,7 +786,60 @@
 		}
 		closeBtn.addEventListener('click', close);
 
+		// Replaces the pages with the fitted ones. slides, segs and total are
+		// the same variables the buttons, the swipe and the exports read, so
+		// they all follow the new pages.
+		function applyPlan(plan) {
+			var header = cardHeaderHtml(fitData);
+			slidesWrap.innerHTML = plan.map(function (p, i) { return sectionHtml(header, slideBodyHtml(p.slide), i, p.src, p.scale); }).join('');
+			progressEl.innerHTML = segsMarkup(plan.length);
+			slides = Array.prototype.slice.call(slidesWrap.querySelectorAll('.twd-sb-slide'));
+			segs = Array.prototype.slice.call(backdrop.querySelectorAll('.twd-sb-seg'));
+			total = slides.length;
+		}
+
+		function refit() {
+			if (!fitData || closed) { return; }
+			try {
+				var box = slidesWrap.getBoundingClientRect();
+				lastW = box.width;
+				lastH = box.height;
+				var plan = computePlan(backdrop, fitData);
+				var sig = planSignature(plan);
+				if (sig === fitSig) { return; }
+				// Stay on the same piece of the book: the first fitted page of the slide being read.
+				var keep = slides[index] ? parseInt(slides[index].getAttribute('data-src'), 10) : 0;
+				fitSig = sig;
+				applyPlan(plan);
+				index = 0;
+				for (var k = 0; k < slides.length; k++) {
+					if (parseInt(slides[k].getAttribute('data-src'), 10) === keep) { index = k; break; }
+				}
+				render();
+			} catch (err) {
+				// A fault in the fit must never cost the reader the book: keep it as it was.
+				if (window.console && window.console.warn) { window.console.warn('Swipe book: pages not fitted.', err); }
+			}
+		}
+
+		// Turning a phone, resizing a window: fit again. A browser toolbar
+		// sliding away changes the height by well under 100px, which is
+		// ignored so the pages do not reshuffle while someone is reading.
+		function onResize() {
+			clearTimeout(resizeTimer);
+			resizeTimer = setTimeout(function () {
+				var box = slidesWrap.getBoundingClientRect();
+				if (Math.abs(box.height - lastH) > 100 || Math.abs(box.width - lastW) > 60) { refit(); }
+			}, 200);
+		}
+
+		refit();
 		render();
+		if (fitData) {
+			window.addEventListener('resize', onResize);
+			// The book's own fonts arriving late change how much fits.
+			if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function () { refit(); }); }
+		}
 		return { close: close };
 	}
 
@@ -480,6 +870,7 @@
 			document.documentElement.style.overflow = 'hidden';
 			document.body.style.overflow = 'hidden';
 			current = mount(backdrop, {
+				data: data,
 				onClose: function () {
 					document.documentElement.style.overflow = '';
 					document.body.style.overflow = '';
@@ -504,6 +895,6 @@
 		wrap.innerHTML = buildMarkup(window.TWD_AP_SB_DATA);
 		var backdrop = wrap.firstElementChild;
 		document.body.appendChild(backdrop);
-		mount(backdrop, {});
+		mount(backdrop, { data: window.TWD_AP_SB_DATA });
 	});
 }());

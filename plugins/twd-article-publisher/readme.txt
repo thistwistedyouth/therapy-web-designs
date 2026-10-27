@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.42.0
+Stable tag: 1.43.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.43.0): (1) Swipe book pages no longer scroll. The book now measures
+each page on the reader's own screen: text is made slightly smaller if that
+is enough (never below 15px), and a page that is still too full is split at a
+paragraph break, or a sentence, into more pages. It re-fits when a phone is
+turned. This covers the swipe book and the Summary Book, and the saved
+images and PDF match what is on screen. (2) The start screen accepts up to
+25,000 characters (it was 20,000) when you improve or format a finished
+article. Very long articles take a few minutes; a host that stops requests
+early (some stop at 30 to 60 seconds) may still cut one off, in which case
+nothing is saved and the screen says so.
 
 NEW (1.42.0): choose the shape of the pictures on article cards. In Customise
 this grid (the gear on the Resources grid or on a category page), "Card image

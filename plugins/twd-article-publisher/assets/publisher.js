@@ -1044,7 +1044,7 @@
 	}
 
 	function updateStartCount() {
-		var max = parseInt(TWD_AP.aiMaxChars, 10) || 20000;
+		var max = parseInt(TWD_AP.aiMaxChars, 10) || 25000;
 		var len = els.startInput.value.length;
 		var over = len > max;
 		els.startCount.textContent = 0 === len ? '' : formatNumber(len) + ' of ' + formatNumber(max) + ' characters' + (over ? '. Too long: please shorten it or split it into two articles.' : '');
@@ -1063,7 +1063,7 @@
 	}
 
 	function refreshStartGenerate() {
-		var max = parseInt(TWD_AP.aiMaxChars, 10) || 20000;
+		var max = parseInt(TWD_AP.aiMaxChars, 10) || 25000;
 		var tooLong = els.startInput.value.length > max;
 		els.startGenerate.disabled = state.aiGenerating || tooLong || state.aiRemaining <= 0;
 	}
@@ -1166,7 +1166,7 @@
 		}
 		var mode = getStartMode();
 		var text = els.startInput.value.trim();
-		var max = parseInt(TWD_AP.aiMaxChars, 10) || 20000;
+		var max = parseInt(TWD_AP.aiMaxChars, 10) || 25000;
 		if (!text) {
 			showStatus('idea' === mode ? 'Please add an idea or topic first.' : 'Please add your article text first.', false);
 			return;
