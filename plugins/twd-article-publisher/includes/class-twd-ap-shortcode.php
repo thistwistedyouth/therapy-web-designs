@@ -168,9 +168,13 @@ class TWD_AP_Shortcode {
 		// every grid, so a crawler can reach every article from any of them.
 		$index_url = TWD_AP_Index::index_url();
 		// "Browse by topic" (the categories the owner chose, then a quiet "All
-		// articles" link) on the default view; a view without that row gets
-		// the same quiet link on its own.
-		$topics_html = $show_filters ? TWD_AP_Cards::topics_html( $index_url ) : '';
+		// articles" link) on the default view and on a category or tag page; a
+		// view without that row gets the same quiet link on its own.
+		// The row also closes a category or tag page, so every topic page links
+		// to every other one. On a category's own page that category is shown
+		// but not linked.
+		$current_cat = ( $on_archive && is_category() && is_object( get_queried_object() ) ) ? (int) get_queried_object()->term_id : 0;
+		$topics_html = ( $show_filters || $on_archive ) ? TWD_AP_Cards::topics_html( $index_url, $current_cat ) : '';
 
 		$config = array(
 			'restUrl'      => esc_url_raw( rest_url( 'twd-publisher/v1' ) ),

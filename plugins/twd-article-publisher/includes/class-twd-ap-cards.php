@@ -443,14 +443,21 @@ class TWD_AP_Cards {
 	/**
 	 * Plain links to every real category archive page.
 	 */
-	public static function topics_html( $index_url = '' ) {
+	public static function topics_html( $index_url = '', $current_id = 0 ) {
 		$items = '';
 		foreach ( self::topic_categories() as $cat ) {
 			$link = get_category_link( $cat->term_id );
 			if ( is_wp_error( $link ) || '' === $link ) {
 				continue;
 			}
-			$items .= '<li><a href="' . esc_url( $link ) . '">' . esc_html( html_entity_decode( $cat->name, ENT_QUOTES, 'UTF-8' ) ) . '</a></li>';
+			$name = esc_html( html_entity_decode( $cat->name, ENT_QUOTES, 'UTF-8' ) );
+			if ( $current_id && (int) $cat->term_id === (int) $current_id ) {
+				// On that category's own page: shown, not linked, so a visitor
+				// can see where they are in the row.
+				$items .= '<li class="twd-ap-topics-current"><span aria-current="page">' . $name . '</span></li>';
+			} else {
+				$items .= '<li><a href="' . esc_url( $link ) . '">' . $name . '</a></li>';
+			}
 		}
 		if ( '' === $items ) {
 			return '';

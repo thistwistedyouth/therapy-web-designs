@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.39.0
+Stable tag: 1.39.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,12 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.39.1): category and tag pages now end with the same "Browse by topic"
+row as the resources page, so every topic page links to every other one and
+to "All articles". The category you are on is shown in bold and is not a
+link. It follows the same list of categories you choose in Customise this
+grid.
 
 NEW (1.39.0): category and tag pages now work out of the box. Open any
 category page and it shows the category's name, its description (with an

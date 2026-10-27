@@ -540,6 +540,11 @@
 
 /* The link to the full article index: a quiet text link (real, crawlable,
    not prominent), at the end of the Browse by topic row or on its own. */
+.twd-ap-topics-current span {
+  color: #1f2937 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
 .twd-ap-topics-all a {
   color: #6b7280 !important;
   font-weight: 500 !important;
