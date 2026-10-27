@@ -33,6 +33,7 @@ const DECK = {
 		{ type: 'question', heading: '', html: '<p>First blank-line paragraph with a handful of words.<br><br>' + para(300, 3) + '<br><br>Last paragraph, short.</p>' },
 		{ type: 'text', heading: 'Short', html: '<p>Fits anywhere.</p>' },
 		{ type: 'bio', heading: 'About the author', photo: '', bio: 'A made-up bio of about one hundred and sixty characters, written for this test only, so it is a short paragraph.', link_url: 'https://example.test/', link_label: 'Visit the site' },
+		{ type: 'image', heading: '', src: 'https://example.test/pic.svg', caption: 'A made-up caption for a tall picture, long enough to wrap onto a second or third line on a small screen.' },
 		{ type: 'related', heading: 'More Articles', items: [1, 2, 3, 4, 5, 6].map((n) => ({ id: n, title: 'A made-up related article title number ' + n, shareUrl: 'https://example.test/r' + n + '/' })) },
 	],
 };
@@ -49,11 +50,14 @@ async function open(browser, deck, vp, withData, extra) {
 	const errors = [];
 	p.on('pageerror', (e) => errors.push(String(e)));
 	p.on('console', (m) => { if (m.type() === 'warning' && /Swipe book/.test(m.text())) { errors.push(m.text()); } });
-	await p.route('https://example.test/**', (r) => r.fulfill({ contentType: 'text/html', body: page(deck, withData !== false) }));
+	// A tall picture (600x900) for the picture card; everything else is the page.
+	const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect width="600" height="900" fill="#446"/></svg>';
+	await p.route('https://example.test/**', (r) => (r.request().url().endsWith('.svg') ? r.fulfill({ contentType: 'image/svg+xml', body: svg }) : r.fulfill({ contentType: 'text/html', body: page(deck, withData !== false) })));
 	if (extra) { await extra(p); }
 	await p.goto('https://example.test/book');
 	if (withData !== false) { await p.waitForSelector('.twd-sb-slide'); } else { await p.waitForFunction(() => !!window.TWD_AP_SwipeBook); }
 	await wait(150);
+	await p.waitForFunction(() => Array.from(document.images).every((i) => i.complete));
 	return { ctx, p, errors };
 }
 
@@ -65,7 +69,7 @@ function inspect(deck) {
 		const pages = slides.map((s) => {
 			const body = s.querySelector('.twd-sb-card-body');
 			const primary = body.querySelector('.twd-sb-body-text, .twd-sb-quote-text, .twd-sb-question-text, .twd-sb-bio-text, .twd-sb-related-title');
-			const kind = body.querySelector('.twd-sb-quote') ? 'quote' : body.querySelector('.twd-sb-question') ? 'question' : body.querySelector('.twd-sb-bio') ? 'bio' : body.querySelector('.twd-sb-related-list') ? 'related' : 'text';
+			const kind = body.querySelector('.twd-sb-image') ? 'image' : body.querySelector('.twd-sb-quote') ? 'quote' : body.querySelector('.twd-sb-question') ? 'question' : body.querySelector('.twd-sb-bio') ? 'bio' : body.querySelector('.twd-sb-related-list') ? 'related' : 'text';
 			let text = '';
 			if (kind === 'related') { text = Array.from(body.querySelectorAll('.twd-sb-related-title')).map((e) => e.textContent).join(''); }
 			else if (primary) { text = primary.textContent; }
@@ -76,6 +80,9 @@ function inspect(deck) {
 				scale: body.style.getPropertyValue('--twd-sb-s') || '',
 				text: norm(text), len: norm(text).length,
 				headings: body.querySelectorAll('.twd-sb-heading').length,
+				imgH: body.querySelector('.twd-sb-image-img') ? body.querySelector('.twd-sb-image-img').getBoundingClientRect().height : 0,
+				imgW: body.querySelector('.twd-sb-image-img') ? body.querySelector('.twd-sb-image-img').getBoundingClientRect().width : 0,
+				capH: body.querySelector('.twd-sb-image-caption') ? body.querySelector('.twd-sb-image-caption').getBoundingClientRect().height : 0,
 				attribution: body.querySelectorAll('.twd-sb-quote-attribution').length,
 			};
 		});
@@ -106,7 +113,9 @@ const sourceText = (deck) => deck.slides.map((s) => {
 		t(label + ': no text page scrolls', scrolling.length === 0, scrolling.map((x) => 'src' + x.src + ' over ' + x.over).join(', '));
 		const bio = pages.find((x) => x.kind === 'bio');
 		t(label + ': the bio page does not scroll' + (vp.height < 600 ? ' (smallest screens may)' : ''), bio.over <= 1 || vp.height < 600, 'over ' + bio.over);
-		const small = pages.filter((x) => x.kind !== 'bio' && x.font > 0 && x.font < 14.9);
+		const pic = pages.find((x) => x.kind === 'image');
+		t(label + ': the picture page does not scroll, and the picture and its caption are on screen', pic && pic.over <= 1 && pic.imgH >= 40 && pic.imgW >= 40 && pic.capH > 0, JSON.stringify(pic));
+		const small = pages.filter((x) => x.kind !== 'bio' && x.kind !== 'image' && x.font > 0 && x.font < 14.9);
 		t(label + ': text never drops below 15px', small.length === 0, small.map((x) => x.font).join(','));
 		// nothing lost, nothing reordered
 		let ok = true, why = '';
@@ -220,7 +229,7 @@ const sourceText = (deck) => deck.slides.map((s) => {
 		await p.evaluate((d) => window.TWD_AP_SwipeBook.open(d), DECK);
 		await wait(200);
 		const r = await p.evaluate(inspect(DECK));
-		t('overlay: fits the same way (no scrolling, 15px floor, text preserved)', r.pages.filter((x) => x.kind !== 'bio' && x.over > 1).length === 0 && r.pages.every((x) => x.kind === 'bio' || x.font >= 14.9) && DECK.slides.every((s, i) => r.pages.filter((x) => x.src === i).map((x) => x.text).join('') === src[i]));
+		t('overlay: fits the same way (no scrolling, 15px floor, text preserved)', r.pages.filter((x) => x.kind !== 'bio' && x.over > 1).length === 0 && r.pages.every((x) => x.kind === 'bio' || x.kind === 'image' || x.font >= 14.9) && DECK.slides.every((s, i) => r.pages.filter((x) => x.src === i).map((x) => x.text).join('') === src[i]));
 		await p.evaluate(() => window.TWD_AP_SwipeBook.close());
 		await wait(100);
 		t('overlay: closes cleanly', (await p.locator('.twd-sb-backdrop').count()) === 0 && errors.length === 0, errors.join(' | '));
@@ -396,6 +405,24 @@ const sourceText = (deck) => deck.slides.map((s) => {
 		const after = await pagesOf(p, DECK);
 		t('pdf export during a resize: the book is fitted to the new size afterwards', after.length > wideCount && after.every((x) => x.kind === 'bio' || x.over <= 1), wideCount + ' -> ' + after.length);
 		await ctx.close();
+	}
+
+	// A picture page with a long caption never scrolls: the picture gives way first, then the caption may shrink to 80% (12px), never further.
+	{
+		const deck = bookOf([{ type: 'image', heading: 'A made-up picture', src: 'https://example.test/pic.svg', caption: para(0, 4) }]);
+		for (const vp of [{ width: 320, height: 568 }, { width: 360, height: 640 }]) {
+			const { ctx, p } = await open(browser, deck, vp);
+			await p.waitForFunction(() => Array.from(document.images).every((i) => i.complete), null, { timeout: 5000 });
+			await wait(400);
+			const r = await p.evaluate(() => {
+				const c = document.querySelector('.twd-sb-slide:not(.twd-sb-probe) .twd-sb-image-caption');
+				const b = document.querySelector('.twd-sb-slide:not(.twd-sb-probe) .twd-sb-card-body');
+				return { font: c ? parseFloat(getComputedStyle(c).fontSize) : 0, over: b.scrollHeight - b.clientHeight };
+			});
+			t('picture page ' + vp.width + 'x' + vp.height + ': the caption stays readable (12px at the least)', r.font >= 11.9, 'font ' + r.font);
+			t('picture page ' + vp.width + 'x' + vp.height + ': and the page does not scroll', r.over <= 1, 'over ' + r.over);
+			await ctx.close();
+		}
 	}
 
 	await browser.close();

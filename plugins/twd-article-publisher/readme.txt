@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.43.0
+Stable tag: 1.44.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,18 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.44.0): paste a Book Maker style book into the New Article popup. Open
+the Paste JSON tab, paste a JSON with a "title" and a list of "cards"
+(insight, filing, quote, question and image cards, a card's "part" opening a
+chapter) and press Fill fields from JSON. The cards become the article text
+(chapter headings, paragraphs, quotes, questions, pictures) and a Summary Book
+draft, which stays private until you open Summary Book after saving, check the
+cards and publish it. The Summary Book now takes up to 200 cards and has a
+picture card (a web address starting https:// plus an optional caption; a
+picture still holding the placeholder REPLACE_WITH_MEDIA_URL is left out and
+the popup says so). The print edition pages, cover colours and series name in
+the JSON are not used.
 
 NEW (1.43.0): (1) Swipe book pages no longer scroll. The book now measures
 each page on the reader's own screen: text is made slightly smaller if that

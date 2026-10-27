@@ -198,6 +198,20 @@ class TWD_AP_REST {
 			)
 		);
 
+		// Reads a Book Maker style JSON (title and typed cards) and returns what
+		// the popup fills in: article text, a short description and a Summary
+		// Book draft. Saves nothing; same gate as /generate (any allowed
+		// editor, no post to own yet).
+		register_rest_route(
+			self::NAMESPACE,
+			'/book-import',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'import_book' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			)
+		);
+
 		// Generates an article directly on this site with the client's own
 		// Anthropic key (Settings > Article Publisher) -- gated the same
 		// way category creation is (any allowed editor, no specific post
@@ -211,6 +225,14 @@ class TWD_AP_REST {
 				'permission_callback' => array( $this, 'check_permission' ),
 			)
 		);
+	}
+
+	public function import_book( $request ) {
+		$result = TWD_AP_Book_Import::convert( $request->get_json_params() );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		return rest_ensure_response( $result );
 	}
 
 	public function generate_article( $request ) {

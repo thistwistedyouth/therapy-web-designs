@@ -36,8 +36,11 @@ class TWD_AP_Summary_Book {
 	const META_DRAFT     = '_twd_ap_summary_book_draft';
 	const META_PUBLISHED = '_twd_ap_summary_book_published';
 
-	const MAX_CARDS = 20;
-	const TYPES     = array( 'text', 'quote', 'question' );
+	// 200, not 20, since 1.44.0: a Book Maker style book pasted into the New
+	// Article popup has about a hundred cards. The AI prompts still ask for
+	// 20 or fewer; this is only the most that is kept.
+	const MAX_CARDS = 200;
+	const TYPES     = array( 'text', 'quote', 'question', 'image' );
 
 	private static $instance = null;
 
@@ -162,6 +165,14 @@ class TWD_AP_Summary_Book {
 				'type' => $card['type'],
 				'html' => '<p>' . nl2br( esc_html( $card['text'] ) ) . '</p>',
 			);
+			if ( 'image' === $card['type'] ) {
+				// swipebook.js draws a picture card from src and caption, not html.
+				$slide = array(
+					'type'    => 'image',
+					'src'     => isset( $card['src'] ) ? $card['src'] : '',
+					'caption' => $card['text'],
+				);
+			}
 			if ( ! empty( $card['heading'] ) ) {
 				$slide['heading'] = $card['heading'];
 			}
@@ -199,7 +210,16 @@ class TWD_AP_Summary_Book {
 			}
 
 			$text = isset( $card['text'] ) ? TWD_AP_Sanitizer::strip_dashes( sanitize_textarea_field( (string) $card['text'] ) ) : '';
-			if ( '' === trim( $text ) ) {
+
+			// A picture card is its picture; its text is only a caption, so it
+			// may be empty. Without a usable web address it has nothing to show.
+			$src = '';
+			if ( 'image' === $type ) {
+				$src = self::clean_image_src( isset( $card['src'] ) ? $card['src'] : '' );
+				if ( '' === $src ) {
+					continue;
+				}
+			} elseif ( '' === trim( $text ) ) {
 				// A card with nothing to actually show isn't worth keeping --
 				// same reasoning as the swipe book never showing an empty
 				// "more articles" slide rather than a blank one.
@@ -210,6 +230,9 @@ class TWD_AP_Summary_Book {
 				'type' => $type,
 				'text' => $text,
 			);
+			if ( '' !== $src ) {
+				$entry['src'] = $src;
+			}
 
 			if ( isset( $card['heading'] ) ) {
 				$heading = TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( (string) $card['heading'] ) );
@@ -228,6 +251,29 @@ class TWD_AP_Summary_Book {
 		}
 
 		return $clean;
+	}
+
+	/**
+	 * A picture address for a picture card: https only, a real host, not a
+	 * placeholder left in an exported book (REPLACE_WITH_MEDIA_URL), or ''.
+	 */
+	public static function clean_image_src( $value ) {
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
+		$value = trim( $value );
+		// Whitespace, quotes, angle brackets, backticks and backslashes have no
+		// place in an address that goes into an attribute; refuse rather than
+		// rely on the escaping that happens later (and is done anyway).
+		if ( '' === $value || strlen( $value ) > 500 || false !== strpos( $value, 'REPLACE_WITH_' ) || preg_match( '/[\s"\'<>`\\\\]/', $value ) ) {
+			return '';
+		}
+		if ( ! preg_match( '~^https://[^/\s]+\.[^/\s]~i', $value ) ) {
+			return '';
+		}
+		// An em or en dash in an address is written out (the article text has every
+		// dash removed, and that must not change which picture the address names).
+		return str_replace( array( "\xE2\x80\x94", "\xE2\x80\x93" ), array( '%E2%80%94', '%E2%80%93' ), esc_url_raw( $value, array( 'https' ) ) );
 	}
 
 	public static function get_draft( $post_id ) {
