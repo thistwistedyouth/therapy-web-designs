@@ -46,6 +46,9 @@ class TWD_AP_Grid_Settings {
 			// how many links.
 			'related_show'       => true,
 			'related_count'      => 4,
+			// Also close every article with the Browse by topic links under the
+			// related list.
+			'related_topics'     => true,
 			'cta_heading'        => '',
 			'cta_text'           => '',
 			'cta_button_label'   => '',
@@ -62,6 +65,9 @@ class TWD_AP_Grid_Settings {
 			'look_size'          => 'medium',
 			'look_spacing'       => 'normal',
 			'swipebook_color'    => '#5b8a72',
+			// Where the swipe book button goes on an article (1.41.0): 'top' (under
+			// the title), 'bottom' (after the text) or 'both'.
+			'swipebook_button_position' => 'both',
 			'swipebook_heading'  => '',
 			'swipebook_label'    => 'Swipe Book',
 			'swipebook_logo_id'  => 0,
@@ -111,6 +117,8 @@ class TWD_AP_Grid_Settings {
 			'look_size'          => $current['look_size'],
 			'look_spacing'       => $current['look_spacing'],
 			'swipebook_color'    => $current['swipebook_color'],
+			'swipebook_button_position' => $current['swipebook_button_position'],
+			'related_topics'     => $current['related_topics'],
 			'swipebook_heading'  => $current['swipebook_heading'],
 			'swipebook_label'    => $current['swipebook_label'],
 			'swipebook_logo_id'  => $current['swipebook_logo_id'],
@@ -160,6 +168,12 @@ class TWD_AP_Grid_Settings {
 				$color            = '' === $input[ $key ] ? '' : sanitize_hex_color( $input[ $key ] );
 				$output[ $key ]   = $color ? $color : ( '' === $input[ $key ] ? '' : $output[ $key ] );
 			}
+		}
+		if ( isset( $input['swipebook_button_position'] ) && in_array( $input['swipebook_button_position'], array( 'top', 'bottom', 'both' ), true ) ) {
+			$output['swipebook_button_position'] = $input['swipebook_button_position'];
+		}
+		if ( isset( $input['related_topics'] ) ) {
+			$output['related_topics'] = (bool) $input['related_topics'];
 		}
 		if ( isset( $input['related_show'] ) ) {
 			$output['related_show'] = (bool) $input['related_show'];

@@ -39,7 +39,11 @@ class WP_Query {
 		$this->posts = array_slice( $p, $a['offset'] ?? 0, $a['posts_per_page'] );
 	}
 }
-class TWD_AP_Grid_Settings { static $s = array( 'related_show' => true, 'related_count' => 4, 'accent_color' => '#2563eb' ); static function get() { return self::$s; } }
+function esc_attr__( $s ) { return htmlspecialchars( $s, ENT_QUOTES ); }
+function get_categories() { $out = array(); foreach ( $GLOBALS['terms'] as $t ) { foreach ( $GLOBALS['posts'] as $p ) { if ( 'publish' === $p->post_status && in_array( $t->term_id, $p->cats, true ) ) { $out[] = $t; break; } } } return $out; }
+class TWD_AP_Index { static function index_url() { return $GLOBALS['index_url']; } }
+$GLOBALS['index_url'] = '';
+class TWD_AP_Grid_Settings { static $s = array( 'related_show' => true, 'related_count' => 4, 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb' ); static function get() { return self::$s; } }
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-related.php';
 
@@ -47,7 +51,8 @@ $pass = 0; $fail = 0;
 function t( $name, $ok, $extra = '' ) { global $pass, $fail; if ( $ok ) { $pass++; echo "PASS  $name\n"; } else { $fail++; echo "FAIL  $name $extra\n"; } }
 function reset_site() {
 	$GLOBALS['posts'] = array(); $GLOBALS['meta'] = array(); $GLOBALS['single'] = true; $GLOBALS['loop'] = true; $GLOBALS['current_id'] = 1;
-	TWD_AP_Grid_Settings::$s = array( 'related_show' => true, 'related_count' => 4, 'accent_color' => '#2563eb' );
+	TWD_AP_Grid_Settings::$s = array( 'related_show' => true, 'related_count' => 4, 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb' );
+	$GLOBALS['index_url'] = '';
 	$GLOBALS['terms'] = array(
 		1 => (object) array( 'term_id' => 1, 'name' => 'Uncategorized', 'slug' => 'uncategorized' ),
 		2 => (object) array( 'term_id' => 2, 'name' => 'Anxiety', 'slug' => 'anxiety' ),
@@ -100,6 +105,37 @@ TWD_AP_Grid_Settings::$s['related_show'] = false;
 t( 'block: switched off by the owner, nothing is printed', '' === TWD_AP_Related::html( 1 ) );
 TWD_AP_Grid_Settings::$s['related_show'] = true;
 
+// ---------- the Browse by topic row under the list ----------
+reset_site();
+add_post( 1, 'This article', array( 2 ), '2026-03-01' );
+add_post( 2, 'A sibling', array( 2 ), '2026-03-02' );
+add_post( 3, 'A sleep piece', array( 3 ), '2026-03-03' );
+t( 'topics: off, no row is added under the list', false === strpos( TWD_AP_Related::html( 1 ), 'twd-ap-articles-topics' ) );
+TWD_AP_Grid_Settings::$s['related_topics'] = true;
+$html = TWD_AP_Related::html( 1 );
+preg_match( '/<nav class="twd-ap-articles-topics".*?<\/nav>/s', $html, $nav );
+t( 'topics: on, the row follows the related list inside the same block', ! empty( $nav ) && strpos( $html, 'twd-ap-related-list' ) < strpos( $html, 'twd-ap-articles-topics' ) && 1 === substr_count( $html, '<aside' ) );
+t( 'topics: this article\'s own category is shown but not linked, the other category is a link', false !== strpos( $nav[0], '<li class="twd-ap-topics-current"><span aria-current="page">Anxiety</span></li>' ) && false !== strpos( $nav[0], '<a href="https://example.test/category/sleep/">Sleep</a>' ) && false === strpos( $nav[0], '/category/anxiety/' ) );
+t( 'topics: no All articles link while there is no index page', false === strpos( $html, 'twd-ap-topics-all' ) );
+$GLOBALS['index_url'] = 'https://example.test/article-index/';
+t( 'topics: with an index page the row ends with the quiet All articles link', false !== strpos( TWD_AP_Related::html( 1 ), '<li class="twd-ap-topics-all"><a href="https://example.test/article-index/">All articles</a></li>' ) );
+TWD_AP_Grid_Settings::$s['topic_category_ids'] = array( 3 );
+t( 'topics: it follows the categories the owner chose', false === strpos( TWD_AP_Related::html( 1 ), 'twd-ap-topics-current' ) && false !== strpos( TWD_AP_Related::html( 1 ), '>Sleep<' ) );
+TWD_AP_Grid_Settings::$s['topic_category_ids'] = 'all';
+TWD_AP_Grid_Settings::$s['related_show'] = false;
+$only = TWD_AP_Related::html( 1 );
+t( 'topics: with the related list switched off the row still closes the article on its own', false === strpos( $only, 'twd-ap-related-list' ) && false !== strpos( $only, 'twd-ap-articles-topics' ) );
+TWD_AP_Grid_Settings::$s['related_topics'] = false;
+t( 'topics: both off, nothing at all is printed', '' === TWD_AP_Related::html( 1 ) );
+TWD_AP_Grid_Settings::$s['related_show'] = true; TWD_AP_Grid_Settings::$s['related_topics'] = true;
+add_post( 4, 'Alone in its category', array( 3 ), '2026-03-04' );
+$GLOBALS['posts'][3]->post_status = 'draft';
+$alone = TWD_AP_Related::html( 4 );
+t( 'topics: an article alone in its category has no list but still gets the row', false === strpos( $alone, 'twd-ap-related-list' ) && false !== strpos( $alone, 'twd-ap-articles-topics' ) );
+add_post( 5, 'Uncategorised', array( 1 ), '2026-03-05' );
+$none = TWD_AP_Related::html( 5 );
+t( 'topics: an article with no real category still gets the row, with nothing marked as current', false !== strpos( $none, 'twd-ap-articles-topics' ) && false === strpos( $none, 'twd-ap-topics-current' ) );
+
 // ---------- small and odd cases ----------
 reset_site();
 add_post( 1, 'Only one in its category', array( 3 ), '2026-03-01' );
@@ -133,7 +169,10 @@ t( 'filter: not outside the main loop (widgets, excerpts)', '<p>x</p>' === inst(
 
 if ( getenv( 'TWD_RELATED_DUMP' ) ) {
 	reset_site();
+	TWD_AP_Grid_Settings::$s['related_topics'] = true;
+	$GLOBALS['index_url'] = 'https://example.test/article-index/';
 	add_post( 1, 'This article', array( 2 ), '2026-03-01' );
+	add_post( 30, 'A sleep piece', array( 3 ), '2026-03-02' );
 	for ( $i = 2; $i <= 6; $i++ ) { add_post( $i, 'Understanding anxiety, part ' . $i, array( 2 ), sprintf( '2026-02-%02d', $i ) ); }
 	file_put_contents( getenv( 'TWD_RELATED_DUMP' ), json_encode( array( 'html' => '<div class="twd-ap-article-content"><h2>A heading</h2><p>Article body text here.</p></div>' . TWD_AP_Related::html( 1 ) ) ) );
 }

@@ -37,6 +37,7 @@ class TWD_AP_Swipebook {
 		// which left it full-width against the page's actual left edge,
 		// disconnected from the article column entirely.
 		add_filter( 'the_content', array( $this, 'append_button' ), 15 );
+		add_filter( 'the_content', array( $this, 'prepend_buttons' ), 11 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_inline' ) );
 	}
 
@@ -131,26 +132,65 @@ class TWD_AP_Swipebook {
 	 * ever runs, not something a the_content filter can touch, let alone
 	 * remove).
 	 */
-	public function append_button( $content ) {
+	/**
+	 * Where the "View as a swipe book" button goes on an article: 'top'
+	 * (straight under the article's title, as the first thing in its text),
+	 * 'bottom' (after the text) or 'both' (the default). Customise this grid.
+	 */
+	public static function button_position() {
+		$pos = TWD_AP_Grid_Settings::get()['swipebook_button_position'];
+		return in_array( $pos, array( 'top', 'bottom', 'both' ), true ) ? $pos : 'both';
+	}
+
+	/**
+	 * True on a normal view of a single published article (not the swipe book
+	 * or Summary Book page itself, not the editor, not a widget or excerpt).
+	 */
+	private static function is_article_view() {
 		if ( is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
-			return $content;
+			return false;
 		}
-		if ( '1' === (string) get_query_var( 'twd_ap_swipebook' ) ) {
-			return $content;
-		}
+		return '1' !== (string) get_query_var( 'twd_ap_swipebook' );
+	}
 
-		$post = get_post();
+	/**
+	 * The button for one article, or '' when the article is not published or
+	 * has the swipe book switched off.
+	 */
+	public static function button_html( $post ) {
 		if ( ! $post || 'publish' !== $post->post_status || ! self::is_enabled( $post->ID ) ) {
-			return $content;
+			return '';
 		}
-
 		$url   = esc_url( self::url_for( $post ) );
 		$color = TWD_AP_Grid_Settings::get()['swipebook_color'];
 		$style = 'style="' . esc_attr( self::color_custom_properties( $color ) ) . '"';
-		$button = '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" ' . $style . ' href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
+		return '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" ' . $style . ' href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
 			. esc_html__( 'View as a swipe book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
+	}
 
-		return $content . $button;
+	public function append_button( $content ) {
+		if ( ! self::is_article_view() || 'top' === self::button_position() ) {
+			return $content;
+		}
+		return $content . self::button_html( get_post() );
+	}
+
+	/**
+	 * The same button (and the Summary Book one, when the article has a
+	 * published deck) as the first thing in the article's text, which is
+	 * straight under the title the theme prints above it. Priority 11, so it
+	 * is inside the article wrapper (20) like the bottom one.
+	 */
+	public function prepend_buttons( $content ) {
+		if ( ! self::is_article_view() || 'bottom' === self::button_position() ) {
+			return $content;
+		}
+		$post = get_post();
+		$html = self::button_html( $post );
+		if ( class_exists( 'TWD_AP_Summary_Book' ) ) {
+			$html .= TWD_AP_Summary_Book::button_html( $post );
+		}
+		return '' === $html ? $content : '<div class="twd-ap-swipebook-top">' . $html . '</div>' . $content;
 	}
 
 	/**

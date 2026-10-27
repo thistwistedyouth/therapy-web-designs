@@ -571,6 +571,8 @@
 		var archiveTakeover = overlay.querySelector('#twd-ap-gs-archive-takeover');
 		var relatedShow = overlay.querySelector('#twd-ap-gs-related-show');
 		var relatedCount = overlay.querySelector('#twd-ap-gs-related-count');
+		var relatedTopics = overlay.querySelector('#twd-ap-gs-related-topics');
+		var sbPosition = overlay.querySelector('#twd-ap-gs-sb-position');
 		var ctaHeading = overlay.querySelector('#twd-ap-gs-cta-heading');
 		var ctaText = overlay.querySelector('#twd-ap-gs-cta-text');
 		var ctaLabel = overlay.querySelector('#twd-ap-gs-cta-label');
@@ -832,7 +834,9 @@
 				if (relatedShow) {
 					relatedShow.checked = false !== data.related_show;
 					relatedCount.value = data.related_count || 4;
+					relatedTopics.checked = false !== data.related_topics;
 				}
+				if (sbPosition) { sbPosition.value = data.swipebook_button_position || 'both'; }
 				// A page cached before an update can carry an older popup without
 				// some of these fields; they are skipped here and on save.
 				if (ctaHeading) {
@@ -891,7 +895,9 @@
 			if (relatedShow) {
 				payload.related_show = !!relatedShow.checked;
 				payload.related_count = parseInt(relatedCount.value, 10) || 4;
+				payload.related_topics = !!relatedTopics.checked;
 			}
+			if (sbPosition) { payload.swipebook_button_position = sbPosition.value; }
 			if (ctaHeading) {
 				payload.cta_heading = ctaHeading.value;
 				payload.cta_text = ctaText.value;

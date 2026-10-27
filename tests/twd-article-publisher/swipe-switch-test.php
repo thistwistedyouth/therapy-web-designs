@@ -11,7 +11,7 @@ function __( $s ) { return $s; }
 function esc_html__( $s ) { return htmlspecialchars( $s ); }
 function esc_url( $s ) { return htmlspecialchars( $s ); }
 function esc_attr( $s ) { return htmlspecialchars( $s ); }
-function add_filter() {}
+function add_filter( $tag = '', $cb = null, $prio = 10 ) { $GLOBALS['registered'][] = array( $tag, is_array( $cb ) ? $cb[1] : $cb, $prio ); }
 function add_action() {}
 function apply_filters( $t, $v ) { return $v; }
 function wp_parse_args( $a, $d ) { return array_merge( $d, (array) $a ); }
@@ -34,7 +34,7 @@ function delete_post_meta( $id, $k ) { unset( $GLOBALS['meta'][ $id ][ $k ] ); r
 function get_option( $k, $d = false ) { return $GLOBALS['opt'][ $k ] ?? $d; }
 function get_posts( $args ) { $GLOBALS['q'] = $args; return array_values( array_filter( $GLOBALS['posts'], function ( $p ) use ( $args ) { return 'publish' === $p->post_status && ! in_array( $p->ID, $args['post__not_in'], true ) && ! ( isset( $GLOBALS['meta'][ $p->ID ]['_twd_ap_swipebook_off'] ) ); } ) ); }
 function rest_ensure_response( $x ) { return $x; }
-class TWD_AP_Grid_Settings { static function get() { return array( 'swipebook_color' => '#5b8a72' ); } }
+class TWD_AP_Grid_Settings { static $pos = 'both'; static function get() { return array( 'swipebook_color' => '#5b8a72', 'swipebook_button_position' => self::$pos ); } }
 class TWD_AP_Shortcode { static $on = false; static function rendered_on_this_page() { return self::$on; } }
 class TWD_AP_Sanitizer { static function strip_dashes( $s ) { return $s; } }
 require $plugin . 'includes/class-twd-ap-settings.php';
@@ -67,6 +67,35 @@ $GLOBALS['current'] = 1;
 t( 'summary book button: shown when published and switch on', false !== strpos( TWD_AP_Summary_Book::instance()->append_button( '' ), 'View Summary Book' ) );
 $GLOBALS['current'] = 2;
 t( 'summary book button: hidden when published but switch off', '' === TWD_AP_Summary_Book::instance()->append_button( '' ) );
+
+// ---------- where the button goes: under the title, at the end, or both ----------
+$sbi = TWD_AP_Swipebook::instance(); $smi = TWD_AP_Summary_Book::instance();
+$GLOBALS['current'] = 1; $GLOBALS['qv'] = array();
+$GLOBALS['meta'][1]['_twd_ap_summary_book_published'] = array( array( 'type' => 'text', 'text' => 'x' ) );
+TWD_AP_Grid_Settings::$pos = 'both';
+$top = $sbi->prepend_buttons( '<p>body</p>' );
+t( 'position both: the button is the first thing in the article text, inside a top wrapper', 1 === preg_match( '/^<div class="twd-ap-swipebook-top"><p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn"/', $top ) && '</div><p>body</p>' === substr( $top, -17 ) );
+t( 'position both: the Summary Book button is beside it at the top when the article has one', false !== strpos( $top, 'twd-ap-summary-book-btn' ) && strpos( $top, 'View as a swipe book' ) < strpos( $top, 'View Summary Book' ) );
+t( 'position both: the bottom buttons are still added after the text', false !== strpos( $sbi->append_button( '<p>body</p>' ), '<p>body</p><p class="twd-ap-swipebook-row">' ) && false !== strpos( $smi->append_button( '<p>body</p>' ), 'View Summary Book' ) );
+TWD_AP_Grid_Settings::$pos = 'top';
+t( 'position top: the buttons are at the top and not repeated at the end', false !== strpos( $sbi->prepend_buttons( '<p>b</p>' ), 'twd-ap-swipebook-btn' ) && '<p>b</p>' === $sbi->append_button( '<p>b</p>' ) && '<p>b</p>' === $smi->append_button( '<p>b</p>' ) );
+TWD_AP_Grid_Settings::$pos = 'bottom';
+t( 'position bottom: nothing at the top, the buttons at the end as before this version', '<p>b</p>' === $sbi->prepend_buttons( '<p>b</p>' ) && false !== strpos( $sbi->append_button( '<p>b</p>' ), 'twd-ap-swipebook-btn' ) );
+TWD_AP_Grid_Settings::$pos = 'sideways';
+t( 'an unknown position value falls back to both', 'both' === TWD_AP_Swipebook::button_position() && false !== strpos( $sbi->prepend_buttons( '<p>b</p>' ), 'twd-ap-swipebook-btn' ) );
+TWD_AP_Grid_Settings::$pos = 'both';
+$GLOBALS['meta'][1]['_twd_ap_summary_book_published'] = '';
+t( 'top: no Summary Book button when the article has no published deck', false === strpos( $sbi->prepend_buttons( '<p>b</p>' ), 'View Summary Book' ) );
+$GLOBALS['current'] = 2;
+$GLOBALS['meta'][2]['_twd_ap_summary_book_published'] = array( array( 'type' => 'text', 'text' => 'x' ) );
+t( 'top: an article with the swipe book switched off gets neither button at the top', '<p>b</p>' === $sbi->prepend_buttons( '<p>b</p>' ) );
+$GLOBALS['current'] = 1;
+$GLOBALS['qv'] = array( 'twd_ap_swipebook' => '1' );
+t( 'top: not added when the swipe book page itself is being shown', '<p>b</p>' === $sbi->prepend_buttons( '<p>b</p>' ) );
+$GLOBALS['qv'] = array();
+
+$reg = array_map( 'json_encode', $GLOBALS['registered'] ?? array() );
+t( 'registered: the top buttons go on the_content at priority 11, the bottom ones at 15 and 16, all before the wrapper (20)', in_array( json_encode( array( 'the_content', 'prepend_buttons', 11 ) ), $reg, true ) && in_array( json_encode( array( 'the_content', 'append_button', 15 ) ), $reg, true ) && in_array( json_encode( array( 'the_content', 'append_button', 16 ) ), $reg, true ), implode( ' ', $reg ) );
 
 // ---------- direct links: the standalone pages must not render ----------
 // maybe_render() ends in exit once it renders, so only the switched-off case can be run here:
@@ -167,5 +196,16 @@ function sanitize_textarea_field( $s ) { return $s; }
 t( 'settings save: missing or invalid scope falls back to shortcode_page', 'shortcode_page' === $san->invoke( $sv, array() )['show_everywhere'] && 'shortcode_page' === $san->invoke( $sv, array( 'show_everywhere' => 'bogus' ) )['show_everywhere'] );
 t( 'settings save: a chosen scope is kept', 'everywhere' === $san->invoke( $sv, array( 'show_everywhere' => 'everywhere' ) )['show_everywhere'] );
 
+if ( getenv( 'TWD_SWIPE_DUMP' ) ) {
+	$GLOBALS['current'] = 1; $GLOBALS['qv'] = array();
+	$GLOBALS['meta'][1]['_twd_ap_summary_book_published'] = array( array( 'type' => 'text', 'text' => 'x' ) );
+	$out = array();
+	foreach ( array( 'both', 'top', 'bottom' ) as $pos ) {
+		TWD_AP_Grid_Settings::$pos = $pos;
+		$body = $sbi->prepend_buttons( '<h2>First heading</h2><p>Article body text.</p>' );
+		$out[ $pos ] = $smi->append_button( $sbi->append_button( $body ) );
+	}
+	file_put_contents( getenv( 'TWD_SWIPE_DUMP' ), json_encode( $out ) );
+}
 echo "\n$pass passed, $fail failed\n";
 exit( $fail ? 1 : 0 );

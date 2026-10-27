@@ -228,3 +228,15 @@ a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover {
     font-size: 19px !important;
   }
 }
+
+/* The swipe book (and Summary Book) buttons straight under the title, as the
+   first thing in the article's text. */
+.twd-ap-swipebook-top {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px 12px !important;
+  margin: 0 0 1.4em !important;
+}
+.twd-ap-swipebook-top .twd-ap-swipebook-row {
+  margin: 0 !important;
+}

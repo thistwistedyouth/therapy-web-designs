@@ -92,6 +92,19 @@ class TWD_AP_Summary_Book {
 	 * TWD_AP_Swipebook's own "View as a swipe book" pill (its append_button()
 	 * runs at priority 15; this one at 16 lands right after it).
 	 */
+	/**
+	 * The "View Summary Book" button for one article, or '' when it has no
+	 * published deck, is not published, or has the swipe book switched off.
+	 */
+	public static function button_html( $post ) {
+		if ( ! $post || 'publish' !== $post->post_status || ! self::is_published( $post->ID ) || ! TWD_AP_Swipebook::is_enabled( $post->ID ) ) {
+			return '';
+		}
+		$url = esc_url( self::url_for( $post ) );
+		return '<p class="twd-ap-swipebook-row twd-ap-summary-book-row"><a class="twd-ap-swipebook-btn twd-ap-summary-book-btn" href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '" data-twd-ap-book-variant="summary-book">'
+			. esc_html__( 'View Summary Book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
+	}
+
 	public function append_button( $content ) {
 		if ( is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
 			return $content;
@@ -99,17 +112,12 @@ class TWD_AP_Summary_Book {
 		if ( '1' === (string) get_query_var( 'twd_ap_summary_book' ) || '1' === (string) get_query_var( 'twd_ap_swipebook' ) ) {
 			return $content;
 		}
-
-		$post = get_post();
-		if ( ! $post || 'publish' !== $post->post_status || ! self::is_published( $post->ID ) || ! TWD_AP_Swipebook::is_enabled( $post->ID ) ) {
+		// When the owner puts the buttons at the top only, they are added there
+		// by TWD_AP_Swipebook::prepend_buttons() and not again here.
+		if ( 'top' === TWD_AP_Swipebook::button_position() ) {
 			return $content;
 		}
-
-		$url    = esc_url( self::url_for( $post ) );
-		$button = '<p class="twd-ap-swipebook-row twd-ap-summary-book-row"><a class="twd-ap-swipebook-btn twd-ap-summary-book-btn" href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '" data-twd-ap-book-variant="summary-book">'
-			. esc_html__( 'View Summary Book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
-
-		return $content . $button;
+		return $content . self::button_html( get_post() );
 	}
 
 	/**

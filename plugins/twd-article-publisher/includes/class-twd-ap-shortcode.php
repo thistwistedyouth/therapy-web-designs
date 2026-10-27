@@ -280,6 +280,7 @@ class TWD_AP_Shortcode {
 							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-related-show" /> <?php esc_html_e( 'Show "More in this category" at the end of every article', 'twd-article-publisher' ); ?></label>
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-related-count"><?php esc_html_e( 'How many links', 'twd-article-publisher' ); ?></label>
 							<input type="number" id="twd-ap-gs-related-count" class="twd-ap-input" min="1" max="8" />
+							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-related-topics" /> <?php esc_html_e( 'Also show the "Browse by topic" links under it (the categories you chose above, and All articles)', 'twd-article-publisher' ); ?></label>
 						</details>
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-cta-details">
@@ -341,6 +342,13 @@ class TWD_AP_Shortcode {
 
 						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-swipebook-color"><?php esc_html_e( '"View as a swipe book" button colour', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-swipebook-color" class="twd-ap-gs-color-input" />
+
+						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-position"><?php esc_html_e( 'Where the "View as a swipe book" button goes on an article', 'twd-article-publisher' ); ?></label>
+						<select id="twd-ap-gs-sb-position" class="twd-ap-input">
+							<option value="both"><?php esc_html_e( 'Under the title and at the end', 'twd-article-publisher' ); ?></option>
+							<option value="top"><?php esc_html_e( 'Under the title only', 'twd-article-publisher' ); ?></option>
+							<option value="bottom"><?php esc_html_e( 'At the end only', 'twd-article-publisher' ); ?></option>
+						</select>
 
 						<div class="twd-ap-section twd-ap-spaced">
 							<p class="twd-ap-section-heading"><?php esc_html_e( 'Swipe Book', 'twd-article-publisher' ); ?></p>

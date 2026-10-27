@@ -53,7 +53,7 @@ async function open(browser, name, o) {
 		if (/\/articles\/grouped/.test(url)) { body = DUMP[name].grouped; }
 		else if (/\/articles\/facets/.test(url)) { body = { categories: [{ name: 'Anxiety', slug: 'anxiety' }, { name: 'Sleep', slug: 'sleep' }], tags: [] }; }
 		else if (/\/articles\?/.test(url)) { body = o.empty ? { items: [], has_more: false } : DUMP[name].list; }
-		else if (/\/grid-settings/.test(url)) { if (o.settingsFail && route.request().method() !== 'POST') { return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }); } if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal', related_show: true, related_count: 4, cta_heading: '', cta_text: '', cta_button_label: '', cta_button_url: '', cta_show_grid: false, cta_show_categories: false, cta_show_index: false, cta_show_articles: false };
+		else if (/\/grid-settings/.test(url)) { if (o.settingsFail && route.request().method() !== 'POST') { return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }); } if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal', related_show: true, related_count: 4, related_topics: true, swipebook_button_position: 'both', cta_heading: '', cta_text: '', cta_button_label: '', cta_button_url: '', cta_show_grid: false, cta_show_categories: false, cta_show_index: false, cta_show_articles: false };
 			Object.assign(body, window_cta); }
 		if (/\/term-intro/.test(url)) { introSaves.push(JSON.parse(route.request().postData())); return route.fulfill({ status: introStatus, contentType: 'application/json', body: JSON.stringify(introStatus === 200 ? { html: '<p>' + introSaves[introSaves.length - 1].description + '</p>', raw: introSaves[introSaves.length - 1].description } : { code: 'x' }) }); }
 		return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
@@ -492,13 +492,16 @@ async function open(browser, name, o) {
 		await r.page.click('.twd-ap-articles-settings-btn');
 		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
 		await r.page.click('#twd-ap-gs-related-details > summary');
-		t('related setting: on to start with, showing 4', (await r.page.isChecked('#twd-ap-gs-related-show')) && (await r.page.inputValue('#twd-ap-gs-related-count')) === '4');
+		t('related setting: on to start with, showing 4, with the topic links under it', (await r.page.isChecked('#twd-ap-gs-related-show')) && (await r.page.inputValue('#twd-ap-gs-related-count')) === '4' && (await r.page.isChecked('#twd-ap-gs-related-topics')));
+		t('swipe button setting: starts as under the title and at the end', (await r.page.inputValue('#twd-ap-gs-sb-position')) === 'both');
+		await r.page.selectOption('#twd-ap-gs-sb-position', 'top');
+		await r.page.uncheck('#twd-ap-gs-related-topics');
 		await r.page.fill('#twd-ap-gs-related-count', '6');
 		await r.page.uncheck('#twd-ap-gs-related-show');
 		await r.page.click('#twd-ap-gs-save');
 		await wait(300);
 		const body = saved[saved.length - 1];
-		t('related setting: saving sends the tick and the count', body.related_show === false && body.related_count === 6, JSON.stringify([body.related_show, body.related_count]));
+		t('related setting: saving sends the tick, the count, the topic links tick and the button position', body.related_show === false && body.related_count === 6 && body.related_topics === false && body.swipebook_button_position === 'top', JSON.stringify([body.related_show, body.related_count, body.related_topics, body.swipebook_button_position]));
 		t('related setting: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
 		await r.ctx.close();
 	}
