@@ -82,7 +82,7 @@
 			var okSrc = /^https:\/\//i.test(slide.src || '');
 			body = '<div class="twd-sb-image">' +
 				(slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
-				(okSrc ? '<img class="twd-sb-image-img" src="' + escapeAttr(slide.src) + '" alt="' + escapeAttr(slide.caption || '') + '">' : '') +
+				(okSrc ? '<img class="twd-sb-image-img" src="' + escapeAttr(slide.src) + '" alt="' + (slide.caption ? '' : escapeAttr(slide.heading || '')) + '">' : '') +
 				(slide.caption ? '<p class="twd-sb-image-caption">' + escapeHtml(slide.caption) + '</p>' : '') +
 				'</div>';
 		} else if ('quote' === slide.type) {

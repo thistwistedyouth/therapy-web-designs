@@ -170,6 +170,59 @@ async function toJsonTab(page, text) {
 		await ctx.close();
 	}
 
+	// 6. Review fixes: quotes in card text cannot become attributes, the picture address is checked as the
+	// server checks it, every card type can show its heading, and an empty "html" still means a book.
+	{
+		const evil = 'Ch " onfocus="window.__pwned=1" x="';
+		const cards = [
+			{ type: 'text', heading: evil, text: 'Plain card.' },
+			{ type: 'quote', heading: 'Part Two - Stay', text: 'A quote.', attribution: 'Au " onfocus="window.__pwned=1" y="' },
+			{ type: 'image', heading: '', src: 'https://pictures.example.org/real.webp', text: 'Real picture.' },
+			{ type: 'image', heading: '', src: 'https://pictures.example.org/other.webp', text: 'Second picture.' },
+		];
+		const { ctx, page, log } = await open(browser, { draft: cards });
+		await page.evaluate(() => { window.__pwned = 0; });
+		await page.click('#twd-ap-edit-btn');
+		await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+		await page.click('#twd-ap-summary-book-btn');
+		await page.waitForSelector('.twd-ap-sb-card-row');
+		const rowsEl = page.locator('.twd-ap-sb-card-row');
+		const heading0 = rowsEl.nth(0).locator('.twd-ap-sb-card-heading');
+		const attr1 = rowsEl.nth(1).locator('.twd-ap-sb-card-attribution');
+		await heading0.focus();
+		await attr1.focus();
+		t('review screen: a quote mark in a heading is kept whole and is not an attribute', (await heading0.inputValue()) === evil && (await heading0.evaluate((e) => e.getAttributeNames().sort().join(','))) === 'class,placeholder,type,value');
+		t('review screen: a quote mark in an attribution is kept whole and is not an attribute', (await attr1.inputValue()) === 'Au " onfocus="window.__pwned=1" y="' && (await attr1.evaluate((e) => e.getAttributeNames().sort().join(','))) === 'class,placeholder,type,value');
+		t('review screen: focusing those fields runs nothing', (await page.evaluate(() => window.__pwned)) === 0);
+		t('review screen: a quote card shows its heading box too', await rowsEl.nth(1).locator('.twd-ap-sb-card-heading').isVisible() && (await rowsEl.nth(1).locator('.twd-ap-sb-card-heading').inputValue()) === 'Part Two - Stay');
+		// a picture address the server would drop is not sent, and the owner is told
+		await rowsEl.nth(2).locator('.twd-ap-sb-card-src').fill('http://mysite.example/wp-content/uploads/x.jpg');
+		await rowsEl.nth(3).locator('.twd-ap-sb-card-src').fill('https://pictures.example.org/with space.webp');
+		await page.click('#twd-ap-summary-book-save-btn');
+		await wait(400);
+		const sent = log.sbSaves[log.sbSaves.length - 1];
+		t('review screen: picture cards with an unusable address are not sent', sent && sent.cards.length === 2 && sent.cards.every((c) => c.type !== 'image'), JSON.stringify(sent && sent.cards.map((c) => c.type)));
+		const msg = await page.locator('#twd-ap-summary-book-status').innerText();
+		t('review screen: the owner is told 2 picture cards were left out and why', /2 picture cards were left out/.test(msg) && /https:\/\//.test(msg), msg);
+		// a good address is sent and not mentioned
+		await rowsEl.nth(2).locator('.twd-ap-sb-card-src').fill('https://pictures.example.org/good.webp');
+		await page.click('#twd-ap-summary-book-save-btn');
+		await wait(400);
+		const sent2 = log.sbSaves[log.sbSaves.length - 1];
+		const msg2 = await page.locator('#twd-ap-summary-book-status').innerText();
+		t('review screen: a corrected address is sent, and only the other card is still reported', sent2.cards.some((c) => c.src === 'https://pictures.example.org/good.webp') && /1 picture card was left out/.test(msg2), msg2);
+		t('review screen: no JavaScript errors', log.errors.length === 0, log.errors.join(' | '));
+		await ctx.close();
+	}
+	{
+		const { ctx, page, log } = await open(browser);
+		await toJsonTab(page, JSON.stringify(Object.assign({}, BOOK, { html: '' })));
+		await page.click('#twd-ap-json-fill-btn');
+		await page.waitForFunction(() => document.getElementById('twd-ap-title').value !== '');
+		t('empty html with cards: still sent to the server as a book', log.imports.length === 1);
+		await ctx.close();
+	}
+
 	await browser.close();
 	console.log('\n' + pass + ' passed, ' + fail + ' failed');
 	process.exit(fail ? 1 : 0);

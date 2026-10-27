@@ -265,13 +265,15 @@ class TWD_AP_Summary_Book {
 		// Whitespace, quotes, angle brackets, backticks and backslashes have no
 		// place in an address that goes into an attribute; refuse rather than
 		// rely on the escaping that happens later (and is done anyway).
-		if ( '' === $value || strlen( $value ) > 500 || false !== stripos( $value, 'REPLACE_WITH' ) || preg_match( '/[\s"\'<>`\\\\]/', $value ) ) {
+		if ( '' === $value || strlen( $value ) > 500 || false !== strpos( $value, 'REPLACE_WITH_' ) || preg_match( '/[\s"\'<>`\\\\]/', $value ) ) {
 			return '';
 		}
 		if ( ! preg_match( '~^https://[^/\s]+\.[^/\s]~i', $value ) ) {
 			return '';
 		}
-		return esc_url_raw( $value, array( 'https' ) );
+		// An em or en dash in an address is written out (the article text has every
+		// dash removed, and that must not change which picture the address names).
+		return str_replace( array( "\xE2\x80\x94", "\xE2\x80\x93" ), array( '%E2%80%94', '%E2%80%93' ), esc_url_raw( $value, array( 'https' ) ) );
 	}
 
 	public static function get_draft( $post_id ) {

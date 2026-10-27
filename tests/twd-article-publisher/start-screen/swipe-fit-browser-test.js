@@ -407,6 +407,24 @@ const sourceText = (deck) => deck.slides.map((s) => {
 		await ctx.close();
 	}
 
+	// A picture page with a long caption never scrolls: the picture gives way first, then the caption may shrink to 80% (12px), never further.
+	{
+		const deck = bookOf([{ type: 'image', heading: 'A made-up picture', src: 'https://example.test/pic.svg', caption: para(0, 4) }]);
+		for (const vp of [{ width: 320, height: 568 }, { width: 360, height: 640 }]) {
+			const { ctx, p } = await open(browser, deck, vp);
+			await p.waitForFunction(() => Array.from(document.images).every((i) => i.complete), null, { timeout: 5000 });
+			await wait(400);
+			const r = await p.evaluate(() => {
+				const c = document.querySelector('.twd-sb-slide:not(.twd-sb-probe) .twd-sb-image-caption');
+				const b = document.querySelector('.twd-sb-slide:not(.twd-sb-probe) .twd-sb-card-body');
+				return { font: c ? parseFloat(getComputedStyle(c).fontSize) : 0, over: b.scrollHeight - b.clientHeight };
+			});
+			t('picture page ' + vp.width + 'x' + vp.height + ': the caption stays readable (12px at the least)', r.font >= 11.9, 'font ' + r.font);
+			t('picture page ' + vp.width + 'x' + vp.height + ': and the page does not scroll', r.over <= 1, 'over ' + r.over);
+			await ctx.close();
+		}
+	}
+
 	await browser.close();
 	console.log('\n' + pass + ' passed, ' + fail + ' failed');
 	process.exit(fail ? 1 : 0);

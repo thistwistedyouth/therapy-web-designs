@@ -41,7 +41,7 @@ class TWD_AP_Book_Import {
 
 	/** True for a decoded JSON that looks like a Book Maker book rather than an article. */
 	public static function is_book( $data ) {
-		return is_array( $data ) && isset( $data['cards'] ) && is_array( $data['cards'] ) && ! isset( $data['html'] );
+		return is_array( $data ) && isset( $data['cards'] ) && is_array( $data['cards'] ) && ( ! isset( $data['html'] ) || '' === $data['html'] );
 	}
 
 	/**
@@ -133,6 +133,9 @@ class TWD_AP_Book_Import {
 		if ( ! empty( $data['series'] ) ) {
 			$left_out[] = __( 'the series name', 'twd-article-publisher' );
 		}
+		if ( ! empty( $data['author_id'] ) ) {
+			$left_out[] = __( 'the author', 'twd-article-publisher' );
+		}
 		if ( $left_out ) {
 			/* translators: %s: a list such as "the cover colours and the series name" */
 			$notes[] = sprintf( __( 'Not used: %s.', 'twd-article-publisher' ), implode( ', ', $left_out ) );
@@ -206,7 +209,7 @@ class TWD_AP_Book_Import {
 				// "Chapter One - The Two Ways of With" over a card that only repeats
 				// "The Two Ways of With": the heading already says it.
 				$after = preg_replace( '/^.*?\s-\s/u', '', $card['heading'], 1 );
-				if ( is_string( $after ) && '' !== $text && 0 === strcasecmp( $text, trim( $after ) ) ) {
+				if ( 'text' === $card['type'] && is_string( $after ) && '' !== $text && 0 === strcasecmp( $text, trim( $after ) ) ) {
 					continue;
 				}
 			}

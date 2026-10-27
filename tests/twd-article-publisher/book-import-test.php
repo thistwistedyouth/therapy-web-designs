@@ -166,6 +166,34 @@ foreach ( array( 'https://media.example.org/REPLACE_WITH_MEDIA_URL/x.webp', 'htt
 	t( 'picture address refused: ' . substr( json_encode( $badsrc ), 0, 40 ), '' === TWD_AP_Summary_Book::clean_image_src( $badsrc ) );
 }
 t( 'picture address accepted: https with a host', 'https://a.example.org/x.png' === TWD_AP_Summary_Book::clean_image_src( ' https://a.example.org/x.png ' ) );
+t( 'picture address accepted: a lower-case "replace_with" in an ordinary address is not a placeholder', 'https://cdn.example.org/how-to-replace_with-care.png' === TWD_AP_Summary_Book::clean_image_src( 'https://cdn.example.org/how-to-replace_with-care.png' ) );
+t( 'picture address: an em or en dash is written out, so it survives the dash clean-up of the article', 'https://pics.example.org/a%E2%80%94b%E2%80%93c.png' === TWD_AP_Summary_Book::clean_image_src( "https://pics.example.org/a\xE2\x80\x94b\xE2\x80\x93c.png" ) );
+
+// Review fixes: a chapter heading that repeats a card's text only hides a TEXT card.
+$r = TWD_AP_Book_Import::convert( array( 'title' => 'T', 'cards' => array(
+	array( 'type' => 'image', 'part' => 'Chapter Two - Hope', 'src' => 'https://pics.example.org/hope.png', 'caption' => 'Hope' ),
+	array( 'type' => 'quote', 'part' => 'Part Three - Stay', 'text' => 'Stay', 'attribution' => 'Someone Famous' ),
+	array( 'type' => 'insight', 'part' => 'Chapter Four - Rest', 'text' => 'Rest' ),
+	array( 'type' => 'question', 'part' => 'Part Five - Why', 'text' => 'Why' ),
+) ) );
+t( 'chapter heading repeating a picture caption: the picture stays in the article', ! is_wp_error( $r ) && false !== strpos( $r['html'], '<img' ) && false !== strpos( $r['html'], 'hope.png' ) );
+t( 'chapter heading repeating a quote: the quote and its attribution stay in the article', false !== strpos( $r['html'], '<blockquote><p>Stay</p></blockquote>' ) && false !== strpos( $r['html'], 'Someone Famous' ) );
+t( 'chapter heading repeating a plain card: the repeat is still skipped once', 1 === substr_count( $r['html'], 'Rest' ) );
+t( 'chapter heading repeating a question: the question stays', false !== strpos( $r['html'], '<em>Why</em>' ) );
+t( 'those cards all stay in the Summary Book draft', 4 === count( $r['summary_book']['slides'] ) );
+
+// An empty "html" next to cards is still a book (the popup and the server agree).
+t( 'html empty string with cards is a book', TWD_AP_Book_Import::is_book( array( 'html' => '', 'cards' => array( array( 'text' => 'x' ) ) ) ) );
+t( 'html null with cards is a book', TWD_AP_Book_Import::is_book( array( 'html' => null, 'cards' => array( array( 'text' => 'x' ) ) ) ) );
+t( 'html with text and cards is an article', ! TWD_AP_Book_Import::is_book( array( 'html' => '<p>x</p>', 'cards' => array( array( 'text' => 'x' ) ) ) ) );
+
+// An em dash in a picture address does not change the address in the article.
+$r = TWD_AP_Book_Import::convert( array( 'title' => 'T', 'cards' => array( array( 'type' => 'image', 'src' => "https://pics.example.org/a\xE2\x80\x94b.png", 'caption' => 'Dashed' ) ) ) );
+t( 'dash in a picture address: the card and the article name the same picture', ! is_wp_error( $r ) && 'https://pics.example.org/a%E2%80%94b.png' === $r['summary_book']['slides'][0]['src'] && false !== strpos( $r['html'], 'https://pics.example.org/a%E2%80%94b.png' ) );
+
+// The notes say the author was not used.
+$r = TWD_AP_Book_Import::convert( array( 'title' => 'T', 'author_id' => 381, 'cards' => array( array( 'text' => 'Hello' ) ) ) );
+t( 'notes mention the author id was not used', ! is_wp_error( $r ) && false !== strpos( implode( ' ', $r['notes'] ), 'the author' ) );
 
 // What the swipe book is given for a picture card.
 $GLOBALS['meta'][5] = array( TWD_AP_Summary_Book::META_PUBLISHED => array(
