@@ -120,7 +120,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div id="twd-ap-visual-editor" class="twd-ap-visual-editor" contenteditable="true" data-placeholder="<?php esc_attr_e( 'Write, or paste AI-formatted HTML using the HTML tab above', 'twd-article-publisher' ); ?>"></div>
 			<textarea id="twd-ap-html-editor" class="twd-ap-html-editor" hidden placeholder="<?php esc_attr_e( 'Paste formatted HTML here', 'twd-article-publisher' ); ?>"></textarea>
 			<div id="twd-ap-json-panel" class="twd-ap-json-panel" hidden>
-				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (the button above, or anywhere producing the same shape). Fill fields from it below to bring in the title, excerpt, SEO fields, category, tags and content in one go. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
+				<p class="twd-ap-muted"><?php esc_html_e( 'Paste a JSON block from Article Assist (the button above, or anywhere producing the same shape). Fill fields from it below to bring in the title, excerpt, SEO fields, category, tags and content in one go. A Book Maker style book (a title and a list of cards: insight, filing, quote, question, image) works too: the cards become the article text and a Summary Book draft that stays private until you review and publish it. You can still edit anything afterward.', 'twd-article-publisher' ); ?></p>
 				<textarea id="twd-ap-json-input" class="twd-ap-html-editor" rows="8" placeholder='{"title": "...", "seo_title": "...", "meta_description": "...", "category": "...", "tags": "...", "html": "..."}'></textarea>
 				<div class="twd-ap-btn-row twd-ap-spaced">
 					<button type="button" id="twd-ap-json-fill-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Fill fields from JSON', 'twd-article-publisher' ); ?></button>
@@ -293,7 +293,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 		<div class="twd-ap-modal-body">
 			<p id="twd-ap-summary-book-status" class="twd-ap-status" hidden></p>
-			<p id="twd-ap-summary-book-empty" class="twd-ap-muted" hidden><?php esc_html_e( 'No draft yet. Paste a JSON block with a summary book from Article Assist, save the article, then reopen this.', 'twd-article-publisher' ); ?></p>
+			<p id="twd-ap-summary-book-empty" class="twd-ap-muted" hidden><?php esc_html_e( 'No draft yet. Paste a JSON block with a summary book from Article Assist, or a Book Maker style book, save the article, then reopen this.', 'twd-article-publisher' ); ?></p>
 			<p id="twd-ap-summary-book-published-note" class="twd-ap-muted" hidden><?php esc_html_e( 'This Summary Book is live. Review your edits below, then publish to update it.', 'twd-article-publisher' ); ?></p>
 			<ul id="twd-ap-summary-book-cards" class="twd-ap-summary-book-cards"></ul>
 			<button type="button" id="twd-ap-summary-book-add-btn" class="twd-ap-btn-secondary"><?php esc_html_e( '+ Add card', 'twd-article-publisher' ); ?></button>

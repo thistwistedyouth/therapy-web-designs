@@ -76,6 +76,15 @@
 				'</a>';
 				}).join('') +
 				'</div>';
+		} else if ('image' === slide.type) {
+			// A picture card (Summary Book only). The address was checked on the
+			// server (https only); checked again here before it is drawn.
+			var okSrc = /^https:\/\//i.test(slide.src || '');
+			body = '<div class="twd-sb-image">' +
+				(slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +
+				(okSrc ? '<img class="twd-sb-image-img" src="' + escapeAttr(slide.src) + '" alt="' + escapeAttr(slide.caption || '') + '">' : '') +
+				(slide.caption ? '<p class="twd-sb-image-caption">' + escapeHtml(slide.caption) + '</p>' : '') +
+				'</div>';
 		} else if ('quote' === slide.type) {
 			body = '<div class="twd-sb-quote">' +
 				(slide.heading ? '<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' : '') +

@@ -32,7 +32,7 @@
 		lastLink: '',
 	};
 	var RELATED_MAX = 6;
-	var SUMMARY_BOOK_TYPES = ['text', 'quote', 'question'];
+	var SUMMARY_BOOK_TYPES = ['text', 'quote', 'question', 'image'];
 
 	var els = {};
 	var featuredFrame = null;
@@ -604,7 +604,7 @@
 	}
 
 	function summaryBookCardTemplate(type) {
-		return { type: type || 'text', heading: '', text: '', attribution: '' };
+		return { type: type || 'text', heading: '', text: '', attribution: '', src: '' };
 	}
 
 	function renderSummaryBookCards(cards) {
@@ -632,7 +632,8 @@
 				'<button type="button" class="twd-ap-sb-card-remove" aria-label="Remove card">&times;</button>' +
 			'</div>' +
 			'<input type="text" class="twd-ap-input twd-ap-sb-card-heading" placeholder="Heading (optional)" value="' + escapeHtml(card.heading || '') + '" />' +
-			'<textarea class="twd-ap-textarea-small twd-ap-sb-card-text" placeholder="Card text" rows="3">' + escapeHtml(card.text || '') + '</textarea>' +
+			'<input type="text" class="twd-ap-input twd-ap-sb-card-src" placeholder="Picture address, starting https:// (a picture from your Media Library works)" value="' + escapeHtml(card.src || '') + '" />' +
+			'<textarea class="twd-ap-textarea-small twd-ap-sb-card-text" placeholder="Card text (for a picture, its caption)" rows="3">' + escapeHtml(card.text || '') + '</textarea>' +
 			'<input type="text" class="twd-ap-input twd-ap-sb-card-attribution" placeholder="Attribution (optional)" value="' + escapeHtml(card.attribution || '') + '" />';
 
 		applySummaryBookCardTypeVisibility(li);
@@ -647,8 +648,10 @@
 		var type = li.dataset.type;
 		var heading = li.querySelector('.twd-ap-sb-card-heading');
 		var attribution = li.querySelector('.twd-ap-sb-card-attribution');
+		var src = li.querySelector('.twd-ap-sb-card-src');
 		if (heading) { heading.hidden = 'text' !== type; }
 		if (attribution) { attribution.hidden = 'quote' !== type; }
+		if (src) { src.hidden = 'image' !== type; }
 	}
 
 	function addSummaryBookCard(type) {
@@ -682,8 +685,11 @@
 			if (heading) { card.heading = heading; }
 			var attribution = row.querySelector('.twd-ap-sb-card-attribution').value.trim();
 			if (attribution) { card.attribution = attribution; }
+			var src = row.querySelector('.twd-ap-sb-card-src');
+			if ('image' === card.type && src && src.value.trim()) { card.src = src.value.trim(); }
 			return card;
-		}).filter(function (card) { return '' !== card.text; });
+		// A picture card is its picture (the text is only a caption); every other card needs text.
+		}).filter(function (card) { return 'image' === card.type ? !!card.src : '' !== card.text; });
 	}
 
 	function setSummaryBookStatus(msg, ok) {
@@ -907,7 +913,36 @@
 			showStatus('That is not valid JSON.', false);
 			return;
 		}
+		// A Book Maker style book (a title and a list of cards) is read by the
+		// server, which turns it into article text plus a Summary Book draft.
+		if (data && Array.isArray(data.cards) && !data.html) {
+			importBook(data);
+			return;
+		}
 		applyGeneratedData(data, 'Fields filled from JSON. Review them below before saving.');
+	}
+
+	function importBook(book) {
+		showStatus('Reading the book...', true);
+		fetch(TWD_AP.restUrl + '/book-import', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': TWD_AP.nonce },
+			body: JSON.stringify(book),
+		})
+			.then(function (r) {
+				return r.json().then(function (d) { return { ok: r.ok, data: d }; });
+			})
+			.then(function (result) {
+				if (!result.ok) {
+					showStatus((result.data && result.data.message) ? result.data.message : 'That book could not be read.', false);
+					return;
+				}
+				var notes = Array.isArray(result.data.notes) ? result.data.notes.join(' ') : '';
+				applyGeneratedData(result.data, (notes ? notes + ' ' : '') + 'The cards became the article text and a Summary Book draft. Review the text below; after saving, open Summary Book to check the cards before they go public.');
+			})
+			.catch(function () {
+				showStatus('Something went wrong reading that book. Please try again.', false);
+			});
 	}
 
 	/**

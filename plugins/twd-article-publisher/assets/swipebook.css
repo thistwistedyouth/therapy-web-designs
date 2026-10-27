@@ -508,6 +508,38 @@ body {
   margin: 0 !important;
 }
 
+/* Picture card (Summary Book). The picture takes whatever height the page has
+   left after the caption and shrinks to fit (flex-shrink on the image, with
+   object-fit so it is never stretched), so a picture never makes a page
+   scroll. */
+.twd-sb-image {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  text-align: center !important;
+}
+.twd-sb-image-img {
+  display: block !important;
+  flex: 0 1 auto !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  object-fit: contain !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5) !important;
+}
+.twd-sb-image-caption {
+  flex: 0 0 auto !important;
+  margin: calc(12px * var(--twd-sb-s, 1)) 0 0 !important;
+  font-family: Georgia, "Cormorant Garamond", Garamond, serif !important;
+  font-size: calc(15px * var(--twd-sb-s, 1)) !important;
+  line-height: 1.5 !important;
+  color: var(--twd-sb-cream-muted) !important;
+}
+
 /* Cross-link between a swipe book and its Summary Book (or back), shown
    only when the other book has actually been published for this article. */
 .twd-sb-companion-link {
