@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.45.0
+Stable tag: 1.46.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,21 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.46.0): (1) A shortcode for the swipe book button. In Customise this
+grid, tick "Place the button under the title with a shortcode instead of
+automatically", then put [twd_swipebook_button] in your own single article
+template (or any page; id="123" names a different article). It prints the
+"View as a swipe book" button, and the Summary Book one when the article has
+one. (2) A shortcode for related articles, [twd_related] (count="3" changes how
+many links). In Customise this grid > Related articles, choose automatically at
+the end of every article (as before), only where you place the shortcode, or
+nowhere. (3) The button at the end of an article now reads "Share as a swipe
+book" and sits on the right. (4) Better line endings in articles: headings are
+balanced and paragraphs avoid a lonely last word (Chrome, Edge and Safari), and
+with "Tidy line endings" ticked (the default, in Article look) a one or two
+letter word such as "so", "we" or "an" stays with the word after it, so a line
+never ends on one. Your saved articles are not changed.
 
 NEW (1.45.0): featured articles come first, in your order. On the Resources
 grid the featured articles now sit in a "Featured" row at the very top, from

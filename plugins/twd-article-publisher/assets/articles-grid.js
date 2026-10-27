@@ -575,6 +575,9 @@
 		var relatedCount = overlay.querySelector('#twd-ap-gs-related-count');
 		var relatedTopics = overlay.querySelector('#twd-ap-gs-related-topics');
 		var sbPosition = overlay.querySelector('#twd-ap-gs-sb-position');
+		var sbTopShortcode = overlay.querySelector('#twd-ap-gs-sb-top-shortcode');
+		var relatedPlace = overlay.querySelector('#twd-ap-gs-related-place');
+		var lookTidy = overlay.querySelector('#twd-ap-gs-look-tidy');
 		var ctaHeading = overlay.querySelector('#twd-ap-gs-cta-heading');
 		var ctaText = overlay.querySelector('#twd-ap-gs-cta-text');
 		var ctaLabel = overlay.querySelector('#twd-ap-gs-cta-label');
@@ -840,6 +843,9 @@
 					relatedTopics.checked = false !== data.related_topics;
 				}
 				if (sbPosition) { sbPosition.value = data.swipebook_button_position || 'both'; }
+				if (sbTopShortcode) { sbTopShortcode.checked = !!data.swipebook_top_shortcode; }
+				if (relatedPlace) { relatedPlace.value = data.related_place || 'auto'; }
+				if (lookTidy) { lookTidy.checked = false !== data.look_tidy_lines; }
 				// A page cached before an update can carry an older popup without
 				// some of these fields; they are skipped here and on save.
 				if (ctaHeading) {
@@ -902,6 +908,9 @@
 				payload.related_topics = !!relatedTopics.checked;
 			}
 			if (sbPosition) { payload.swipebook_button_position = sbPosition.value; }
+			if (sbTopShortcode) { payload.swipebook_top_shortcode = !!sbTopShortcode.checked; }
+			if (relatedPlace) { payload.related_place = relatedPlace.value; }
+			if (lookTidy) { payload.look_tidy_lines = !!lookTidy.checked; }
 			if (ctaHeading) {
 				payload.cta_heading = ctaHeading.value;
 				payload.cta_text = ctaText.value;

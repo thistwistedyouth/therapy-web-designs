@@ -9,10 +9,21 @@ class WP_Error { public $c; public $m; public $d; function __construct( $c = '',
 function is_wp_error( $x ) { return $x instanceof WP_Error; }
 function __( $s ) { return $s; }
 function esc_html__( $s ) { return htmlspecialchars( $s ); }
+function esc_html( $s ) { return htmlspecialchars( (string) $s ); }
 function esc_url( $s ) { return htmlspecialchars( $s ); }
 function esc_attr( $s ) { return htmlspecialchars( $s ); }
 function add_filter( $tag = '', $cb = null, $prio = 10 ) { $GLOBALS['registered'][] = array( $tag, is_array( $cb ) ? $cb[1] : $cb, $prio ); }
 function add_action() {}
+function add_shortcode( $tag, $cb ) { $GLOBALS['shortcodes'][ $tag ] = $cb; }
+function shortcode_atts( $pairs, $atts ) { return array_merge( $pairs, array_intersect_key( (array) $atts, $pairs ) ); }
+function wp_enqueue_style( $h ) { $GLOBALS['enqueued'][] = $h; }
+function wp_enqueue_script( $h ) { $GLOBALS['enqueued'][] = $h; }
+function wp_localize_script() {}
+function rest_url( $p = '' ) { return 'https://example.test/wp-json/' . $p; }
+function esc_url_raw( $s ) { return $s; }
+define( 'TWD_AP_URL', 'https://example.test/plugin/' );
+define( 'TWD_AP_VERSION', 'test' );
+$GLOBALS['shortcodes'] = array(); $GLOBALS['enqueued'] = array();
 function apply_filters( $t, $v ) { return $v; }
 function wp_parse_args( $a, $d ) { return array_merge( $d, (array) $a ); }
 function wp_unslash( $s ) { return $s; }
@@ -34,10 +45,11 @@ function delete_post_meta( $id, $k ) { unset( $GLOBALS['meta'][ $id ][ $k ] ); r
 function get_option( $k, $d = false ) { return $GLOBALS['opt'][ $k ] ?? $d; }
 function get_posts( $args ) { $GLOBALS['q'] = $args; return array_values( array_filter( $GLOBALS['posts'], function ( $p ) use ( $args ) { return 'publish' === $p->post_status && ! in_array( $p->ID, $args['post__not_in'], true ) && ! ( isset( $GLOBALS['meta'][ $p->ID ]['_twd_ap_swipebook_off'] ) ); } ) ); }
 function rest_ensure_response( $x ) { return $x; }
-class TWD_AP_Grid_Settings { static $pos = 'both'; static function get() { return array( 'swipebook_color' => '#5b8a72', 'swipebook_button_position' => self::$pos ); } }
+class TWD_AP_Grid_Settings { static $pos = 'both'; static $top = false; static function get() { return array( 'swipebook_color' => '#5b8a72', 'swipebook_button_position' => self::$pos, 'swipebook_top_shortcode' => self::$top ); } }
 class TWD_AP_Shortcode { static $on = false; static function rendered_on_this_page() { return self::$on; } }
 class TWD_AP_Sanitizer { static function strip_dashes( $s ) { return $s; } }
 require $plugin . 'includes/class-twd-ap-settings.php';
+require $plugin . 'includes/class-twd-ap-article-style.php';
 require $plugin . 'includes/class-twd-ap-swipebook.php';
 require $plugin . 'includes/class-twd-ap-summary-book.php';
 require $plugin . 'includes/class-twd-ap-cards.php';
@@ -58,7 +70,7 @@ t( 'is_enabled: only that article is off', TWD_AP_Swipebook::is_enabled( 1 ) && 
 // ---------- the buttons ----------
 $GLOBALS['current'] = 1;
 $on = TWD_AP_Swipebook::instance()->append_button( '<p>body</p>' );
-t( 'swipe button: shown for an article that is on', false !== strpos( $on, 'View as a swipe book' ) );
+t( 'swipe button: shown at the end for an article that is on, worded as a share', false !== strpos( $on, 'Share as a swipe book' ) && false === strpos( $on, 'View as a swipe book' ) );
 $GLOBALS['current'] = 2;
 t( 'swipe button: hidden for an article that is off', '<p>body</p>' === TWD_AP_Swipebook::instance()->append_button( '<p>body</p>' ) );
 $GLOBALS['meta'][1]['_twd_ap_summary_book_published'] = array( array( 'type' => 'text', 'text' => 'x' ) );
@@ -76,7 +88,7 @@ TWD_AP_Grid_Settings::$pos = 'both';
 $top = $sbi->prepend_buttons( '<p>body</p>' );
 t( 'position both: the button is the first thing in the article text, inside a top wrapper', 1 === preg_match( '/^<div class="twd-ap-swipebook-top"><p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn"/', $top ) && '</div><p>body</p>' === substr( $top, -17 ) );
 t( 'position both: the Summary Book button is beside it at the top when the article has one', false !== strpos( $top, 'twd-ap-summary-book-btn' ) && strpos( $top, 'View as a swipe book' ) < strpos( $top, 'View Summary Book' ) );
-t( 'position both: the bottom buttons are still added after the text', false !== strpos( $sbi->append_button( '<p>body</p>' ), '<p>body</p><p class="twd-ap-swipebook-row">' ) && false !== strpos( $smi->append_button( '<p>body</p>' ), 'View Summary Book' ) );
+t( 'position both: the bottom buttons are still added after the text', false !== strpos( $sbi->append_button( '<p>body</p>' ), '<p>body</p><p class="twd-ap-swipebook-row twd-ap-swipebook-row-end">' ) && false !== strpos( $smi->append_button( '<p>body</p>' ), 'View Summary Book' ) );
 TWD_AP_Grid_Settings::$pos = 'top';
 t( 'position top: the buttons are at the top and not repeated at the end', false !== strpos( $sbi->prepend_buttons( '<p>b</p>' ), 'twd-ap-swipebook-btn' ) && '<p>b</p>' === $sbi->append_button( '<p>b</p>' ) && '<p>b</p>' === $smi->append_button( '<p>b</p>' ) );
 TWD_AP_Grid_Settings::$pos = 'bottom';
@@ -207,6 +219,46 @@ if ( getenv( 'TWD_SWIPE_DUMP' ) ) {
 	}
 	file_put_contents( getenv( 'TWD_SWIPE_DUMP' ), json_encode( $out ) );
 }
+// ---------- the end button and the shortcode (1.46.0) ----------
+$GLOBALS['current'] = 1; $GLOBALS['qv'] = array(); TWD_AP_Grid_Settings::$pos = 'both'; TWD_AP_Grid_Settings::$top = false;
+$GLOBALS['meta'][1]['_twd_ap_summary_book_published'] = array( array( 'type' => 'text', 'text' => 'x' ) );
+$endhtml = $sbi->append_button( '' );
+t( 'end button: "Share as a swipe book", in a row marked as the end one (the stylesheet puts it on the right)', 1 === preg_match( '/^<p class="twd-ap-swipebook-row twd-ap-swipebook-row-end"><a class="twd-ap-swipebook-btn"[^>]*>Share as a swipe book &#8599;<\/a><\/p>$/', $endhtml ) );
+$endsum = $smi->append_button( '' );
+t( 'end button: the Summary Book one sits on the right too, its words unchanged', false !== strpos( $endsum, 'twd-ap-swipebook-row-end' ) && false !== strpos( $endsum, 'View Summary Book' ) );
+t( 'top button: still "View as a swipe book", not marked as the end row', false !== strpos( $sbi->prepend_buttons( '' ), 'View as a swipe book' ) && false === strpos( $sbi->prepend_buttons( '' ), 'row-end' ) );
+// the "place it with a shortcode" tick
+TWD_AP_Grid_Settings::$top = true;
+t( 'top shortcode tick: no automatic button under the title', '<p>b</p>' === $sbi->prepend_buttons( '<p>b</p>' ) );
+t( 'top shortcode tick: the button at the end is still added (position both)', false !== strpos( $sbi->append_button( '<p>b</p>' ), 'Share as a swipe book' ) );
+TWD_AP_Grid_Settings::$pos = 'top';
+t( 'top shortcode tick with "under the title only": nothing is added automatically at all', '<p>b</p>' === $sbi->prepend_buttons( '<p>b</p>' ) && '<p>b</p>' === $sbi->append_button( '<p>b</p>' ) );
+TWD_AP_Grid_Settings::$pos = 'both'; TWD_AP_Grid_Settings::$top = false;
+t( 'top shortcode tick off: the automatic button is back', false !== strpos( $sbi->prepend_buttons( '<p>b</p>' ), 'View as a swipe book' ) );
+// [twd_swipebook_button]
+t( 'shortcode [twd_swipebook_button] is registered', isset( $GLOBALS['shortcodes']['twd_swipebook_button'] ) );
+$sc = function ( $atts = array() ) { return $GLOBALS['shortcodes']['twd_swipebook_button']( $atts ); };
+$out = $sc();
+t( 'shortcode: the top wrapper with the swipe book button and, for a published deck, the Summary Book one', 1 === preg_match( '/^<div class="twd-ap-swipebook-top"><p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn"[^>]*>View as a swipe book/', $out ) && false !== strpos( $out, 'twd-ap-summary-book-btn' ) && '</div>' === substr( $out, -6 ) );
+TWD_AP_Grid_Settings::$top = true; TWD_AP_Grid_Settings::$pos = 'bottom';
+t( 'shortcode: prints where it is placed whatever the position and tick settings say', $out === $sc() );
+TWD_AP_Grid_Settings::$top = false; TWD_AP_Grid_Settings::$pos = 'both';
+$GLOBALS['enqueued'] = array(); $sc();
+t( 'shortcode: loads the overlay script and the article stylesheet (so it works on a page that is not an article)', in_array( 'twd-ap-swipebook-inline', $GLOBALS['enqueued'], true ) && in_array( 'twd-ap-article-style', $GLOBALS['enqueued'], true ), json_encode( $GLOBALS['enqueued'] ) );
+mkpost( 7 );
+$o7 = $sc( array( 'id' => '7' ) );
+t( 'shortcode: id names another article', false !== strpos( $o7, 'data-twd-ap-post-id="7"' ) && false === strpos( $o7, 'data-twd-ap-post-id="1"' ) );
+t( 'shortcode: an article with the swipe book switched off prints nothing', '' === $sc( array( 'id' => '2' ) ) );
+mkpost( 8, 'draft' );
+t( 'shortcode: an unpublished article prints nothing', '' === $sc( array( 'id' => '8' ) ) );
+t( 'shortcode: an unknown id prints nothing', '' === $sc( array( 'id' => '999' ) ) );
+$GLOBALS['posts'][9] = (object) array( 'ID' => 9, 'post_type' => 'page', 'post_status' => 'publish' );
+t( 'shortcode: a page (not an article) prints nothing', '' === $sc( array( 'id' => '9' ) ) );
+$GLOBALS['current'] = 0;
+t( 'shortcode: with no current article and no id prints nothing and does not fail', '' === $sc() );
+$GLOBALS['current'] = 1;
+t( 'shortcode: the Summary Book button is left out when there is no published deck', ( function () use ( $sc ) { $o = $sc( array( 'id' => '7' ) ); return false === strpos( $o, 'summary-book' ); } )() );
+
 // ---------- the grid number (1.45.0): saving and loading ----------
 $GN = TWD_AP_Cards::ORDER_META;
 $m->invoke( $rest, 3, array( 'featured' => true, 'grid_order' => '2' ) );

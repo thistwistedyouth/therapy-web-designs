@@ -49,5 +49,32 @@ t( 'shape class: 4:3', 'twd-ap-thumbs-4-3' === TWD_AP_Grid_Settings::thumb_shape
 t( 'shape class: square', 'twd-ap-thumbs-square' === TWD_AP_Grid_Settings::thumb_shape_class( 'square' ) );
 t( 'shape class: anything else prints none', '' === TWD_AP_Grid_Settings::thumb_shape_class( 'huge' ) && '' === TWD_AP_Grid_Settings::thumb_shape_class( null ) && '' === TWD_AP_Grid_Settings::thumb_shape_class( array() ) );
 
+// Shortcode placement and line endings (1.46.0).
+$d = TWD_AP_Grid_Settings::get();
+t( 'defaults: related block automatic, top button automatic, line endings tidied', 'auto' === $d['related_place'] && false === $d['swipebook_top_shortcode'] && true === $d['look_tidy_lines'] );
+foreach ( array( 'shortcode', 'off', 'auto' ) as $place ) {
+	TWD_AP_Grid_Settings::save( array( 'related_place' => $place ) );
+	t( 'related place: ' . $place . ' is saved', $place === TWD_AP_Grid_Settings::get()['related_place'] );
+}
+TWD_AP_Grid_Settings::save( array( 'related_place' => 'shortcode' ) );
+foreach ( array( 'Shortcode', 'everywhere', '', 0, true, array( 'off' ), '<script>' ) as $bad ) {
+	TWD_AP_Grid_Settings::save( array( 'related_place' => $bad ) );
+	t( 'related place: ' . json_encode( $bad ) . ' is ignored, the saved place stays', 'shortcode' === TWD_AP_Grid_Settings::get()['related_place'] );
+}
+TWD_AP_Grid_Settings::save( array( 'accent_color' => '#445566' ) );
+t( 'related place: saving something else leaves it alone', 'shortcode' === TWD_AP_Grid_Settings::get()['related_place'] );
+TWD_AP_Grid_Settings::save( array( 'swipebook_top_shortcode' => true ) );
+t( 'top button by shortcode: can be ticked', true === TWD_AP_Grid_Settings::get()['swipebook_top_shortcode'] );
+TWD_AP_Grid_Settings::save( array( 'accent_color' => '#112233' ) );
+t( 'top button by shortcode: saving something else leaves it ticked', true === TWD_AP_Grid_Settings::get()['swipebook_top_shortcode'] );
+TWD_AP_Grid_Settings::save( array( 'swipebook_top_shortcode' => false ) );
+t( 'top button by shortcode: can be unticked', false === TWD_AP_Grid_Settings::get()['swipebook_top_shortcode'] );
+TWD_AP_Grid_Settings::save( array( 'look_tidy_lines' => false ) );
+t( 'tidy line endings: can be switched off', false === TWD_AP_Grid_Settings::get()['look_tidy_lines'] );
+TWD_AP_Grid_Settings::save( array( 'accent_color' => '#334455' ) );
+t( 'tidy line endings: saving something else leaves it off', false === TWD_AP_Grid_Settings::get()['look_tidy_lines'] );
+TWD_AP_Grid_Settings::save( array( 'look_tidy_lines' => true ) );
+t( 'tidy line endings: can be switched on again', true === TWD_AP_Grid_Settings::get()['look_tidy_lines'] );
+
 echo "\n$pass passed, $fail failed\n";
 exit( $fail ? 1 : 0 );

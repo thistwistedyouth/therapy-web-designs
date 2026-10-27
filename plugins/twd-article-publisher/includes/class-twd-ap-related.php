@@ -15,6 +15,8 @@ class TWD_AP_Related {
 
 	private static $instance = null;
 	private static $appended = false;
+	/** True once a [twd_related] shortcode has printed the block on this page. */
+	private static $placed = false;
 
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -27,10 +29,49 @@ class TWD_AP_Related {
 		// After TWD_AP_Article_Style::wrap_content() (20) so it sits below the
 		// article's narrow column, and before the call to action (25).
 		add_filter( 'the_content', array( $this, 'append_to_article' ), 22 );
+		add_shortcode( 'twd_related', array( $this, 'shortcode' ) );
+	}
+
+	/** 'auto' (the default), 'shortcode' or 'off': where the block goes (Customise this grid > Related articles). */
+	public static function place() {
+		$p = TWD_AP_Grid_Settings::get()['related_place'];
+		return in_array( $p, TWD_AP_Grid_Settings::RELATED_PLACES, true ) ? $p : 'auto';
+	}
+
+	/**
+	 * [twd_related]: the same block as the automatic one, wherever it is
+	 * placed (a single article template, an article's own text). It works for
+	 * the article being shown; id="123" names another, count="3" changes how
+	 * many links for this one place. Prints nothing when the owner has chosen
+	 * "Nowhere", or when the article has nothing to show. When the owner has
+	 * left it on "automatically at the end" and the shortcode sits in the
+	 * article's own text, the automatic copy steps aside, so it never shows
+	 * twice there; in a template that prints after the text, choose "Only
+	 * where I place the shortcode".
+	 */
+	public function shortcode( $atts ) {
+		if ( 'off' === self::place() ) {
+			return '';
+		}
+		$atts = shortcode_atts( array( 'id' => 0, 'count' => 0 ), (array) $atts, 'twd_related' );
+		$id   = absint( $atts['id'] );
+		if ( ! $id ) {
+			$id = (int) get_the_ID();
+		}
+		if ( ! $id ) {
+			return '';
+		}
+		$count = absint( $atts['count'] );
+		$box   = self::html( $id, $count ? max( 1, min( 8, $count ) ) : 0 );
+		if ( '' !== $box ) {
+			self::$placed = true;
+			TWD_AP_Article_Style::enqueue();
+		}
+		return $box;
 	}
 
 	public function append_to_article( $content ) {
-		if ( self::$appended || is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
+		if ( self::$appended || self::$placed || 'auto' !== self::place() || is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
 			return $content;
 		}
 		$box = self::html( (int) get_the_ID() );
@@ -83,12 +124,12 @@ class TWD_AP_Related {
 	 * and the quiet All articles link, this article's own category shown but
 	 * not linked). Either part can be switched off; '' when neither shows.
 	 */
-	public static function html( $post_id ) {
+	public static function html( $post_id, $count = 0 ) {
 		$s     = TWD_AP_Grid_Settings::get();
 		$topic = self::topic_for( $post_id );
 		$list  = '';
 		if ( ! empty( $s['related_show'] ) && $topic ) {
-			$list = self::list_html( $post_id, $topic, max( 1, min( 8, (int) $s['related_count'] ) ) );
+			$list = self::list_html( $post_id, $topic, $count ? max( 1, min( 8, (int) $count ) ) : max( 1, min( 8, (int) $s['related_count'] ) ) );
 		}
 		$nav = '';
 		if ( ! empty( $s['related_topics'] ) ) {

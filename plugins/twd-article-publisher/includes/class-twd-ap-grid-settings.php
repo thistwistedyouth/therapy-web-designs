@@ -50,6 +50,10 @@ class TWD_AP_Grid_Settings {
 			// how many links.
 			'related_show'       => true,
 			'related_count'      => 4,
+			// 1.46.0: where the related block goes: 'auto' (at the end of every
+			// article, as before), 'shortcode' (only where [twd_related] is
+			// placed) or 'off'.
+			'related_place'      => 'auto',
 			// Also close every article with the Browse by topic links under the
 			// related list.
 			'related_topics'     => true,
@@ -68,10 +72,16 @@ class TWD_AP_Grid_Settings {
 			'look_font'          => 'system',
 			'look_size'          => 'medium',
 			'look_spacing'       => 'normal',
+			// 1.46.0: keep one and two letter words with the word after them, so a
+			// line never ends on "so" or "we".
+			'look_tidy_lines'    => true,
 			'swipebook_color'    => '#5b8a72',
 			// Where the swipe book button goes on an article (1.41.0): 'top' (under
 			// the title), 'bottom' (after the text) or 'both'.
 			'swipebook_button_position' => 'both',
+			// 1.46.0: put the button under the title with the [twd_swipebook_button]
+			// shortcode (in a template or a page) instead of the automatic one.
+			'swipebook_top_shortcode' => false,
 			'swipebook_heading'  => '',
 			'swipebook_label'    => 'Swipe Book',
 			'swipebook_logo_id'  => 0,
@@ -92,6 +102,9 @@ class TWD_AP_Grid_Settings {
 
 	/** The choices for the card image shape, in the order the popup lists them. */
 	const THUMB_SHAPES = array( 'wide', '4-3', 'square' );
+
+	/** Where the related block goes (1.46.0). */
+	const RELATED_PLACES = array( 'auto', 'shortcode', 'off' );
 
 	/**
 	 * The class the grid's root element carries for a card image shape: none for
@@ -124,6 +137,7 @@ class TWD_AP_Grid_Settings {
 			'archive_takeover'   => $current['archive_takeover'],
 			'related_show'       => $current['related_show'],
 			'related_count'      => $current['related_count'],
+			'related_place'      => $current['related_place'],
 			'cta_heading'        => $current['cta_heading'],
 			'cta_text'           => $current['cta_text'],
 			'cta_button_label'   => $current['cta_button_label'],
@@ -139,8 +153,10 @@ class TWD_AP_Grid_Settings {
 			'look_font'          => $current['look_font'],
 			'look_size'          => $current['look_size'],
 			'look_spacing'       => $current['look_spacing'],
+			'look_tidy_lines'    => $current['look_tidy_lines'],
 			'swipebook_color'    => $current['swipebook_color'],
 			'swipebook_button_position' => $current['swipebook_button_position'],
+			'swipebook_top_shortcode' => $current['swipebook_top_shortcode'],
 			'related_topics'     => $current['related_topics'],
 			'swipebook_heading'  => $current['swipebook_heading'],
 			'swipebook_label'    => $current['swipebook_label'],
@@ -197,6 +213,15 @@ class TWD_AP_Grid_Settings {
 		}
 		if ( isset( $input['swipebook_button_position'] ) && in_array( $input['swipebook_button_position'], array( 'top', 'bottom', 'both' ), true ) ) {
 			$output['swipebook_button_position'] = $input['swipebook_button_position'];
+		}
+		if ( isset( $input['swipebook_top_shortcode'] ) ) {
+			$output['swipebook_top_shortcode'] = (bool) $input['swipebook_top_shortcode'];
+		}
+		if ( isset( $input['look_tidy_lines'] ) ) {
+			$output['look_tidy_lines'] = (bool) $input['look_tidy_lines'];
+		}
+		if ( isset( $input['related_place'] ) && in_array( $input['related_place'], self::RELATED_PLACES, true ) ) {
+			$output['related_place'] = $input['related_place'];
 		}
 		if ( isset( $input['related_topics'] ) ) {
 			$output['related_topics'] = (bool) $input['related_topics'];

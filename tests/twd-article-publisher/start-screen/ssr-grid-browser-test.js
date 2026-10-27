@@ -614,6 +614,37 @@ async function open(browser, name, o) {
 		await r.ctx.close();
 	}
 
+	// 19. The gear popup: the shortcode choices and tidy line endings (1.46.0).
+	{
+		const r = await open(browser, 'admin', { delay: 50 });
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.click('#twd-ap-gs-related-details > summary');
+		await r.page.click('#twd-ap-gs-look-details > summary');
+		t('shortcode settings: they start as automatic related articles, no top-button shortcode, tidy line endings on', (await r.page.inputValue('#twd-ap-gs-related-place')) === 'auto' && !(await r.page.isChecked('#twd-ap-gs-sb-top-shortcode')) && (await r.page.isChecked('#twd-ap-gs-look-tidy')));
+		t('shortcode settings: the related choice offers automatic, shortcode and nowhere', (await r.page.locator('#twd-ap-gs-related-place option').evaluateAll((o) => o.map((x) => x.value))).join(',') === 'auto,shortcode,off');
+		t('shortcode settings: the hints name the shortcodes', (await r.page.locator('#twd-ap-gs-sb-top-shortcode').evaluate((e) => e.closest('label').nextElementSibling.textContent)).includes('[twd_swipebook_button]') && (await r.page.locator('#twd-ap-gs-related-place option[value="shortcode"]').innerText()).includes('[twd_related]'));
+		await r.page.selectOption('#twd-ap-gs-related-place', 'shortcode');
+		await r.page.check('#twd-ap-gs-sb-top-shortcode');
+		await r.page.uncheck('#twd-ap-gs-look-tidy');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		const body = saved[saved.length - 1];
+		t('shortcode settings: saving sends the three choices', body.related_place === 'shortcode' && body.swipebook_top_shortcode === true && body.look_tidy_lines === false, JSON.stringify([body.related_place, body.swipebook_top_shortcode, body.look_tidy_lines]));
+		t('shortcode settings: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+		// saved values load back in
+		window_cta = { related_place: 'off', swipebook_top_shortcode: true, look_tidy_lines: false };
+		const q = await open(browser, 'admin', { delay: 50 });
+		await q.page.click('.twd-ap-articles-settings-btn');
+		await q.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await q.page.click('#twd-ap-gs-related-details > summary');
+		await q.page.click('#twd-ap-gs-look-details > summary');
+		t('shortcode settings: saved values load back into the boxes', (await q.page.inputValue('#twd-ap-gs-related-place')) === 'off' && (await q.page.isChecked('#twd-ap-gs-sb-top-shortcode')) && !(await q.page.isChecked('#twd-ap-gs-look-tidy')));
+		await q.ctx.close();
+		window_cta = {};
+	}
+
 	await browser.close();
 	console.log('\n' + pass + ' passed, ' + fail + ' failed');
 	process.exit(fail ? 1 : 0);

@@ -39,6 +39,7 @@ class TWD_AP_Swipebook {
 		add_filter( 'the_content', array( $this, 'append_button' ), 15 );
 		add_filter( 'the_content', array( $this, 'prepend_buttons' ), 11 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_inline' ) );
+		add_shortcode( 'twd_swipebook_button', array( $this, 'shortcode_button' ) );
 	}
 
 	public function register_query_var( $vars ) {
@@ -93,7 +94,15 @@ class TWD_AP_Swipebook {
 		if ( '1' === (string) get_query_var( 'twd_ap_swipebook' ) ) {
 			return;
 		}
+		self::enqueue_inline_assets();
+	}
 
+	/**
+	 * The overlay's stylesheet and scripts. Also called by the
+	 * [twd_swipebook_button] shortcode, so a button placed on a page that is
+	 * not a single article (a custom template, a landing page) still opens.
+	 */
+	public static function enqueue_inline_assets() {
 		wp_enqueue_style(
 			'twd-ap-swipebook',
 			TWD_AP_URL . 'assets/swipebook.css',
@@ -157,22 +166,53 @@ class TWD_AP_Swipebook {
 	 * The button for one article, or '' when the article is not published or
 	 * has the swipe book switched off.
 	 */
-	public static function button_html( $post ) {
+	public static function button_html( $post, $end = false ) {
 		if ( ! $post || 'publish' !== $post->post_status || ! self::is_enabled( $post->ID ) ) {
 			return '';
 		}
 		$url   = esc_url( self::url_for( $post ) );
 		$color = TWD_AP_Grid_Settings::get()['swipebook_color'];
 		$style = 'style="' . esc_attr( self::color_custom_properties( $color ) ) . '"';
-		return '<p class="twd-ap-swipebook-row"><a class="twd-ap-swipebook-btn" ' . $style . ' href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
-			. esc_html__( 'View as a swipe book', 'twd-article-publisher' ) . ' &#8599;</a></p>';
+		// Under the title it invites a read ("View as"); at the end of the article
+		// it invites a share, and sits to the right.
+		$label = $end ? __( 'Share as a swipe book', 'twd-article-publisher' ) : __( 'View as a swipe book', 'twd-article-publisher' );
+		return '<p class="twd-ap-swipebook-row' . ( $end ? ' twd-ap-swipebook-row-end' : '' ) . '"><a class="twd-ap-swipebook-btn" ' . $style . ' href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
+			. esc_html( $label ) . ' &#8599;</a></p>';
+	}
+
+	/**
+	 * [twd_swipebook_button]: the button under the title (and the Summary Book
+	 * one, when the article has a published deck) wherever the shortcode is
+	 * placed, for a theme or page-builder template. Works inside a single
+	 * article template without any attribute; id="123" names another article.
+	 * Prints nothing when the article is not published or has the swipe book
+	 * switched off. The "place it with a shortcode" setting only switches off
+	 * the automatic copy; this always prints where it is placed.
+	 */
+	public function shortcode_button( $atts ) {
+		$atts = shortcode_atts( array( 'id' => 0 ), (array) $atts, 'twd_swipebook_button' );
+		$id   = absint( $atts['id'] );
+		$post = $id ? get_post( $id ) : get_post();
+		if ( ! $post || 'post' !== $post->post_type ) {
+			return '';
+		}
+		$html = self::button_html( $post );
+		if ( class_exists( 'TWD_AP_Summary_Book' ) ) {
+			$html .= TWD_AP_Summary_Book::button_html( $post );
+		}
+		if ( '' === $html ) {
+			return '';
+		}
+		self::enqueue_inline_assets();
+		TWD_AP_Article_Style::enqueue();
+		return '<div class="twd-ap-swipebook-top">' . $html . '</div>';
 	}
 
 	public function append_button( $content ) {
 		if ( ! self::is_article_view() || 'top' === self::button_position() ) {
 			return $content;
 		}
-		return $content . self::button_html( get_post() );
+		return $content . self::button_html( get_post(), true );
 	}
 
 	/**
@@ -182,7 +222,7 @@ class TWD_AP_Swipebook {
 	 * is inside the article wrapper (20) like the bottom one.
 	 */
 	public function prepend_buttons( $content ) {
-		if ( ! self::is_article_view() || 'bottom' === self::button_position() ) {
+		if ( ! self::is_article_view() || 'bottom' === self::button_position() || ! empty( TWD_AP_Grid_Settings::get()['swipebook_top_shortcode'] ) ) {
 			return $content;
 		}
 		$post = get_post();

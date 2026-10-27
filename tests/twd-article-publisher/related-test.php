@@ -6,6 +6,11 @@ define( 'ABSPATH', '/' );
 $plugin = dirname( __DIR__, 2 ) . '/plugins/twd-article-publisher/';
 $GLOBALS['filters'] = array(); $GLOBALS['meta'] = array(); $GLOBALS['single'] = true; $GLOBALS['loop'] = true; $GLOBALS['current_id'] = 1;
 function add_filter( $tag, $cb, $prio = 10 ) { $GLOBALS['filters'][] = array( $tag, $prio ); }
+function add_shortcode( $tag, $cb ) { $GLOBALS['shortcodes'][ $tag ] = $cb; }
+function shortcode_atts( $pairs, $atts ) { return array_merge( $pairs, array_intersect_key( (array) $atts, $pairs ) ); }
+function absint( $n ) { return abs( (int) $n ); }
+$GLOBALS['shortcodes'] = array(); $GLOBALS['enqueued'] = 0;
+class TWD_AP_Article_Style { static function enqueue() { $GLOBALS['enqueued']++; } }
 function is_wp_error( $x ) { return false; }
 function __( $s ) { return $s; }
 function esc_html__( $s ) { return htmlspecialchars( $s, ENT_QUOTES ); }
@@ -55,7 +60,7 @@ function esc_attr__( $s ) { return htmlspecialchars( $s, ENT_QUOTES ); }
 function get_categories() { $out = array(); foreach ( $GLOBALS['terms'] as $t ) { foreach ( $GLOBALS['posts'] as $p ) { if ( 'publish' === $p->post_status && in_array( $t->term_id, $p->cats, true ) ) { $out[] = $t; break; } } } return $out; }
 class TWD_AP_Index { static function index_url() { return $GLOBALS['index_url']; } }
 $GLOBALS['index_url'] = '';
-class TWD_AP_Grid_Settings { static $s = array( 'related_show' => true, 'related_count' => 4, 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb' ); static function get() { return self::$s; } }
+class TWD_AP_Grid_Settings { const RELATED_PLACES = array( 'auto', 'shortcode', 'off' ); static $s = array( 'related_show' => true, 'related_count' => 4, 'related_place' => 'auto', 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb' ); static function get() { return self::$s; } }
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-related.php';
 
@@ -63,7 +68,7 @@ $pass = 0; $fail = 0;
 function t( $name, $ok, $extra = '' ) { global $pass, $fail; if ( $ok ) { $pass++; echo "PASS  $name\n"; } else { $fail++; echo "FAIL  $name $extra\n"; } }
 function reset_site() {
 	$GLOBALS['posts'] = array(); $GLOBALS['meta'] = array(); $GLOBALS['single'] = true; $GLOBALS['loop'] = true; $GLOBALS['current_id'] = 1;
-	TWD_AP_Grid_Settings::$s = array( 'related_show' => true, 'related_count' => 4, 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb' );
+	TWD_AP_Grid_Settings::$s = array( 'related_show' => true, 'related_count' => 4, 'related_place' => 'auto', 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb' );
 	$GLOBALS['index_url'] = '';
 	$GLOBALS['terms'] = array(
 		1 => (object) array( 'term_id' => 1, 'name' => 'Uncategorized', 'slug' => 'uncategorized' ),
@@ -74,7 +79,7 @@ function reset_site() {
 }
 function add_post( $id, $title, $cats, $date, $status = 'publish' ) { $GLOBALS['posts'][ $id ] = (object) array( 'ID' => $id, 'slug' => 'post-' . $id, 'post_title' => $title, 'post_status' => $status, 'post_date' => $date, 'cats' => $cats ); }
 function links( $html ) { preg_match_all( '/<li><a href="([^"]+)">/', $html, $m ); return $m[1]; }
-function inst() { $p = new ReflectionProperty( 'TWD_AP_Related', 'appended' ); $p->setAccessible( true ); $p->setValue( null, false ); return ( new ReflectionClass( 'TWD_AP_Related' ) )->newInstanceWithoutConstructor(); }
+function inst() { foreach ( array( 'appended', 'placed' ) as $flag ) { $p = new ReflectionProperty( 'TWD_AP_Related', $flag ); $p->setAccessible( true ); $p->setValue( null, false ); } return ( new ReflectionClass( 'TWD_AP_Related' ) )->newInstanceWithoutConstructor(); }
 
 // ---------- which topic an article belongs to ----------
 reset_site();
@@ -179,6 +184,50 @@ t( 'filter: not on a page that is not a single article', '<p>x</p>' === inst()->
 $GLOBALS['single'] = true; $GLOBALS['loop'] = false;
 t( 'filter: not outside the main loop (widgets, excerpts)', '<p>x</p>' === inst()->append_to_article( '<p>x</p>' ) );
 
+// ---------- where it goes, and the [twd_related] shortcode (1.46.0) ----------
+reset_site();
+add_post( 1, 'This article', array( 2 ), '2026-03-01' );
+for ( $i = 2; $i <= 9; $i++ ) { add_post( $i, 'Anxiety piece ' . $i, array( 2 ), sprintf( '2026-02-%02d', $i ) ); }
+add_post( 20, 'A sleep piece', array( 3 ), '2026-03-05' );
+add_post( 21, 'Another sleep piece', array( 3 ), '2026-03-06' );
+$sc = function ( $atts = array() ) { return $GLOBALS['shortcodes']['twd_related']( $atts ); };
+t( 'shortcode [twd_related] is registered', isset( $GLOBALS['shortcodes']['twd_related'] ) );
+t( 'place: the default is automatically at the end of every article', 'auto' === TWD_AP_Related::place() );
+$GLOBALS['current_id'] = 1;
+t( 'shortcode: prints the same block as the automatic one, for the article being shown', TWD_AP_Related::html( 1 ) === $sc() && '' !== $sc() );
+t( 'shortcode: count changes how many links for that place only', 2 === count( links( $sc( array( 'count' => '2' ) ) ) ) && 4 === count( links( $sc() ) ) );
+t( 'shortcode: a count above 8 is held at 8', 8 === count( links( $sc( array( 'count' => '99' ) ) ) ) );
+t( 'shortcode: id names another article, with its own topic', false !== strpos( $sc( array( 'id' => '20' ) ), '>Sleep<' ) && 1 === count( links( $sc( array( 'id' => '20' ) ) ) ) );
+$GLOBALS['enqueued'] = 0; $sc();
+t( 'shortcode: loads the article stylesheet so the block is styled on any page', $GLOBALS['enqueued'] > 0 );
+$GLOBALS['current_id'] = 0;
+t( 'shortcode: with no article in view and no id prints nothing and does not fail', '' === $sc() );
+$GLOBALS['current_id'] = 1;
+// automatic: after the text
+$i = inst();
+t( 'place auto: the block is added after the article text', 0 === strpos( $i->append_to_article( '<p>text</p>' ), '<p>text</p><aside' ) );
+// auto, but the shortcode already printed it inside the article's own text
+$i = inst();
+$sc();
+t( 'place auto with the shortcode in the article text: the automatic copy steps aside, so it shows once', '<p>text</p>' === $i->append_to_article( '<p>text</p>' ) );
+// shortcode only
+TWD_AP_Grid_Settings::$s['related_place'] = 'shortcode';
+$i = inst();
+t( 'place shortcode: nothing is added automatically', '<p>text</p>' === $i->append_to_article( '<p>text</p>' ) );
+t( 'place shortcode: the shortcode still prints', '' !== $sc() );
+// off
+TWD_AP_Grid_Settings::$s['related_place'] = 'off';
+$i = inst();
+t( 'place off: nothing is added automatically and the shortcode prints nothing', '<p>text</p>' === $i->append_to_article( '<p>text</p>' ) && '' === $sc() );
+TWD_AP_Grid_Settings::$s['related_place'] = 'sideways';
+t( 'place: an unknown value is treated as automatic', 'auto' === TWD_AP_Related::place() );
+TWD_AP_Grid_Settings::$s['related_place'] = 'auto';
+// nothing to show: the shortcode prints nothing and leaves the automatic copy free to print nothing too
+reset_site();
+add_post( 1, 'Alone', array( 3 ), '2026-03-01' );
+TWD_AP_Grid_Settings::$s['related_topics'] = false;
+$i = inst();
+t( 'shortcode: an article with nothing related prints nothing', '' === $sc() && '<p>t</p>' === $i->append_to_article( '<p>t</p>' ) );
 if ( getenv( 'TWD_RELATED_DUMP' ) ) {
 	reset_site();
 	TWD_AP_Grid_Settings::$s['related_topics'] = true;

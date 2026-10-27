@@ -30,6 +30,22 @@
   color: var(--twd-ap-content-text) !important;
 }
 
+/* Line endings (1.46.0): headings are balanced across their lines, and a
+   paragraph avoids ending on a lonely word, where the browser supports it
+   (Chrome, Edge, Safari; others ignore it and wrap as before). The
+   "Tidy line endings" setting adds the other half, keeping a short word with
+   the word after it, in the page text itself. */
+.twd-ap-article-content h2,
+.twd-ap-article-content h3,
+.twd-ap-article-content h4 {
+  text-wrap: balance !important;
+}
+.twd-ap-article-content p,
+.twd-ap-article-content li,
+.twd-ap-article-content blockquote {
+  text-wrap: pretty !important;
+}
+
 .twd-ap-article-content h2 {
   font-size: 26px !important;
   font-weight: 700 !important;
@@ -210,6 +226,10 @@ a.twd-ap-swipebook-btn.twd-ap-swipebook-btn {
   text-decoration: none !important;
   box-shadow: none !important;
   transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease !important;
+}
+/* The button at the end of the article sits to the right. */
+.twd-ap-swipebook-row.twd-ap-swipebook-row-end {
+  text-align: right !important;
 }
 a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover {
   background: var(--twd-ap-swipebook-bg-hover, rgba(91, 138, 114, 0.16)) !important;
