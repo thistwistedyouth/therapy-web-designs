@@ -813,6 +813,8 @@ class TWD_AP_REST {
 				'intro_show'          => (bool) $settings['intro_show'],
 				'archive_takeover'    => (bool) $settings['archive_takeover'],
 				'related_show'        => (bool) $settings['related_show'],
+				'related_topics'      => (bool) $settings['related_topics'],
+				'swipebook_button_position' => $settings['swipebook_button_position'],
 				'related_count'       => (int) $settings['related_count'],
 				'cta_heading'         => $settings['cta_heading'],
 				'cta_text'            => $settings['cta_text'],

@@ -78,19 +78,33 @@ class TWD_AP_Related {
 	}
 
 	/**
-	 * The block for one article, or '' when switched off, the article has no
-	 * topic, or the topic has no other articles.
+	 * The block for one article: "More in {category}" with its list of links
+	 * and, under it, the Browse by topic row (the owner's chosen categories
+	 * and the quiet All articles link, this article's own category shown but
+	 * not linked). Either part can be switched off; '' when neither shows.
 	 */
 	public static function html( $post_id ) {
-		$s = TWD_AP_Grid_Settings::get();
-		if ( empty( $s['related_show'] ) ) {
-			return '';
-		}
+		$s     = TWD_AP_Grid_Settings::get();
 		$topic = self::topic_for( $post_id );
-		if ( ! $topic ) {
+		$list  = '';
+		if ( ! empty( $s['related_show'] ) && $topic ) {
+			$list = self::list_html( $post_id, $topic, max( 1, min( 8, (int) $s['related_count'] ) ) );
+		}
+		$nav = '';
+		if ( ! empty( $s['related_topics'] ) ) {
+			$nav = TWD_AP_Cards::topics_html( TWD_AP_Index::index_url(), $topic ? (int) $topic->term_id : 0 );
+		}
+		if ( '' === $list && '' === $nav ) {
 			return '';
 		}
-		$count = max( 1, min( 8, (int) $s['related_count'] ) );
+		return '<aside class="twd-ap-related" style="' . esc_attr( '--twd-ap-accent-color:' . $s['accent_color'] . ';' ) . '">' . $list . $nav . '</aside>';
+	}
+
+	/**
+	 * The heading and the plain list of other articles in the topic, or ''
+	 * when the topic has no other articles.
+	 */
+	private static function list_html( $post_id, $topic, $count ) {
 		// One extra, so the article itself can be dropped and still leave $count.
 		$found = TWD_AP_Cards::fetch( $count + 1, 0, '', $topic->slug );
 		$items = '';
@@ -113,9 +127,7 @@ class TWD_AP_Related {
 		if ( ! is_wp_error( $link ) && '' !== $link ) {
 			$name = '<a href="' . esc_url( $link ) . '">' . $name . '</a>';
 		}
-		return '<aside class="twd-ap-related" style="' . esc_attr( '--twd-ap-accent-color:' . $s['accent_color'] . ';' ) . '">' .
-			'<h2 class="twd-ap-related-title">' . esc_html__( 'More in', 'twd-article-publisher' ) . ' ' . $name . '</h2>' .
-			'<ul class="twd-ap-related-list">' . $items . '</ul>' .
-		'</aside>';
+		return '<h2 class="twd-ap-related-title">' . esc_html__( 'More in', 'twd-article-publisher' ) . ' ' . $name . '</h2>' .
+			'<ul class="twd-ap-related-list">' . $items . '</ul>';
 	}
 }

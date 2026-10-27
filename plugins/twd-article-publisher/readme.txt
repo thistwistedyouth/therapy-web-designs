@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.40.0
+Stable tag: 1.41.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.41.0): two changes to articles. (1) The "View as a swipe book" button
+(and the "View Summary Book" button, when the article has one) now also sits
+straight under the article's title, as the first thing in the text, as well
+as at the end. Choose "Under the title and at the end", "Under the title
+only" or "At the end only" in Customise this grid, next to the button
+colour. (2) The "More in {category}" block at the end of every article now
+also shows the "Browse by topic" links under its list (your chosen
+categories, this article's own category in bold, and All articles). Untick
+"Also show the Browse by topic links under it" under Related articles to
+leave them off.
 
 NEW (1.40.0): every article now ends with a short "More in {category}"
 list: plain links to other articles from the same category (newest first,

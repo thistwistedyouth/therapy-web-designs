@@ -893,3 +893,15 @@
   color: #6b7280 !important;
   white-space: nowrap !important;
 }
+
+/* The Browse by topic row inside the end-of-article block. */
+.twd-ap-related .twd-ap-articles-topics {
+  margin: 22px 0 0 !important;
+  padding: 16px 0 0 !important;
+  border-top: 1px solid #f3f4f6 !important;
+}
+.twd-ap-related .twd-ap-articles-topics:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
