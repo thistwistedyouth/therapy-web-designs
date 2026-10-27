@@ -812,6 +812,8 @@ class TWD_AP_REST {
 				'topic_category_ids'  => $settings['topic_category_ids'],
 				'intro_show'          => (bool) $settings['intro_show'],
 				'archive_takeover'    => (bool) $settings['archive_takeover'],
+				'related_show'        => (bool) $settings['related_show'],
+				'related_count'       => (int) $settings['related_count'],
 				'cta_heading'         => $settings['cta_heading'],
 				'cta_text'            => $settings['cta_text'],
 				'cta_button_label'    => $settings['cta_button_label'],

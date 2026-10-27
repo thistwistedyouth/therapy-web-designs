@@ -14,6 +14,10 @@ const dumpFile = path.join(tmp, 'look.json');
 execFileSync('php', [path.join(root, 'tests/twd-article-publisher/article-look-test.php')], { env: Object.assign({}, process.env, { TWD_LOOK_DUMP: dumpFile }) });
 const DUMP = JSON.parse(fs.readFileSync(dumpFile, 'utf8'));
 const CSS = fs.readFileSync(path.join(plugin, 'assets/article-content.css'), 'utf8');
+const relFile = path.join(tmp, 'related.json');
+execFileSync('php', [path.join(root, 'tests/twd-article-publisher/related-test.php')], { env: Object.assign({}, process.env, { TWD_RELATED_DUMP: relFile }) });
+const RELATED = JSON.parse(fs.readFileSync(relFile, 'utf8')).html;
+const GRIDCSS = fs.readFileSync(path.join(plugin, 'assets/articles-grid.css'), 'utf8');
 const BODY = '<h2>A heading</h2><p>Some text with a <a href="#x">link</a> in it.</p><blockquote>A quote</blockquote>';
 
 let pass = 0, fail = 0;
@@ -66,6 +70,29 @@ const css = (page, sel, prop) => page.locator(sel).first().evaluate((el, p) => g
 	({ page } = await load(browser, DUMP.default, 375));
 	t('default on a phone: still 16px', (await css(page, '.twd-ap-article-content', 'fontSize')) === '16px');
 	await page.close();
+
+	// "More in {category}" at the end of an article, with the real article and grid stylesheets.
+	{
+		const open3 = async (width) => {
+			const page = await browser.newPage({ viewport: { width, height: 900 } });
+			const errors = [];
+			page.on('pageerror', (e) => errors.push(String(e)));
+			await page.setContent('<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:"Courier New",monospace;margin:0}a{color:hotpink}h2{color:orange}ul{list-style:disc}</style><style>' + CSS + '</style><style>' + GRIDCSS + '</style></head><body>' + RELATED + '</body></html>');
+			return { page, errors };
+		};
+		let { page, errors } = await open3(1000);
+		const box = await page.locator('.twd-ap-related').boundingBox();
+		const art = await page.locator('.twd-ap-article-content').boundingBox();
+		t('related: the block sits below the article and is centred, no wider than 720px', box.y >= art.y + art.height && box.width <= 721 && Math.abs((box.x + box.width / 2) - 500) < 2, JSON.stringify([box, art]));
+		t('related: four links, the heading links to the category', (await page.locator('.twd-ap-related-list li').count()) === 4 && (await page.locator('.twd-ap-related-title a').getAttribute('href')) === 'https://example.test/category/anxiety/');
+		const st = await page.evaluate(() => { const c = (s, p) => getComputedStyle(document.querySelector(s))[p]; return { link: c('.twd-ap-related-list a', 'color'), title: c('.twd-ap-related-title', 'color'), titleLink: c('.twd-ap-related-title a', 'color'), date: c('.twd-ap-related-date', 'color'), bullet: c('.twd-ap-related-list', 'listStyleType'), font: c('.twd-ap-related', 'fontFamily') }; });
+		t('related: the plugin beats the theme (accent links, no bullets, its own font, grey dates)', st.link === 'rgb(37, 99, 235)' && st.titleLink === 'rgb(37, 99, 235)' && st.title === 'rgb(31, 41, 55)' && st.date === 'rgb(107, 114, 128)' && st.bullet === 'none' && !/Courier/.test(st.font), JSON.stringify(st));
+		t('related: no JavaScript errors', errors.length === 0, errors.join(' | '));
+		await page.close();
+		({ page } = await open3(375));
+		t('related: on a phone nothing scrolls sideways', !(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)));
+		await page.close();
+	}
 
 	await browser.close();
 	console.log('\n' + pass + ' passed, ' + fail + ' failed');

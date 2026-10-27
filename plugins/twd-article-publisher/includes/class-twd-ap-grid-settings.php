@@ -41,6 +41,11 @@ class TWD_AP_Grid_Settings {
 			// needed. On by default; it steps aside for a theme or page-builder
 			// template that already applies (see TWD_AP_Archive).
 			'archive_takeover'   => true,
+			// Related articles (1.40.0): "More in {category}" links at the end of
+			// every article. On by default; the owner can switch it off or change
+			// how many links.
+			'related_show'       => true,
+			'related_count'      => 4,
 			'cta_heading'        => '',
 			'cta_text'           => '',
 			'cta_button_label'   => '',
@@ -88,6 +93,8 @@ class TWD_AP_Grid_Settings {
 			'topic_category_ids' => $current['topic_category_ids'],
 			'intro_show'         => $current['intro_show'],
 			'archive_takeover'   => $current['archive_takeover'],
+			'related_show'       => $current['related_show'],
+			'related_count'      => $current['related_count'],
 			'cta_heading'        => $current['cta_heading'],
 			'cta_text'           => $current['cta_text'],
 			'cta_button_label'   => $current['cta_button_label'],
@@ -153,6 +160,12 @@ class TWD_AP_Grid_Settings {
 				$color            = '' === $input[ $key ] ? '' : sanitize_hex_color( $input[ $key ] );
 				$output[ $key ]   = $color ? $color : ( '' === $input[ $key ] ? '' : $output[ $key ] );
 			}
+		}
+		if ( isset( $input['related_show'] ) ) {
+			$output['related_show'] = (bool) $input['related_show'];
+		}
+		if ( isset( $input['related_count'] ) ) {
+			$output['related_count'] = max( 1, min( 8, absint( $input['related_count'] ) ) );
 		}
 		if ( isset( $input['archive_takeover'] ) ) {
 			$output['archive_takeover'] = (bool) $input['archive_takeover'];
