@@ -20,6 +20,10 @@ class TWD_AP_Grid_Settings {
 			'categories_count'   => 4,
 			'posts_per_category' => 6,
 			'show_thumbnails'    => true,
+			// Card image shape (1.42.0): 'wide' (the original full-width strip, 170px
+			// tall), '4-3' or 'square'. 'wide' prints nothing extra, so a site that
+			// never touches it is unchanged.
+			'thumb_shape'        => 'wide',
 			'read_more_color'    => '#1d4ed8',
 			'accent_color'       => '#2563eb',
 			// Which categories the "Browse by topic" row under the grid lists:
@@ -86,6 +90,24 @@ class TWD_AP_Grid_Settings {
 		return wp_parse_args( $saved, $defaults );
 	}
 
+	/** The choices for the card image shape, in the order the popup lists them. */
+	const THUMB_SHAPES = array( 'wide', '4-3', 'square' );
+
+	/**
+	 * The class the grid's root element carries for a card image shape: none for
+	 * the original wide strip (and for anything unrecognised), so the page HTML
+	 * of a site that never chose a shape is byte for byte what it was.
+	 */
+	public static function thumb_shape_class( $shape ) {
+		if ( '4-3' === $shape ) {
+			return 'twd-ap-thumbs-4-3';
+		}
+		if ( 'square' === $shape ) {
+			return 'twd-ap-thumbs-square';
+		}
+		return '';
+	}
+
 	public static function sanitize( $input ) {
 		$current = self::get();
 
@@ -94,6 +116,7 @@ class TWD_AP_Grid_Settings {
 			'categories_count'   => $current['categories_count'],
 			'posts_per_category' => $current['posts_per_category'],
 			'show_thumbnails'    => $current['show_thumbnails'],
+			'thumb_shape'        => $current['thumb_shape'],
 			'read_more_color'    => $current['read_more_color'],
 			'accent_color'       => $current['accent_color'],
 			'topic_category_ids' => $current['topic_category_ids'],
@@ -142,6 +165,9 @@ class TWD_AP_Grid_Settings {
 		}
 		if ( isset( $input['show_thumbnails'] ) ) {
 			$output['show_thumbnails'] = (bool) $input['show_thumbnails'];
+		}
+		if ( isset( $input['thumb_shape'] ) && in_array( $input['thumb_shape'], self::THUMB_SHAPES, true ) ) {
+			$output['thumb_shape'] = $input['thumb_shape'];
 		}
 		if ( isset( $input['read_more_color'] ) ) {
 			$color = sanitize_hex_color( $input['read_more_color'] );

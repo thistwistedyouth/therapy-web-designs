@@ -569,6 +569,7 @@
   width: 40% !important;
   height: auto !important;
   min-height: 220px !important;
+  aspect-ratio: auto !important;
 }
 .twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-body {
   flex: 1 1 auto !important;
@@ -589,6 +590,34 @@
     width: 100% !important;
     min-height: 0 !important;
     height: 170px !important;
+  }
+}
+
+/* Card image shape (1.42.0). The root carries .twd-ap-thumbs-4-3 or
+   .twd-ap-thumbs-square (none for the original wide strip, so a site that
+   never chose one is unchanged). The picture, the loading skeleton and the
+   no-picture placeholder all take the same shape, so nothing moves when the
+   real cards arrive. A browser without aspect-ratio keeps the wide strip. A
+   lone card keeps its image-beside-text layout on a wide screen (the rule
+   above sets aspect-ratio: auto) and takes the shape again on a phone. */
+@supports (aspect-ratio: 1 / 1) {
+  .twd-ap-articles.twd-ap-thumbs-4-3 .twd-ap-article-thumb {
+    height: auto !important;
+    aspect-ratio: 4 / 3 !important;
+  }
+  .twd-ap-articles.twd-ap-thumbs-square .twd-ap-article-thumb {
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+  @media (max-width: 600px) {
+    .twd-ap-articles.twd-ap-thumbs-4-3 .twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-thumb {
+      height: auto !important;
+      aspect-ratio: 4 / 3 !important;
+    }
+    .twd-ap-articles.twd-ap-thumbs-square .twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-thumb {
+      height: auto !important;
+      aspect-ratio: 1 / 1 !important;
+    }
   }
 }
 

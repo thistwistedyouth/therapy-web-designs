@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.41.0
+Stable tag: 1.42.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,13 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.42.0): choose the shape of the pictures on article cards. In Customise
+this grid (the gear on the Resources grid or on a category page), "Card image
+shape" offers Wide strip (the original), 4:3 or Square. It applies to the
+Resources grid and to category pages, including the loading placeholders and
+cards that have no featured image. Pictures are cropped to fit from the
+centre. A site that does not change it looks exactly as before.
 
 NEW (1.41.0): two changes to articles. (1) The "View as a swipe book" button
 (and the "View Summary Book" button, when the article has one) now also sits

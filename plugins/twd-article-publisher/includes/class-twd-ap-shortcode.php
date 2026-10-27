@@ -188,7 +188,8 @@ class TWD_AP_Shortcode {
 			'startOffset'  => $start_offset,
 		);
 
-		$root_classes = 'twd-ap-articles' . ( $show_thumbs ? '' : ' twd-ap-no-thumbnails' );
+		$shape_class  = TWD_AP_Grid_Settings::thumb_shape_class( $grid_settings['thumb_shape'] );
+		$root_classes = 'twd-ap-articles' . ( $show_thumbs ? '' : ' twd-ap-no-thumbnails' ) . ( '' !== $shape_class ? ' ' . $shape_class : '' );
 		// Same custom properties the JS sets once /grid-settings replies, set
 		// here so the colours are right from the first paint.
 		$root_style = '--twd-ap-readmore-color:' . $grid_settings['read_more_color'] . ';--twd-ap-accent-color:' . $grid_settings['accent_color'] . ';';
@@ -255,6 +256,14 @@ class TWD_AP_Shortcode {
 							<input type="checkbox" id="twd-ap-gs-thumbnails" />
 							<?php esc_html_e( 'Show thumbnails', 'twd-article-publisher' ); ?>
 						</label>
+
+						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-thumb-shape"><?php esc_html_e( 'Card image shape', 'twd-article-publisher' ); ?></label>
+						<select id="twd-ap-gs-thumb-shape" class="twd-ap-input">
+							<option value="wide"><?php esc_html_e( 'Wide strip (the original)', 'twd-article-publisher' ); ?></option>
+							<option value="4-3"><?php esc_html_e( '4:3 (landscape)', 'twd-article-publisher' ); ?></option>
+							<option value="square"><?php esc_html_e( 'Square', 'twd-article-publisher' ); ?></option>
+						</select>
+						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Applies to the Resources grid and to category pages. Pictures are cropped to fit the shape, from the centre, so keep the subject in the middle of each featured image.', 'twd-article-publisher' ); ?></p>
 
 						<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-readmore-color"><?php esc_html_e( '"Read more" link colour', 'twd-article-publisher' ); ?></label>
 						<input type="color" id="twd-ap-gs-readmore-color" class="twd-ap-gs-color-input" />
