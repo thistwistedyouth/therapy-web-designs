@@ -29,5 +29,25 @@ TWD_AP_Grid_Settings::save( array( 'topic_category_ids' => 'all' ) );
 t( 'all goes back to every category', 'all' === TWD_AP_Grid_Settings::get()['topic_category_ids'] );
 TWD_AP_Grid_Settings::save( array( 'topic_category_ids' => '<script>' ) );
 t( 'junk is ignored, not stored', 'all' === TWD_AP_Grid_Settings::get()['topic_category_ids'] );
+
+// Card image shape (1.42.0).
+t( 'shape: the default is the original wide strip', 'wide' === TWD_AP_Grid_Settings::get()['thumb_shape'] );
+TWD_AP_Grid_Settings::save( array( 'thumb_shape' => '4-3' ) );
+t( 'shape: 4:3 is saved', '4-3' === TWD_AP_Grid_Settings::get()['thumb_shape'] );
+TWD_AP_Grid_Settings::save( array( 'thumb_shape' => 'square' ) );
+t( 'shape: square is saved', 'square' === TWD_AP_Grid_Settings::get()['thumb_shape'] );
+foreach ( array( '16-9', 'Square', 'SQUARE', ' square', '4:3', '<script>', '', 0, true, array( 'square' ) ) as $bad ) {
+	TWD_AP_Grid_Settings::save( array( 'thumb_shape' => $bad ) );
+	t( 'shape: ' . json_encode( $bad ) . ' is ignored, the saved shape stays', 'square' === TWD_AP_Grid_Settings::get()['thumb_shape'] );
+}
+TWD_AP_Grid_Settings::save( array( 'accent_color' => '#112233' ) );
+t( 'shape: saving something else leaves it alone', 'square' === TWD_AP_Grid_Settings::get()['thumb_shape'] );
+TWD_AP_Grid_Settings::save( array( 'thumb_shape' => 'wide' ) );
+t( 'shape: wide can be chosen again', 'wide' === TWD_AP_Grid_Settings::get()['thumb_shape'] );
+t( 'shape class: wide prints none', '' === TWD_AP_Grid_Settings::thumb_shape_class( 'wide' ) );
+t( 'shape class: 4:3', 'twd-ap-thumbs-4-3' === TWD_AP_Grid_Settings::thumb_shape_class( '4-3' ) );
+t( 'shape class: square', 'twd-ap-thumbs-square' === TWD_AP_Grid_Settings::thumb_shape_class( 'square' ) );
+t( 'shape class: anything else prints none', '' === TWD_AP_Grid_Settings::thumb_shape_class( 'huge' ) && '' === TWD_AP_Grid_Settings::thumb_shape_class( null ) && '' === TWD_AP_Grid_Settings::thumb_shape_class( array() ) );
+
 echo "\n$pass passed, $fail failed\n";
 exit( $fail ? 1 : 0 );

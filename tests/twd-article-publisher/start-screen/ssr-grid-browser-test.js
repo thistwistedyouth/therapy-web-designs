@@ -24,6 +24,7 @@ const REST = 'https://example.test/wp-json/twd-publisher/v1';
 let pass = 0, fail = 0;
 const saved = [];
 let window_topics = 'all';
+let window_shape = 'wide';
 let window_cta = {};
 const introSaves = [];
 let introStatus = 200;
@@ -53,7 +54,7 @@ async function open(browser, name, o) {
 		if (/\/articles\/grouped/.test(url)) { body = DUMP[name].grouped; }
 		else if (/\/articles\/facets/.test(url)) { body = { categories: [{ name: 'Anxiety', slug: 'anxiety' }, { name: 'Sleep', slug: 'sleep' }], tags: [] }; }
 		else if (/\/articles\?/.test(url)) { body = o.empty ? { items: [], has_more: false } : DUMP[name].list; }
-		else if (/\/grid-settings/.test(url)) { if (o.settingsFail && route.request().method() !== 'POST') { return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }); } if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal', related_show: true, related_count: 4, related_topics: true, swipebook_button_position: 'both', cta_heading: '', cta_text: '', cta_button_label: '', cta_button_url: '', cta_show_grid: false, cta_show_categories: false, cta_show_index: false, cta_show_articles: false };
+		else if (/\/grid-settings/.test(url)) { if (o.settingsFail && route.request().method() !== 'POST') { return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }); } if (route.request().method() === 'POST') { saved.push(JSON.parse(route.request().postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"saved":true}' }); } body = { show_thumbnails: true, thumb_shape: window_shape, read_more_color: '#1d4ed8', accent_color: '#2563eb', total_articles: DUMP[name].total, categories_count: 4, posts_per_category: 6, categories: [{ id: 2, name: 'Anxiety' }, { id: 3, name: 'Sleep' }, { id: 5, name: 'Boundaries' }], topic_category_ids: window_topics, look_text_color: '', look_heading_color: '', look_link_color: '', look_quote_color: '', look_font: 'system', look_size: 'medium', look_spacing: 'normal', related_show: true, related_count: 4, related_topics: true, swipebook_button_position: 'both', cta_heading: '', cta_text: '', cta_button_label: '', cta_button_url: '', cta_show_grid: false, cta_show_categories: false, cta_show_index: false, cta_show_articles: false };
 			Object.assign(body, window_cta); }
 		if (/\/term-intro/.test(url)) { introSaves.push(JSON.parse(route.request().postData())); return route.fulfill({ status: introStatus, contentType: 'application/json', body: JSON.stringify(introStatus === 200 ? { html: '<p>' + introSaves[introSaves.length - 1].description + '</p>', raw: introSaves[introSaves.length - 1].description } : { code: 'x' }) }); }
 		return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
@@ -484,6 +485,105 @@ async function open(browser, name, o) {
 		await wait(300);
 		t('popup: unticking the category pages option saves it as off', saved[saved.length - 1].archive_takeover === false);
 		await r.ctx.close();
+	}
+
+	// 19. Card image shape: measured in real Chromium, desktop and phone.
+	{
+		// Measured once the page has loaded and a picture is really on screen, not while it is still being parsed.
+		const shapes = async (page) => { await page.waitForLoadState('load'); await page.waitForSelector('.twd-ap-article-thumb', { state: 'visible' }); return page.$$eval('.twd-ap-article-thumb', (els) => els.filter((e) => e.getBoundingClientRect().width > 0).map((e) => { const r = e.getBoundingClientRect(); return { ratio: r.width / r.height, h: r.height, w: r.width, ph: e.classList.contains('twd-ap-article-thumb-placeholder') }; })); };
+		const near = (list, want) => list.length > 0 && list.every((x) => Math.abs(x.ratio - want) < 0.02);
+
+		window_shape = 'wide';
+		let r = await open(browser, 'small', { delay: 50 });
+		await r.page.waitForSelector('.twd-ap-article-card');
+		let s = await shapes(r.page);
+		t('shape wide (default): every picture is still the 170px strip', s.length >= 5 && s.every((x) => Math.abs(x.h - 170) < 0.5), JSON.stringify(s.map((x) => x.h)));
+		t('shape wide (default): the root has no shape class', (await r.page.locator('.twd-ap-articles').getAttribute('class')) === 'twd-ap-articles');
+		await r.ctx.close();
+
+		for (const [name, want, label, saved_shape] of [['shape43', 4 / 3, '4:3', '4-3'], ['shapesq', 1, 'square', 'square']]) {
+			window_shape = saved_shape; // the real REST route answers with what is saved, which is what the page was built from
+			r = await open(browser, name, { delay: 50 });
+			await r.page.waitForSelector('.twd-ap-article-card');
+			s = await shapes(r.page);
+			t('shape ' + label + ': every picture and placeholder is the shape before the script runs', near(s, want) && s.some((x) => x.ph) && s.some((x) => !x.ph), JSON.stringify(s.map((x) => x.ratio.toFixed(2))));
+			const first = await r.page.locator('.twd-ap-article-card').first().boundingBox();
+			await wait(600);
+			s = await shapes(r.page);
+			const firstAfter = await r.page.locator('.twd-ap-article-card').first().boundingBox();
+			t('shape ' + label + ': still the shape after the script swaps the cards in, and the first card did not move', near(s, want) && JSON.stringify(first) === JSON.stringify(firstAfter));
+			// Skeleton cards while a search runs take the same shape.
+			await r.page.route(/\/articles\?/, async (route) => { await wait(1500); route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], has_more: false }) }); });
+			await r.page.fill('.twd-ap-articles-search', 'calm');
+			await r.page.waitForSelector('.twd-ap-skeleton-card');
+			const sk = await r.page.$$eval('.twd-ap-skeleton-block', (els) => els.map((e) => { const b = e.getBoundingClientRect(); return b.width / b.height; }));
+			t('shape ' + label + ': the loading placeholders are the shape too', sk.length > 0 && sk.every((x) => Math.abs(x - want) < 0.02), JSON.stringify(sk));
+			await r.page.setViewportSize({ width: 390, height: 800 });
+			await r.page.reload();
+			await r.page.waitForSelector('.twd-ap-article-card');
+			s = await shapes(r.page);
+			t('shape ' + label + ': the same on a phone, with no sideways scroll', near(s, want) && await r.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+			t('shape ' + label + ': no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+			await r.ctx.close();
+		}
+
+		// A single article keeps its image-beside-text card on a wide screen and takes the shape on a phone.
+		for (const [name, want, label, saved_shape] of [['singlesq', 1, 'square', 'square'], ['single43', 4 / 3, '4:3', '4-3']]) {
+			window_shape = saved_shape;
+			r = await open(browser, name, { delay: 50 });
+			await r.page.waitForSelector('.twd-ap-article-card');
+			const lone = await r.page.evaluate(() => { const th = document.querySelector('.twd-ap-article-thumb'); const body = document.querySelector('.twd-ap-article-body'); const a = th.getBoundingClientRect(); const b = body.getBoundingClientRect(); const c = th.closest('.twd-ap-article-card').getBoundingClientRect(); return { ar: getComputedStyle(th).aspectRatio, beside: a.right <= b.left + 1, share: a.width / c.width, h: a.height }; });
+			t('single article, ' + label + ', wide screen: image beside the text, about 40% wide, not forced into the shape', lone.beside && lone.ar === 'auto' && Math.abs(lone.share - 0.4) < 0.03 && lone.h >= 220, JSON.stringify(lone));
+			await r.page.setViewportSize({ width: 390, height: 800 });
+			await r.page.reload();
+			await r.page.waitForSelector('.twd-ap-article-card');
+			s = await shapes(r.page);
+			t('single article, ' + label + ', phone: the picture takes the shape', near(s, want), JSON.stringify(s.map((x) => x.ratio.toFixed(2))));
+			await r.ctx.close();
+		}
+
+		// The grouped view of a large site.
+		window_shape = 'square';
+		r = await open(browser, 'largesq', { delay: 50 });
+		await r.page.waitForSelector('.twd-ap-article-card');
+		s = await shapes(r.page);
+		t('shape square: the grouped view of a large site is square too', near(s, 1), JSON.stringify(s.map((x) => x.ratio.toFixed(2))));
+		await r.ctx.close();
+
+		// The gear popup: the choice loads, saves, and the page changes without a reload.
+		window_shape = '4-3';
+		r = await open(browser, 'adminmulti', { delay: 50 });
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		t('popup: the card image shape field starts on what is saved', (await r.page.inputValue('#twd-ap-gs-thumb-shape')) === '4-3' && (await r.page.locator('#twd-ap-gs-thumb-shape option').allInnerTexts()).join('|') === 'Wide strip (the original)|4:3 (landscape)|Square');
+		window_shape = 'square';
+		await r.page.selectOption('#twd-ap-gs-thumb-shape', 'square');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(900);
+		t('popup: saving sends the chosen shape', saved[saved.length - 1].thumb_shape === 'square');
+		t('popup: the grid takes the new shape at once, without a reload', (await r.page.locator('.twd-ap-articles').getAttribute('class')).indexOf('twd-ap-thumbs-square') !== -1 && near(await shapes(r.page), 1));
+		window_shape = 'wide';
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.selectOption('#twd-ap-gs-thumb-shape', 'wide');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(900);
+		t('popup: going back to wide removes the shape class', (await r.page.locator('.twd-ap-articles').getAttribute('class')).indexOf('twd-ap-thumbs-') === -1 && (await shapes(r.page)).every((x) => Math.abs(x.h - 170) < 0.5));
+		t('popup: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+
+		// An older cached popup (no shape field) cannot change the setting.
+		window_shape = 'square';
+		r = await open(browser, 'admin', { delay: 50 });
+		await r.page.evaluate(() => { const el = document.querySelector('#twd-ap-gs-thumb-shape'); if (el) { el.remove(); } });
+		const before2 = saved.length;
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(400);
+		t('older cached popup: saving does not send a shape', saved.length === before2 + 1 && !('thumb_shape' in saved[saved.length - 1]));
+		await r.ctx.close();
+		window_shape = 'wide';
 	}
 
 	// 18. The gear popup: Related articles tick and count.

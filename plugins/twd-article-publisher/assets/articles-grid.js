@@ -333,6 +333,7 @@
 				.then(function (data) {
 					state.showThumbnails = data && false !== data.show_thumbnails;
 					root.classList.toggle('twd-ap-no-thumbnails', !state.showThumbnails);
+					if (data && 'string' === typeof data.thumb_shape) { applyThumbShape(root, data.thumb_shape); }
 					if (data && data.read_more_color) {
 						root.style.setProperty('--twd-ap-readmore-color', data.read_more_color);
 					}
@@ -553,6 +554,7 @@
 		var catsCount  = overlay.querySelector('#twd-ap-gs-cats-count');
 		var postsCount = overlay.querySelector('#twd-ap-gs-posts-count');
 		var thumbsBox  = overlay.querySelector('#twd-ap-gs-thumbnails');
+		var thumbShape = overlay.querySelector('#twd-ap-gs-thumb-shape');
 		var colorInput = overlay.querySelector('#twd-ap-gs-readmore-color');
 		var accentColorInput = overlay.querySelector('#twd-ap-gs-accent-color');
 		// Not applied via a CSS var on `root` like the other two colours --
@@ -808,6 +810,7 @@
 				catsCount.value = data.categories_count || 4;
 				postsCount.value = data.posts_per_category || 6;
 				thumbsBox.checked = false !== data.show_thumbnails;
+				if (thumbShape) { thumbShape.value = data.thumb_shape || 'wide'; }
 				colorInput.value = data.read_more_color || '#1d4ed8';
 				accentColorInput.value = data.accent_color || '#2563eb';
 				swipebookColorInput.value = data.swipebook_color || '#5b8a72';
@@ -889,6 +892,7 @@
 
 			// Only the sections this popup actually has are sent, so an older cached
 			// popup can never clear a setting it does not show.
+			if (thumbShape) { payload.thumb_shape = thumbShape.value; }
 			if (topicsBox) { payload.topic_category_ids = topicsValue(); }
 			if (introShow) { payload.intro_show = !!introShow.checked; }
 			if (archiveTakeover) { payload.archive_takeover = !!archiveTakeover.checked; }
@@ -938,6 +942,17 @@
 					setStatus('Could not save. Please try again.', false);
 				});
 		};
+	}
+
+	// The shape classes the server prints (class-twd-ap-grid-settings.php,
+	// thumb_shape_class): none for the original wide strip.
+	function applyThumbShape(root, shape) {
+		root.classList.remove('twd-ap-thumbs-4-3', 'twd-ap-thumbs-square');
+		if ('4-3' === shape) {
+			root.classList.add('twd-ap-thumbs-4-3');
+		} else if ('square' === shape) {
+			root.classList.add('twd-ap-thumbs-square');
+		}
 	}
 
 	function escapeHtml(str) {

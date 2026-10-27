@@ -807,6 +807,7 @@ class TWD_AP_REST {
 				'categories_count'    => $settings['categories_count'],
 				'posts_per_category'  => $settings['posts_per_category'],
 				'show_thumbnails'     => (bool) $settings['show_thumbnails'],
+				'thumb_shape'         => in_array( $settings['thumb_shape'], TWD_AP_Grid_Settings::THUMB_SHAPES, true ) ? $settings['thumb_shape'] : 'wide',
 				'read_more_color'     => $settings['read_more_color'],
 				'accent_color'        => $settings['accent_color'],
 				'topic_category_ids'  => $settings['topic_category_ids'],

@@ -100,8 +100,10 @@ class WP_Query {
 	}
 }
 class TWD_AP_Grid_Settings {
-	static $s = array( 'intro_show' => false, 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false, 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
+	static $s = array( 'intro_show' => false, 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false, 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'thumb_shape' => 'wide', 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
 	static function get() { return self::$s; }
+	// Same mapping as the real class (tested against the real one in grid-settings-test.php).
+	static function thumb_shape_class( $shape ) { return '4-3' === $shape ? 'twd-ap-thumbs-4-3' : ( 'square' === $shape ? 'twd-ap-thumbs-square' : '' ); }
 }
 class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } }
 
@@ -134,6 +136,7 @@ function reset_site() {
 		4 => (object) array( 'term_id' => 4, 'name' => 'Empty topic', 'slug' => 'empty-topic', 'count' => 0, 'taxonomy' => 'category', 'description' => '' ),
 	);
 	TWD_AP_Grid_Settings::$s['show_thumbnails'] = true;
+	TWD_AP_Grid_Settings::$s['thumb_shape'] = 'wide';
 	TWD_AP_Grid_Settings::$s['posts_per_category'] = 6;
 	TWD_AP_Grid_Settings::$s['topic_category_ids'] = 'all';
 	TWD_AP_Grid_Settings::$s['intro_show'] = false;
@@ -198,6 +201,34 @@ t( 'thumbnails off: no thumbnail markup at all', false === strpos( $html, 'twd-a
 t( 'thumbnails off: the root carries the no-thumbnails class', false !== strpos( $html, 'class="twd-ap-articles twd-ap-no-thumbnails"' ) );
 TWD_AP_Grid_Settings::$s['show_thumbnails'] = true;
 
+// ---------- card image shape ----------
+$html = grid();
+t( 'shape: the default prints no shape class, so the page is as it was', false !== strpos( $html, 'class="twd-ap-articles"' ) && false === strpos( $html, 'twd-ap-thumbs-' ) );
+TWD_AP_Grid_Settings::$s['thumb_shape'] = '4-3';
+t( 'shape: 4:3 puts its class on the root', false !== strpos( grid(), 'class="twd-ap-articles twd-ap-thumbs-4-3"' ) );
+snap( 'shape43' );
+// Several cards and the owner's gear, built while 4:3 is saved, so the popup test can tell a live change from a page that already had the shape.
+$GLOBALS['allowed'] = true; snap( 'adminmulti' ); $GLOBALS['allowed'] = false;
+TWD_AP_Grid_Settings::$s['thumb_shape'] = 'square';
+t( 'shape: square puts its class on the root', false !== strpos( grid(), 'class="twd-ap-articles twd-ap-thumbs-square"' ) );
+snap( 'shapesq' );
+// A site with a single article keeps its image-beside-text card on a wide screen.
+$keep_posts = $GLOBALS['posts']; $keep_meta = $GLOBALS['meta'];
+$GLOBALS['posts'] = array(); $GLOBALS['meta'] = array();
+add_post( 90, 'The only article', array( 2 ), '2026-03-12', array( 'thumb' => 'https://example.test/img/lone.jpg' ) );
+snap( 'singlesq' );
+TWD_AP_Grid_Settings::$s['thumb_shape'] = '4-3';
+snap( 'single43' );
+$GLOBALS['posts'] = $keep_posts; $GLOBALS['meta'] = $keep_meta;
+TWD_AP_Grid_Settings::$s['thumb_shape'] = 'square';
+TWD_AP_Grid_Settings::$s['show_thumbnails'] = false;
+t( 'shape: with thumbnails off the root keeps both classes', false !== strpos( grid(), 'class="twd-ap-articles twd-ap-no-thumbnails twd-ap-thumbs-square"' ) );
+TWD_AP_Grid_Settings::$s['show_thumbnails'] = true;
+TWD_AP_Grid_Settings::$s['thumb_shape'] = '16-9"><script>';
+$html = grid();
+t( 'shape: a stored value that is not a known shape prints nothing', false === strpos( $html, 'twd-ap-thumbs-' ) && false === strpos( $html, '<script>' ) );
+TWD_AP_Grid_Settings::$s['thumb_shape'] = 'wide';
+
 // ---------- password-protected articles ----------
 add_post( 16, 'Private piece', array( 2 ), '2026-03-11', array( 'protected' => true, 'post_content' => '<p>secret words nobody should read</p>' ) );
 t( 'a password-protected article leaks no text into the HTML', false === strpos( grid(), 'secret words' ) );
@@ -220,6 +251,7 @@ $GLOBALS['archive'] = 0;
 
 // ---------- a large site on the bare shortcode: grouped by category ----------
 snap( 'large' );
+TWD_AP_Grid_Settings::$s['thumb_shape'] = 'square'; snap( 'largesq' ); TWD_AP_Grid_Settings::$s['thumb_shape'] = 'wide';
 $html = grid();
 t( 'large site: starts grouped, with a heading per category', 1 === preg_match( '/<h2 class="twd-ap-articles-group-title">Anxiety<\/h2>.*<h2 class="twd-ap-articles-group-title">Sleep<\/h2>/s', $html ) );
 t( 'large site: the main flat grid is hidden', 1 === preg_match( '/<div class="twd-ap-articles-grid" style="[^"]*" hidden><\/div>/', $html ) );
