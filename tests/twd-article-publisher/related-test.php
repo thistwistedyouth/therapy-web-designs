@@ -36,7 +36,18 @@ class WP_Query {
 		foreach ( $a['meta_query'] ?? array() as $mq ) {
 			if ( isset( $mq['key'], $mq['compare'] ) && 'EXISTS' === $mq['compare'] ) { $p = array_filter( $p, function ( $x ) use ( $mq ) { return array_key_exists( $mq['key'], $GLOBALS['meta'][ $x->ID ] ?? array() ); } ); }
 		}
-		usort( $p, function ( $x, $y ) { return strcmp( $y->post_date, $x->post_date ); } );
+		// Honour the ordering the code asks for (a string or an array of field => direction), so a lost or wrong
+		// orderby is caught; WordPress's default when none is given is date, newest first.
+		$ob   = $a['orderby'] ?? 'date';
+		$dirs = is_array( $ob ) ? $ob : array( $ob => $a['order'] ?? 'DESC' );
+		usort( $p, function ( $x, $y ) use ( $dirs ) {
+			foreach ( $dirs as $k => $dir ) {
+				$f = 'ID' === $k ? 'ID' : ( 'date' === $k ? 'post_date' : 'post_title' );
+				$c = $x->$f <=> $y->$f;
+				if ( 0 !== $c ) { return 'ASC' === strtoupper( $dir ) ? $c : -$c; }
+			}
+			return 0;
+		} );
 		$this->posts = array_slice( $p, $a['offset'] ?? 0, $a['posts_per_page'] );
 	}
 }

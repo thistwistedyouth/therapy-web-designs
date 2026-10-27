@@ -82,8 +82,12 @@ class TWD_AP_Cards {
 			'posts_per_page' => max( 1, (int) $limit ),
 			'offset'         => $offset,
 			'no_found_rows'  => true,
-			'orderby'        => 'date',
-			'order'          => 'DESC',
+			// ID as the tie-break, so articles with the same date come back in the
+			// same order from both queries and from one page to the next.
+			'orderby'        => array(
+				'date' => 'DESC',
+				'ID'   => 'DESC',
+			),
 		);
 
 		if ( '' !== $search ) {
@@ -293,6 +297,17 @@ class TWD_AP_Cards {
 		// grouped view; a search still finds it by text.
 		unset( $by_category[ self::uncategorized_id() ] );
 
+		// The Featured row: the featured articles of the whole site, whatever
+		// their category, at the very top, lowest grid number first. Each
+		// appears once on the page: here, not again in its own section below.
+		$groups = array();
+		$in_row = array();
+		$row    = array();
+		foreach ( array_slice( self::featured_posts(), 0, (int) $settings['posts_per_category'] ) as $post ) {
+			$in_row[ $post->ID ] = true;
+			$row[]               = self::format( $post );
+		}
+
 		$ordered_cat_ids = array();
 		foreach ( $settings['category_order'] as $cat_id ) {
 			if ( isset( $by_category[ $cat_id ] ) ) {
@@ -307,18 +322,18 @@ class TWD_AP_Cards {
 			}
 		);
 		$ordered_cat_ids = array_merge( $ordered_cat_ids, $remaining );
+		// A category whose every article is up in the row has no section, so it
+		// must not take one of the "how many categories" places either.
+		$ordered_cat_ids = array_values(
+			array_filter(
+				$ordered_cat_ids,
+				function ( $cat_id ) use ( $by_category, $in_row ) {
+					return (bool) array_diff( $by_category[ $cat_id ], array_keys( $in_row ) );
+				}
+			)
+		);
 		$ordered_cat_ids = array_slice( $ordered_cat_ids, 0, $settings['categories_count'] );
 
-		// The Featured row: the featured articles of the whole site, whatever
-		// their category, at the very top, lowest grid number first. Each
-		// appears once on the page: here, not again in its own section below.
-		$groups = array();
-		$in_row = array();
-		$row    = array();
-		foreach ( array_slice( self::featured_posts(), 0, (int) $settings['posts_per_category'] ) as $post ) {
-			$in_row[ $post->ID ] = true;
-			$row[]               = self::format( $post );
-		}
 		if ( $row ) {
 			$groups[] = array(
 				'category' => array(

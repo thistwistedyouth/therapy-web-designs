@@ -64,7 +64,8 @@ shows first, 2 next, and so on. Featured articles with no number come after the
 numbered ones, newest first. An article shows once on the page: in the Featured
 row, or in its own section if the row is full. Lists (a category page, search
 results) also put the featured articles first, in the same order. The grid
-number only affects featured articles.
+number only affects featured articles (up to the 100 newest featured
+articles are ranked).
 
 NEW (1.44.0): paste a Book Maker style book into the New Article popup. Open
 the Paste JSON tab, paste a JSON with a "title" and a list of "cards"

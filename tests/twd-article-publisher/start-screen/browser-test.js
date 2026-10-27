@@ -424,24 +424,52 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	await waitSaves(s, 1);
 	t('GN: featured with the box left blank sends an empty grid number', s.saves[0].body.featured === true && s.saves[0].body.grid_order === '');
 	await s.ctx.close();
+	// a number that is not a whole number from 1 to 9999 is refused with a message, not silently dropped
+	s = await open(browser, 'key-off', { aiKeyConfigured: 0 }); page = s.page;
+	await page.click('#twd-ap-new-btn');
+	await page.check('#twd-ap-featured-toggle');
+	await page.fill('#twd-ap-title', 'Bad number');
+	for (const bad of ['0', '-1', '2.5', '1e3', '10000']) {
+		await page.fill('#twd-ap-grid-order', bad);
+		await page.click('#twd-ap-publish-btn');
+		await new Promise((r) => setTimeout(r, 250));
+		t('GN: "' + bad + '" is refused with a message and nothing is saved', s.saves.length === 0 && (await page.locator('#twd-ap-status').innerText()).includes('whole number from 1 to 9999'), (await page.locator('#twd-ap-status').innerText()));
+	}
+	t('GN: the box has the focus so it can be fixed', await page.evaluate(() => document.activeElement && document.activeElement.id === 'twd-ap-grid-order'));
+	await page.fill('#twd-ap-grid-order', '9999');
+	await page.click('#twd-ap-publish-btn');
+	await waitSaves(s, 1);
+	t('GN: 9999 is accepted', s.saves[0].body.grid_order === '9999');
+	await s.ctx.close();
+	// not featured: a bad number in the hidden box is dropped, the save goes ahead
+	s = await open(browser, 'key-off', { aiKeyConfigured: 0 }); page = s.page;
+	await page.click('#twd-ap-new-btn');
+	await page.check('#twd-ap-featured-toggle');
+	await page.fill('#twd-ap-grid-order', '2.5');
+	await page.uncheck('#twd-ap-featured-toggle');
+	await page.fill('#twd-ap-title', 'Hidden bad number');
+	await page.click('#twd-ap-publish-btn');
+	await waitSaves(s, 1);
+	t('GN: a bad number on an article that is not featured is dropped and the save goes ahead', s.saves[0].body.grid_order === '' && s.saves[0].body.featured === false);
+	await s.ctx.close();
 	// editing: the saved number loads, shows, and can be changed
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	s.replies.post = { featured: true, grid_order: 4 };
 	await page.evaluate(() => { window.confirm = () => true; });
 	await page.click('#twd-ap-edit-btn');
-	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article' && (() => { const st = document.getElementById('twd-ap-status'); return !st || st.hidden || !st.textContent.trim(); })());
 	t('GN: edit page: a featured article shows its saved grid number', await vis(page, '#twd-ap-grid-order') && (await page.inputValue('#twd-ap-grid-order')) === '4');
 	await page.fill('#twd-ap-grid-order', '1');
 	await page.click('#twd-ap-publish-btn');
 	await waitSaves(s, 1);
-	t('GN: Update sends the changed number', s.saves[0].body.grid_order === '1' && s.saves[0].body.featured === true);
+	t('GN: Update sends the changed number', s.saves.length === 1 && s.saves[0].body.grid_order === '1' && s.saves[0].body.featured === true, JSON.stringify(s.saves.map((x) => [x.url, x.body.grid_order, x.body.featured])) + ' status=' + (await page.locator('#twd-ap-status').innerText()));
 	await s.ctx.close();
 	// a number kept on an article that is not featured: hidden, still sent so it is not lost
 	s = await open(browser, 'key-on', cfgOn); page = s.page;
 	s.replies.post = { featured: false, grid_order: 6 };
 	await page.evaluate(() => { window.confirm = () => true; });
 	await page.click('#twd-ap-edit-btn');
-	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article' && (() => { const st = document.getElementById('twd-ap-status'); return !st || st.hidden || !st.textContent.trim(); })());
 	t('GN: edit page: an article that is not featured hides the box', !(await vis(page, '#twd-ap-grid-order')));
 	await page.check('#twd-ap-featured-toggle');
 	t('GN: ticking Feature brings back the number it already had', await vis(page, '#twd-ap-grid-order') && (await page.inputValue('#twd-ap-grid-order')) === '6');
@@ -451,7 +479,7 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	s.replies.post = { featured: true };
 	await page.evaluate(() => { window.confirm = () => true; });
 	await page.click('#twd-ap-edit-btn');
-	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+	await page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article' && (() => { const st = document.getElementById('twd-ap-status'); return !st || st.hidden || !st.textContent.trim(); })());
 	t('GN: a featured article from before grid numbers shows an empty box', await vis(page, '#twd-ap-grid-order') && (await page.inputValue('#twd-ap-grid-order')) === '');
 	await s.ctx.close();
 

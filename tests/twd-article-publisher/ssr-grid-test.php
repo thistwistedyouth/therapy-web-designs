@@ -99,8 +99,18 @@ class WP_Query {
 				$p = array_filter( $p, function ( $x ) use ( $mq ) { return array_key_exists( $mq['key'], $GLOBALS['meta'][ $x->ID ] ?? array() ); } );
 			}
 		}
-		// Newest first, as asked. Featured first is NOT done by the database any more (PHP does it in TWD_AP_Cards).
-		usort( $p, function ( $x, $y ) { return strcmp( $y->post_date, $x->post_date ); } );
+		// Honour the ordering the code asks for (a string or an array of field => direction), so a lost or wrong
+		// orderby is caught; WordPress's default when none is given is date, newest first.
+		$ob   = $a['orderby'] ?? 'date';
+		$dirs = is_array( $ob ) ? $ob : array( $ob => $a['order'] ?? 'DESC' );
+		usort( $p, function ( $x, $y ) use ( $dirs ) {
+			foreach ( $dirs as $k => $dir ) {
+				$f = 'ID' === $k ? 'ID' : ( 'date' === $k ? 'post_date' : 'post_title' );
+				$c = $x->$f <=> $y->$f;
+				if ( 0 !== $c ) { return 'ASC' === strtoupper( $dir ) ? $c : -$c; }
+			}
+			return 0;
+		} );
 		$this->found_posts = count( $p );
 		$this->posts = array_slice( $p, $a['offset'] ?? 0, $a['posts_per_page'] );
 	}
@@ -321,6 +331,15 @@ $html  = grid();
 $links = card_links( $html );
 t( 'the page HTML shows the same order as the REST route', $links === rest_links( array( 'per_page' => 24, 'offset' => 0 ) ) && 'https://example.test/post-24/' === $links[0] && 'https://example.test/post-23/' === $links[10], json_encode( $links ) );
 
+// Two articles with the very same date: the higher ID first, every time (both queries share the tie-break).
+add_post( 50, 'Same day older id', array( 3 ), '2026-02-27' );
+add_post( 51, 'Same day newer id', array( 3 ), '2026-02-27' );
+$r = TWD_AP_Cards::fetch( 24, 0, '', 'sleep' );
+$sl = $ids( $r );
+t( 'same date: the higher ID comes first', array_search( 51, $sl, true ) < array_search( 50, $sl, true ), json_encode( $sl ) );
+t( 'the lists ask the database for newest first with an ID tie-break', array( 'date' => 'DESC', 'ID' => 'DESC' ) === TWD_AP_Cards::query_args( 5, 0 )['orderby'] );
+unset( $GLOBALS['posts'][50], $GLOBALS['posts'][51] );
+
 // The grouped landing view: a Featured row first, each article once.
 $g     = TWD_AP_Cards::grouped();
 $names = array_map( function ( $x ) { return $x['category']['name']; }, $g['groups'] );
@@ -337,6 +356,17 @@ t( 'sections keep their own full count for See all', 4 === $g['groups'][1]['tota
 TWD_AP_Grid_Settings::$s['posts_per_category'] = 3;
 $g = TWD_AP_Cards::grouped();
 t( 'a smaller section size makes a smaller Featured row; the rest return to their sections', array( 24, 26, 21 ) === $gids( $g['groups'][0] ) && array( 22, 20, 23 ) === $gids( $g['groups'][1] ) && array( 27, 25 ) === $gids( $g['groups'][2] ), json_encode( array_map( $gids, $g['groups'] ) ) );
+// A topic whose only article is in the row does not take up one of the category places.
+TWD_AP_Grid_Settings::$s['posts_per_category'] = 6;
+TWD_AP_Grid_Settings::$s['category_order'] = array( 4 );
+TWD_AP_Grid_Settings::$s['categories_count'] = 2;
+$g = TWD_AP_Cards::grouped();
+$names = array_map( function ( $x ) { return $x['category']['name']; }, $g['groups'] );
+t( 'a topic emptied by the Featured row gives its place to the next topic', array( 'Featured', 'Anxiety', 'Sleep' ) === $names, json_encode( $names ) );
+TWD_AP_Grid_Settings::$s['category_order'] = array();
+TWD_AP_Grid_Settings::$s['categories_count'] = 4;
+TWD_AP_Grid_Settings::$s['posts_per_category'] = 3;
+
 // Two more featured articles past the row, in one section: ordered by grid number, not by date.
 add_post( 40, 'Sleep featured nine', array( 3 ), '2026-03-10' );
 add_post( 41, 'Sleep featured eight', array( 3 ), '2026-01-03' );

@@ -432,15 +432,15 @@ body.admin-bar .twd-ap-edit-pencil {
 }
 /* Grid number, shown only while "Feature this article" is ticked. */
 .twd-ap-grid-order {
-  margin: -6px 0 16px 26px;
+  margin: -6px 0 16px 26px !important;
 }
 .twd-ap-grid-order .twd-ap-grid-order-input {
   width: 110px !important;
   margin-bottom: 6px !important;
 }
 .twd-ap-grid-order .twd-ap-hint {
-  display: block;
-  margin: 0;
+  display: block !important;
+  margin: 0 !important;
 }
 
 .twd-ap-btn-secondary {
