@@ -44,7 +44,7 @@ function page(deck, withData) {
 		(withData ? '<script>window.TWD_AP_SB_DATA = ' + JSON.stringify(deck) + ';</script>' : '') + '<script>' + JS + '</script></body></html>';
 }
 
-async function open(browser, deck, vp, withData) {
+async function open(browser, deck, vp, withData, extra) {
 	const ctx = await browser.newContext({ viewport: vp });
 	const p = await ctx.newPage();
 	const errors = [];
@@ -53,6 +53,7 @@ async function open(browser, deck, vp, withData) {
 	// A tall picture (600x900) for the picture card; everything else is the page.
 	const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect width="600" height="900" fill="#446"/></svg>';
 	await p.route('https://example.test/**', (r) => (r.request().url().endsWith('.svg') ? r.fulfill({ contentType: 'image/svg+xml', body: svg }) : r.fulfill({ contentType: 'text/html', body: page(deck, withData !== false) })));
+	if (extra) { await extra(p); }
 	await p.goto('https://example.test/book');
 	if (withData !== false) { await p.waitForSelector('.twd-sb-slide'); } else { await p.waitForFunction(() => !!window.TWD_AP_SwipeBook); }
 	await wait(150);
@@ -254,6 +255,155 @@ const sourceText = (deck) => deck.slides.map((s) => {
 		broken.slides[1].html = null;
 		const { ctx, p, errors } = await open(browser, broken, { width: 360, height: 640 });
 		t('safety: odd data does not stop the book opening', (await p.locator('.twd-sb-slide:not(.twd-sb-probe)').count()) >= broken.slides.length && (await p.locator('.twd-sb-probe').count()) === 0);
+		await ctx.close();
+	}
+
+
+	// ---- review fixes (still 1.43.0) -------------------------------------------------------------
+	const bookOf = (slides) => Object.assign({}, DECK, { slides });
+	const textOnly = (html) => html.replace(/<br\s*\/?>/g, '').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, '');
+	const pagesOf = async (p, d) => (await p.evaluate(inspect(d))).pages;
+
+	// A full stop right after a bold, italic or linked word is never lost when a paragraph is cut into sentences.
+	{
+		const html = '<p>' + para(0, 6) + ' <strong>Important</strong>. ' + para(10, 5) + ' <em>Really</em>? ' + para(20, 5) + ' <a href="https://example.test/x">a link</a>. ' + para(30, 6) + ' <strong>Done</strong>! </p>';
+		const deck = bookOf([{ type: 'text', heading: 'Punctuation', html }]);
+		for (const vp of [{ width: 360, height: 640 }, { width: 320, height: 568 }]) {
+			const { ctx, p } = await open(browser, deck, vp);
+			const pg = await pagesOf(p, deck);
+			t('stops after inline words ' + vp.width + 'x' + vp.height + ': the paragraph was cut into several pages', pg.length > 1, 'pages ' + pg.length);
+			t('stops after inline words ' + vp.width + 'x' + vp.height + ': every full stop, question mark and exclamation mark is still there', pg.map((x) => x.text).join('') === textOnly(html), pg.map((x) => x.text).join('').length + ' vs ' + textOnly(html).length);
+			t('stops after inline words ' + vp.width + 'x' + vp.height + ': no page scrolls', pg.every((x) => x.over <= 1));
+			await ctx.close();
+		}
+	}
+
+	// A paragraph that is wholly bold, italic or a link, a block quote, and a one-item list are cut at sentences, not left to scroll.
+	{
+		const cases = [
+			['a whole italic paragraph', '<p><em>' + para(0, 14) + '</em></p>'],
+			['a whole bold, then italic paragraph', '<p><strong><em>' + para(0, 14) + '</em></strong></p>'],
+			['a whole linked paragraph', '<p><a href="https://example.test/y">' + para(0, 14) + '</a></p>'],
+			['a block quote of one long paragraph', '<blockquote><p>' + para(0, 14) + '</p></blockquote>'],
+			['a block quote of several paragraphs', '<blockquote><p>' + para(0, 6) + '</p><p>' + para(10, 6) + '</p><p>' + para(20, 6) + '</p></blockquote>'],
+			['a one-item list with a long item', '<ul><li>' + para(0, 14) + '</li></ul>'],
+		];
+		for (const [name, html] of cases) {
+			const deck = bookOf([{ type: 'text', heading: 'Nested', html }]);
+			const { ctx, p } = await open(browser, deck, { width: 360, height: 640 });
+			const pg = await pagesOf(p, deck);
+			t(name + ': cut into pages, none scrolls, text intact', pg.length > 1 && pg.every((x) => x.over <= 1) && pg.map((x) => x.text).join('') === textOnly(html), 'pages ' + pg.length + ' over ' + pg.map((x) => x.over).join(',') + ' text ' + pg.map((x) => x.text).join('').length + '/' + textOnly(html).length);
+			const wrapped = await p.evaluate(() => Array.from(document.querySelectorAll('.twd-sb-slide:not(.twd-sb-probe) .twd-sb-body-text')).map((b) => b.innerHTML.replace(/<[^>]+>[^<]*/g, (m) => m.match(/^<[^>]+>/)[0]).replace(/\s+/g, ' ')));
+			t(name + ': every page keeps the wrapper it came from', wrapped.every((h) => /^(<p>)?(<em>|<strong>|<a |<blockquote>|<ul>)/.test(h)), wrapped[0]);
+			await ctx.close();
+		}
+	}
+
+	// A heading is not left as the last thing on a page when its text starts the next.
+	{
+		const sec = (n) => '<h3>Section ' + n + ' heading</h3><p>' + para(n * 10, 4) + '</p>';
+		const html = '<p>' + para(0, 2) + '</p>' + sec(1) + sec(2) + sec(3) + sec(4) + '<h2>Last heading</h2><p>' + para(90, 3) + '</p>';
+		const deck = bookOf([{ type: 'text', heading: 'Sections', html }]);
+		let bad = 0, checked = 0, alone = 0, lossy = 0, overs = 0;
+		for (const h of [480, 520, 560, 600, 640, 680, 720, 760, 800]) {
+			const { ctx, p } = await open(browser, deck, { width: 360, height: h });
+			const info = await p.evaluate(() => Array.from(document.querySelectorAll('.twd-sb-slide:not(.twd-sb-probe)')).map((s) => {
+				const b = s.querySelector('.twd-sb-body-text');
+				const last = b && b.lastElementChild;
+				return { endsWithHeading: !!last && /^H[1-6]$/.test(last.tagName), onlyHeading: !!b && b.children.length === 1 && /^H[1-6]$/.test(b.children[0].tagName), over: s.querySelector('.twd-sb-card-body').scrollHeight - s.querySelector('.twd-sb-card-body').clientHeight, text: (b ? b.textContent : '').replace(/\s+/g, '') };
+			}));
+			info.forEach((x, i) => { checked++; if (x.endsWithHeading && i < info.length - 1) { bad++; } if (x.onlyHeading && i < info.length - 1) { alone++; } if (x.over > 1) { overs++; } });
+			if (info.map((x) => x.text).join('') !== textOnly(html)) { lossy++; }
+			await ctx.close();
+		}
+		t('headings: across nine screen heights no page ends on a heading whose text is on the next page', bad === 0, bad + ' of ' + checked + ' pages');
+		t('headings: no page is a heading on its own', alone === 0, alone + ' pages');
+		t('headings: nothing lost and nothing scrolls at any of those heights', lossy === 0 && overs === 0, 'lossy ' + lossy + ' scrolling ' + overs);
+		// A heading and a block that will not sit with it: the block is cut, the heading is not left alone.
+		let aloneTotal = 0, pagesTotal = 0, lostTotal = 0;
+		for (const h of [520, 600, 680]) {
+			for (const n of [3, 4, 5, 6, 7, 8]) {
+				const html2 = '<p>' + para(0, 1) + '</p><h3>A heading before a paragraph</h3><p>' + para(10, n) + '</p>';
+				const d2 = bookOf([{ type: 'text', heading: 'Heading then block', html: html2 }]);
+				const { ctx, p } = await open(browser, d2, { width: 360, height: h });
+				const info = await p.evaluate(() => Array.from(document.querySelectorAll('.twd-sb-slide:not(.twd-sb-probe)')).map((s) => {
+					const b = s.querySelector('.twd-sb-body-text');
+					return { only: !!b && b.children.length === 1 && /^H[1-6]$/.test(b.children[0].tagName), text: (b ? b.textContent : '').replace(/\s+/g, '') };
+				}));
+				info.forEach((x, i) => { pagesTotal++; if (x.only && i < info.length - 1) { aloneTotal++; } });
+				if (info.map((x) => x.text).join('') !== textOnly(html2)) { lostTotal++; }
+				await ctx.close();
+			}
+		}
+		t('headings: with a block that will not sit beside it, the heading still goes with the start of that block', aloneTotal === 0 && lostTotal === 0, aloneTotal + ' alone, ' + lostTotal + ' lossy, of ' + pagesTotal + ' pages');
+	}
+
+	// A split quote or question keeps its blank lines between paragraphs.
+	{
+		const q = Object.assign({}, DECK, { slides: [
+			{ type: 'quote', heading: '', html: '<p>' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => 'Short made-up paragraph number ' + i + ' of the card.').join('<br><br>') + '</p>', attribution: 'Someone' },
+			{ type: 'question', heading: '', html: '<p>' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => 'Short made-up paragraph number ' + i + ' of the card.').join('<br><br>') + '</p>' },
+		] });
+		const { ctx, p } = await open(browser, q, { width: 360, height: 640 });
+		const gaps = await p.evaluate(() => Array.from(document.querySelectorAll('.twd-sb-slide:not(.twd-sb-probe)')).map((s) => {
+			const ps = s.querySelectorAll('.twd-sb-quote-text p, .twd-sb-question-text p');
+			if (ps.length < 2) { return null; }
+			const font = parseFloat(getComputedStyle(ps[0]).fontSize);
+			const lh = parseFloat(getComputedStyle(ps[0]).lineHeight);
+			const a = ps[0].getBoundingClientRect(), b = ps[1].getBoundingClientRect();
+			return { ratio: (b.top - a.bottom) / lh, margin: parseFloat(getComputedStyle(ps[1]).marginTop) / font, over: s.querySelector('.twd-sb-card-body').scrollHeight - s.querySelector('.twd-sb-card-body').clientHeight };
+		}).filter(Boolean));
+		t('split quote and question cards: pages with two paragraphs exist for both', gaps.length >= 2, 'found ' + gaps.length);
+		t('split quote and question cards: the gap between paragraphs is one blank line, as with a line break pair', gaps.every((g) => g.ratio > 0.9 && g.ratio < 1.1 && Math.abs(g.margin - 1.6) < 0.05), JSON.stringify(gaps));
+		t('split quote and question cards: still no scrolling', gaps.every((g) => g.over <= 1));
+		await ctx.close();
+	}
+
+	// A picture that arrives after the book opened: the pages are measured again once it has a height.
+	{
+		const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320"><rect width="320" height="320" fill="#c9a24b"/></svg>';
+		const late = async (p) => { await p.route('https://example.test/late.svg', async (r) => { await wait(800); await r.fulfill({ contentType: 'image/svg+xml', body: svg }); }); };
+		for (const attrs of ['', ' width="320" height="320"']) {
+			const html = '<p>' + para(0, 3) + '</p><figure><img src="https://example.test/late.svg" alt="made-up picture"' + attrs + '></figure><p>' + para(10, 3) + '</p>';
+			const deck = bookOf([{ type: 'text', heading: 'A picture', html }, { type: 'text', heading: 'After', html: '<p>The next slide.</p>' }]);
+			const { ctx, p, errors } = await open(browser, deck, { width: 360, height: 640 }, true, late);
+			const before = await pagesOf(p, deck);
+			await p.waitForFunction(() => Array.from(document.images).filter((i) => !i.closest('.twd-sb-probe')).every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 5000 });
+			await wait(600);
+			const pg = await pagesOf(p, deck);
+			const label = 'late picture' + (attrs ? ' (width and height given)' : ' (no size given)');
+			t(label + ': once it has loaded, no page scrolls', pg.every((x) => x.over <= 1), 'before ' + before.map((x) => x.over).join(',') + ' after ' + pg.map((x) => x.over).join(','));
+			t(label + ': the picture and all the text are still there, in order', pg.filter((x) => x.src === 0).map((x) => x.text).join('') === textOnly(html) && (await p.locator('.twd-sb-slide:not(.twd-sb-probe) img').count()) === 1, '');
+			t(label + ': the book stayed on its first page and raised no errors', (await p.evaluate(() => document.querySelector('.twd-sb-counter').textContent.startsWith('1 /'))) && errors.length === 0, errors.join(' | '));
+			const marks = await p.evaluate(() => { document.querySelector('.twd-sb-slide').setAttribute('data-mark', 'x'); return true; });
+			await wait(700);
+			t(label + ': no endless re-fitting (the pages are left alone afterwards)', (await p.evaluate(() => document.querySelector('.twd-sb-slide').getAttribute('data-mark'))) === 'x');
+			await ctx.close();
+		}
+	}
+
+	// A PDF export in progress is not pulled apart by a re-fit (turning the phone while it runs).
+	{
+		const { ctx, p, errors } = await open(browser, DECK, { width: 1024, height: 700 });
+		await p.evaluate(() => {
+			window.__saved = 0;
+			window.html2canvas = (el) => new Promise((resolve) => setTimeout(() => { const c = document.createElement('canvas'); c.width = 20; c.height = 30; resolve(c); }, 60));
+			window.jspdf = { jsPDF: function () { this.addPage = function () {}; this.addImage = function () {}; this.save = function () { window.__saved++; }; } };
+		});
+		const wideCount = (await pagesOf(p, DECK)).length;
+		await p.evaluate(() => { const b = document.querySelector('.twd-sb-pdf-btn'); if (b) { b.click(); } });
+		const hasPdf = await p.locator('.twd-sb-pdf-btn').count();
+		await wait(150);
+		await p.setViewportSize({ width: 360, height: 640 });
+		await p.waitForFunction(() => window.__saved >= 1, null, { timeout: 20000 }).catch(() => {});
+		await wait(300);
+		const saved = await p.evaluate(() => window.__saved);
+		const btn = hasPdf ? await p.locator('.twd-sb-pdf-btn').innerText() : '';
+		t('pdf export during a resize: finishes, saves once, and the button comes back', hasPdf > 0 && saved === 1 && !/Page \d+\/\d+/.test(btn) && !/Building/.test(btn), 'saved ' + saved + ' button "' + btn + '"');
+		t('pdf export during a resize: raises no error', errors.length === 0, errors.join(' | '));
+		await wait(500);
+		const after = await pagesOf(p, DECK);
+		t('pdf export during a resize: the book is fitted to the new size afterwards', after.length > wideCount && after.every((x) => x.kind === 'bio' || x.over <= 1), wideCount + ' -> ' + after.length);
 		await ctx.close();
 	}
 
