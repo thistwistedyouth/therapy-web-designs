@@ -176,6 +176,11 @@ async function open(browser, name, o) {
 		const wrap = await bb('.twd-ap-archive');
 		t('archive page: title, then intro, then cards, in that order down the page', title.y < intro.y && intro.y < grid.y);
 		t('archive page: the intro is visible without any setting ticked', (await r.page.locator('.twd-ap-articles-intro-text').innerText()).includes('Anxiety can feel huge.'));
+		const topicsBox = await bb('.twd-ap-articles-topics');
+		t('archive page: Browse by topic sits under the cards, inside the page width', topicsBox && topicsBox.y > grid.y + grid.height - 1 && topicsBox.x >= wrap.x - 1 && topicsBox.width <= wrap.width + 1, JSON.stringify([topicsBox, grid]));
+		const cur = await r.page.locator('.twd-ap-topics-current span').evaluate((el) => { const c = getComputedStyle(el); return { weight: c.fontWeight, tag: el.tagName, href: el.getAttribute('href') }; });
+		t('archive page: this category is bold text, not a link', cur.tag === 'SPAN' && cur.href === null && parseInt(cur.weight, 10) >= 700, JSON.stringify(cur));
+		t('archive page: the other topics are links', (await r.page.locator('.twd-ap-articles-topics a').count()) >= 1);
 		t('archive page: the content is centred and no wider than 1140px', wrap.width <= 1141 && Math.abs((wrap.x + wrap.width / 2) - 550) < 2, JSON.stringify(wrap));
 		t('archive page: the heading is large and the three cards sit in one row', (await r.page.locator('.twd-ap-archive-title').evaluate((el) => parseFloat(getComputedStyle(el).fontSize))) >= 34 && (await r.page.$$eval('.twd-ap-article-card', (c) => new Set(c.map((x) => Math.round(x.getBoundingClientRect().top))).size)) === 1);
 		await r.ctx.close();
