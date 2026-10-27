@@ -200,6 +200,12 @@ class TWD_AP_Shortcode {
 		ob_start();
 		?>
 		<div id="<?php echo esc_attr( $instance_id ); ?>" class="<?php echo esc_attr( $root_classes ); ?>" style="<?php echo esc_attr( $root_style ); ?>" data-ssr="1" data-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
+			<?php if ( ! $show_filters && $on_archive && $is_admin_user ) : ?>
+				<?php // The plugin's own category page has no filters, but the owner still needs the gear to reach Customise this grid (including the switch for this page). ?>
+				<div class="twd-ap-articles-toolbar twd-ap-articles-toolbar-gear">
+					<button type="button" class="twd-ap-articles-settings-btn" aria-label="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>">&#9881;</button>
+				</div>
+			<?php endif; ?>
 			<?php if ( $show_filters ) : ?>
 				<div class="twd-ap-articles-toolbar">
 					<select class="twd-ap-articles-category-select" aria-label="<?php esc_attr_e( 'Jump to a category', 'twd-article-publisher' ); ?>">
@@ -226,7 +232,7 @@ class TWD_AP_Shortcode {
 			<?php endif; ?>
 			<?php echo TWD_AP_Cta::html( $on_archive ? 'category' : 'grid' ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Cta. ?>
 		</div>
-		<?php if ( $show_filters && $is_admin_user ) : ?>
+		<?php if ( ( $show_filters || $on_archive ) && $is_admin_user ) : ?>
 			<div class="twd-ap-overlay twd-ap-grid-settings-overlay" data-for="<?php echo esc_attr( $instance_id ); ?>" hidden>
 				<div class="twd-ap-modal twd-ap-grid-settings-modal">
 					<div class="twd-ap-modal-header">

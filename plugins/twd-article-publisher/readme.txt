@@ -66,7 +66,11 @@ category template, on block themes, or if you untick "Use this grid on
 category and tag pages" under Category pages in Customise this grid. Also,
 the link to the full article index is now a quiet "All articles" text link
 at the end of the "Browse by topic" row (still a real link for search
-engines) instead of a large button.
+engines) instead of a large button. Things to know when updating: the page
+heading is the plain category name (no "Category:"), the theme's own
+archive extras such as a sidebar or breadcrumbs are not shown on this page,
+and WordPress's own "page 2" addresses for a category redirect to the
+category page.
 
 NEW (1.38.0): four things, all set in Customise this grid (the gear icon on
 your resources page). (1) Article look: choose the text, heading, link and

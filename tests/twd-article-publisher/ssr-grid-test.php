@@ -283,6 +283,7 @@ t( 'cta: unticked for the grid, a normal page shows none', false === strpos( gri
 TWD_AP_Grid_Settings::$s = array_merge( TWD_AP_Grid_Settings::$s, array( 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_categories' => false ) );
 
 // ---------- the plugin's own category page (template + shortcode together) ----------
+function get_template() { return 'astra'; }
 function get_header() { echo '<header class="theme-header">Site header</header>'; }
 function get_footer() { echo '<footer class="theme-footer">Site footer</footer>'; }
 function do_shortcode( $s ) { return grid( 'intro="force"' === substr( $s, -14, -1 ) || false !== strpos( $s, 'intro="force"' ) ? array( 'intro' => 'force' ) : array() ); }
@@ -299,6 +300,13 @@ $dump['archivepage'] = array( 'html' => $page_html, 'list' => array( 'items' => 
 t( 'archive page: theme header, the category name as H1, the intro (forced on although the setting is off), the cards, then the footer', 1 === preg_match( '/theme-header.*<h1 class="twd-ap-archive-title">Anxiety<\/h1>.*twd-ap-articles-intro-text">\s*<p>Anxiety can feel huge\..*twd-ap-article-card.*theme-footer/s', $page_html ) && 3 === count( card_links( $page_html ) ) );
 t( 'archive page: one H1 only (the shortcode adds none)', 1 === substr_count( $page_html, '<h1' ) );
 t( 'archive page: no filter toolbar on a category page', false === strpos( $page_html, 'twd-ap-articles-toolbar' ) );
+t( 'archive page: a visitor sees no settings gear', false === strpos( $page_html, 'twd-ap-articles-settings-btn' ) && false === strpos( $page_html, 'twd-ap-grid-settings-overlay' ) );
+$GLOBALS['allowed'] = true;
+$admin_page = render_archive_page();
+$dump['archiveadmin'] = array( 'html' => $admin_page, 'list' => array( 'items' => array(), 'has_more' => false ), 'grouped' => array( 'groups' => array() ), 'total' => 3 );
+t( 'archive page: someone allowed to publish gets the gear, so the owner can always reach the switch for this page', false !== strpos( $admin_page, 'twd-ap-articles-settings-btn' ) && false !== strpos( $admin_page, 'twd-ap-grid-settings-overlay' ) && false !== strpos( $admin_page, 'id="twd-ap-gs-archive-takeover"' ) );
+t( 'archive page: the gear is not the full filter toolbar (no search box or dropdown on a category page)', false === strpos( $admin_page, 'twd-ap-articles-search' ) && false === strpos( $admin_page, 'twd-ap-articles-category-select' ) );
+$GLOBALS['allowed'] = false;
 $GLOBALS['archive'] = 0;
 reset_site();
 

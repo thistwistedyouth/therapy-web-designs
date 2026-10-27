@@ -830,3 +830,9 @@
     font-size: 28px !important;
   }
 }
+
+/* On the plugin's own category page the toolbar holds only the gear. */
+.twd-ap-articles-toolbar-gear {
+  justify-content: flex-end !important;
+  margin-bottom: 8px !important;
+}

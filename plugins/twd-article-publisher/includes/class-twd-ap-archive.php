@@ -34,21 +34,44 @@ class TWD_AP_Archive {
 		// reason of its own has already had its say; should_take_over()
 		// checks for the cases it knows about.
 		add_filter( 'template_include', array( $this, 'maybe_take_over' ), 99 );
+		// Redirects belong on template_redirect (core's own hook for them); it
+		// also runs for HEAD requests, which never reach template_include.
+		add_action( 'template_redirect', array( $this, 'maybe_redirect_paged' ) );
+	}
+
+	/**
+	 * WordPress's own /category/x/page/2/ would print this same grid again
+	 * (the grid pages itself with ?twd_page=N and Load more), a duplicate
+	 * page for search engines. Send those addresses to the category page,
+	 * permanently, so any that are already indexed fold into it.
+	 */
+	public function maybe_redirect_paged() {
+		if ( ! is_paged() || ! self::should_take_over() ) {
+			return;
+		}
+		$url = get_term_link( get_queried_object() );
+		if ( ! is_wp_error( $url ) && '' !== $url ) {
+			wp_safe_redirect( $url, 301 );
+			exit;
+		}
 	}
 
 	public function maybe_take_over( $template ) {
 		if ( ! self::should_take_over() ) {
 			return $template;
 		}
-		// WordPress's own /category/x/page/2/ would print this same grid again
-		// (the grid pages itself with ?twd_page=N and Load more), a duplicate
-		// page for search engines. Send those addresses to the category page.
-		if ( is_paged() ) {
-			$url = get_term_link( get_queried_object() );
-			if ( ! is_wp_error( $url ) && '' !== $url ) {
-				wp_safe_redirect( $url, 301 );
-				exit;
-			}
+		// Belt and braces for page builders: a template that something other
+		// than the theme chose (Elementor Pro's Theme Builder, another
+		// builder or plugin) always wins, whatever the detection above says.
+		if ( ! self::is_theme_template( $template ) ) {
+			return $template;
+		}
+		// The main query still counts the theme's own pages (/page/2/ ...), and
+		// SEO plugins print a "next page" link from that count. This page
+		// pages itself, so tell them there is only one.
+		global $wp_query;
+		if ( is_object( $wp_query ) ) {
+			$wp_query->max_num_pages = 1;
 		}
 		return TWD_AP_PATH . 'templates/archive-grid.php';
 	}
@@ -71,6 +94,21 @@ class TWD_AP_Archive {
 	}
 
 	/**
+	 * True when the template WordPress chose lives in the active theme (or its
+	 * parent), as the generic archive.php or index.php does.
+	 */
+	private static function is_theme_template( $template ) {
+		$template = wp_normalize_path( (string) $template );
+		foreach ( array( get_stylesheet_directory(), get_template_directory() ) as $dir ) {
+			$dir = trailingslashit( wp_normalize_path( $dir ) );
+			if ( 0 === strpos( $template, $dir ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * A dedicated category or tag template in the active theme (or its
 	 * parent) is the theme author's own design, so it is left alone. The
 	 * generic archive.php and index.php do not count: those are what this
@@ -82,10 +120,15 @@ class TWD_AP_Archive {
 			return false;
 		}
 		$names = array();
-		if ( is_category() ) {
-			$names = array( 'category-' . $term->slug . '.php', 'category-' . $term->term_id . '.php', 'category.php' );
-		} elseif ( is_tag() ) {
-			$names = array( 'tag-' . $term->slug . '.php', 'tag-' . $term->term_id . '.php', 'tag.php' );
+		// Same names WordPress itself tries, including the decoded slug.
+		$slugs = array_unique( array( $term->slug, urldecode( $term->slug ) ) );
+		$base  = is_category() ? 'category' : ( is_tag() ? 'tag' : '' );
+		if ( '' !== $base ) {
+			foreach ( $slugs as $slug ) {
+				$names[] = $base . '-' . $slug . '.php';
+			}
+			$names[] = $base . '-' . $term->term_id . '.php';
+			$names[] = $base . '.php';
 		}
 		return '' !== locate_template( $names );
 	}

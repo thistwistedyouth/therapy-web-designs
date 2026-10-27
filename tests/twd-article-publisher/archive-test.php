@@ -26,6 +26,12 @@ class WP_Error {}
 function is_paged() { return ! empty( $GLOBALS['ctx']['paged'] ); }
 function get_term_link( $t ) { return 'https://example.test/category/' . $t->slug . '/'; }
 function wp_safe_redirect( $u, $c ) { $GLOBALS['redirect'] = array( $u, $c ); throw new RuntimeException( 'redirected' ); }
+function wp_normalize_path( $p ) { return str_replace( '\\', '/', $p ); }
+function trailingslashit( $p ) { return rtrim( $p, '/' ) . '/'; }
+function get_stylesheet_directory() { return '/wp/themes/child'; }
+function get_template_directory() { return '/wp/themes/parent'; }
+function get_template() { return $GLOBALS['ctx']['theme'] ?? 'astra'; }
+function esc_attr( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES ); }
 function esc_html( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES ); }
 function single_term_title( $p = '', $echo = true ) { return $GLOBALS['term']->name; }
 function get_header() { echo "[HEADER]\n"; }
@@ -42,32 +48,45 @@ $arch = ( new ReflectionClass( 'TWD_AP_Archive' ) )->newInstanceWithoutConstruct
 
 // ---------- it works out of the box ----------
 t( 'default: on for a category page with a plain theme (no setup, no template)', 'on' === ( TWD_AP_Grid_Settings::get()['archive_takeover'] ? 'on' : 'off' ) && take() );
-t( 'it hands back the plugin template instead of the theme archive', $plugin . 'templates/archive-grid.php' === $arch->maybe_take_over( '/theme/archive.php' ) );
+t( 'it hands back the plugin template instead of the theme archive', $plugin . 'templates/archive-grid.php' === $arch->maybe_take_over( '/wp/themes/parent/archive.php' ) );
+t( 'a child theme\'s archive.php counts as the theme\'s own, so it is replaced too', $plugin . 'templates/archive-grid.php' === $arch->maybe_take_over( '/wp/themes/child/archive.php' ) );
+$GLOBALS['wp_query'] = (object) array( 'max_num_pages' => 7 );
+$arch->maybe_take_over( '/wp/themes/parent/index.php' );
+t( 'the main query is told there is one page, so SEO plugins print no next page link to /page/2/', 1 === $GLOBALS['wp_query']->max_num_pages );
+$GLOBALS['wp_query'] = (object) array( 'max_num_pages' => 7 );
+t( 'a template chosen by something other than the theme (Elementor Pro, another builder) is left alone, whatever detection says', '/wp/plugins/elementor-pro/theme-builder/archive.php' === $arch->maybe_take_over( '/wp/plugins/elementor-pro/theme-builder/archive.php' ) && 7 === $GLOBALS['wp_query']->max_num_pages );
+t( 'a theme path that only shares a prefix is not the theme', '/wp/themes/parentage/archive.php' === $arch->maybe_take_over( '/wp/themes/parentage/archive.php' ) );
 ctx( array( 'cat' => false, 'tag' => true ) );
 t( 'a tag page too', take() );
 
 // ---------- WordPress's own page 2, 3 ... of a category ----------
 ctx( array( 'paged' => true ) );
 $GLOBALS['redirect'] = null;
-try { $arch->maybe_take_over( '/theme/archive.php' ); $redirected = false; } catch ( RuntimeException $e ) { $redirected = true; }
+try { $arch->maybe_redirect_paged(); $redirected = false; } catch ( RuntimeException $e ) { $redirected = true; }
 t( '/category/x/page/2/ is sent permanently (301) to the category page, not shown as a duplicate of page 1', $redirected && array( 'https://example.test/category/anxiety/', 301 ) === $GLOBALS['redirect'] );
 $GLOBALS['redirect'] = null;
 $GLOBALS['opt']['twd_ap_grid_settings'] = array( 'archive_takeover' => false );
-t( 'with the takeover switched off page 2 is left to the theme, no redirect', '/theme/archive.php' === $arch->maybe_take_over( '/theme/archive.php' ) && null === $GLOBALS['redirect'] );
+$arch->maybe_redirect_paged();
+t( 'with the takeover switched off page 2 is left to the theme, no redirect', null === $GLOBALS['redirect'] );
 $GLOBALS['opt'] = array();
 ctx( array( 'paged' => true, 'own_templates' => array( 'category.php' ) ) );
-t( 'where the theme has its own category template page 2 is left alone too', '/theme/archive.php' === $arch->maybe_take_over( '/theme/archive.php' ) && null === $GLOBALS['redirect'] );
+$arch->maybe_redirect_paged();
+t( 'where the theme has its own category template page 2 is left alone too', null === $GLOBALS['redirect'] );
+ctx( array( 'paged' => false ) );
+$arch->maybe_redirect_paged();
+t( 'an ordinary (unpaged) category page is never redirected', null === $GLOBALS['redirect'] );
+t( 'the redirect is registered on template_redirect so HEAD requests get it too (not only template_include)', true === ( new ReflectionMethod( 'TWD_AP_Archive', 'maybe_redirect_paged' ) )->isPublic() );
 
 // ---------- when it steps aside ----------
 ctx( array( 'cat' => false ) );
-t( 'not on pages that are neither a category nor a tag (home, search, author)', ! take() && '/theme/index.php' === $arch->maybe_take_over( '/theme/index.php' ) );
+t( 'not on pages that are neither a category nor a tag (home, search, author)', ! take() && '/wp/themes/parent/index.php' === $arch->maybe_take_over( '/wp/themes/parent/index.php' ) );
 ctx( array( 'admin' => true ) );
 t( 'not in wp-admin', ! take() );
 ctx( array( 'main' => false ) );
 t( 'not for a secondary query', ! take() );
 $GLOBALS['opt']['twd_ap_grid_settings'] = array( 'archive_takeover' => false );
 ctx();
-t( 'the owner can switch it off (Customise this grid)', ! take() && '/theme/archive.php' === $arch->maybe_take_over( '/theme/archive.php' ) );
+t( 'the owner can switch it off (Customise this grid)', ! take() && '/wp/themes/parent/archive.php' === $arch->maybe_take_over( '/wp/themes/parent/archive.php' ) );
 $GLOBALS['opt'] = array();
 ctx( array( 'block' => true ) );
 t( 'not on a block (full site editing) theme, where header and footer are template parts', ! take() );
@@ -77,6 +96,10 @@ ctx( array( 'own_templates' => array( 'category-anxiety.php' ) ) );
 t( 'not when the theme has a template for this exact category (slug)', ! take() );
 ctx( array( 'own_templates' => array( 'category-3.php' ) ) );
 t( 'not when the theme has a template for this exact category (id)', ! take() );
+$GLOBALS['term']->slug = 'caf%C3%A9';
+ctx( array( 'own_templates' => array( 'category-café.php' ) ) );
+t( 'not when the theme has a template for a non-ASCII slug (WordPress also tries the decoded slug)', ! take() );
+$GLOBALS['term']->slug = 'anxiety';
 ctx( array( 'own_templates' => array( 'tag.php' ) ) );
 t( 'a tag.php does not stop a category page being taken over', take() );
 ctx( array( 'cat' => false, 'tag' => true, 'own_templates' => array( 'tag.php' ) ) );
@@ -107,9 +130,15 @@ t( 'Elementor Pro throwing an error: it does not break the page, it takes over',
 ctx();
 $GLOBALS['shortcodes'] = array();
 ob_start(); include $plugin . 'templates/archive-grid.php'; $out = ob_get_clean();
-t( 'template: theme header, then the category name as the only H1, then the grid, then the theme footer', 1 === preg_match( '/^\[HEADER\]\n<main id="content" class="twd-ap-archive site-main">\s*<h1 class="twd-ap-archive-title">Tom &amp; Jerry<\/h1>\s*\[GRID OUTPUT\]\s*<\/main>\n\[FOOTER\]\n$/', $out ) && 1 === substr_count( $out, '<h1' ) );
+t( 'template: theme header, then the category name as the only H1, then the grid, then the theme footer', 1 === preg_match( '/^\[HEADER\]\n<main id="twd-ap-archive" class="twd-ap-archive site-main">\s*<h1 class="twd-ap-archive-title">Tom &amp; Jerry<\/h1>\s*\[GRID OUTPUT\]\s*<\/main>\n\[FOOTER\]\n$/', $out ) && 1 === substr_count( $out, '<h1' ) );
+$GLOBALS['ctx']['theme'] = 'hello-elementor';
+ob_start(); include $plugin . 'templates/archive-grid.php'; $hello = ob_get_clean();
+$GLOBALS['ctx']['theme'] = 'astra';
+ob_start(); include $plugin . 'templates/archive-grid.php'; $astra = ob_get_clean();
+t( 'template: on Hello Elementor the main element is #content (its skip link points there)', false !== strpos( $hello, '<main id="content"' ) );
+t( 'template: on other themes it uses its own id, so there is never a second #content', false !== strpos( $astra, '<main id="twd-ap-archive"' ) && false === strpos( $astra, 'id="content"' ) );
 t( 'template: the name has no "Category:" prefix and is not double-encoded', false === strpos( $out, 'Category:' ) && false === strpos( $out, '&amp;amp;' ) );
-t( 'template: the grid is the plain shortcode with the intro forced on', array( '[twd_articles intro="force"]' ) === $GLOBALS['shortcodes'] );
+t( 'template: the grid is the plain shortcode with the intro forced on', array( '[twd_articles intro="force"]' ) === array_values( array_unique( $GLOBALS['shortcodes'] ) ) );
 $GLOBALS['term']->name = 'Esteem <script>x</script>';
 ob_start(); include $plugin . 'templates/archive-grid.php'; $out = ob_get_clean();
 t( 'template: a category name with markup in it is escaped', false === strpos( $out, '<script' ) );

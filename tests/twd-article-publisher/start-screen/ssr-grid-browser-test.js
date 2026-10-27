@@ -187,6 +187,23 @@ async function open(browser, name, o) {
 		await phone.close();
 	}
 
+	// 7c. On the plugin's own category page the owner still has the gear, so the switch can always be reached.
+	{
+		const r = await open(browser, 'archiveadmin', { delay: 50 });
+		await wait(500);
+		t('archive page owner: the gear is on the page, right aligned, and opens Customise this grid', await r.page.locator('.twd-ap-articles-settings-btn').isVisible());
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.click('#twd-ap-gs-intro-details > summary');
+		t('archive page owner: the Use this grid on category and tag pages tick is there and on', await r.page.isChecked('#twd-ap-gs-archive-takeover'));
+		await r.page.uncheck('#twd-ap-gs-archive-takeover');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		t('archive page owner: unticking it from the category page saves it as off', saved[saved.length - 1].archive_takeover === false);
+		t('archive page owner: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+	}
+
 	// 8. Few articles: one is a wide card, two sit two across, five stay three across.
 	{
 		const { ctx, page } = await open(browser, 'small', { js: false });
