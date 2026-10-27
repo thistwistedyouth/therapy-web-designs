@@ -486,6 +486,11 @@ body {
 .twd-sb-quote-text p {
   margin: 0 !important;
 }
+/* A card split into pages keeps a blank line between its paragraphs, as the original line breaks did. */
+.twd-sb-quote-text p + p,
+.twd-sb-question-text p + p {
+  margin-top: 1.6em !important;
+}
 .twd-sb-quote-attribution {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: calc(13px * var(--twd-sb-s, 1)) !important;

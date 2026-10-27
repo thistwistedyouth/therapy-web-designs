@@ -257,48 +257,107 @@
 		return (d.textContent || '').length;
 	}
 
-	// A block that is too big for a page by itself, as smaller pieces that
-	// join back up into one block when they share a page: a paragraph as its
-	// sentences, a list as its items. Anything else cannot be cut.
+	// Inline wrappers a whole paragraph can sit inside: a bold, italic or
+	// linked paragraph (a pull quote, say). Cut through, not treated as one piece.
+	var INLINE_WRAP = { EM: 1, STRONG: 1, I: 1, B: 1, A: 1, SPAN: 1, U: 1, MARK: 1, SMALL: 1, S: 1, DEL: 1, INS: 1, CITE: 1, Q: 1 };
+	// A sentence with its closing quote or bracket and the space after it; a run
+	// of stops at the very start (the full stop after a bold word) is a piece of its own.
+	var SENTENCE_PARTS = /[.!?…]+["'”’)\]]*\s*|[^.!?…]+[.!?…]*["'”’)\]]*\s*/g;
+	var SENTENCE_END = /[.!?…]["'”’)\]]*\s*$/;
+
+	// The sentences of an inline run, as html: a sentence that holds a link or a
+	// bold word stays whole, and nothing in the text is ever lost.
+	function inlineAtoms(host) {
+		var kids = Array.prototype.filter.call(host.childNodes, function (n) { return !isBlankText(n); });
+		if (1 === kids.length && 1 === kids[0].nodeType && INLINE_WRAP[kids[0].tagName]) {
+			var shell = kids[0];
+			return inlineAtoms(shell).map(function (a) {
+				var s = shell.cloneNode(false);
+				s.innerHTML = a;
+				return s.outerHTML;
+			});
+		}
+		var atoms = [];
+		var cur = '';
+		function close() { if (cur) { atoms.push(cur); cur = ''; } }
+		Array.prototype.forEach.call(host.childNodes, function (n) {
+			if (3 === n.nodeType) {
+				var parts = n.nodeValue.match(SENTENCE_PARTS);
+				if (!parts || parts.join('') !== n.nodeValue) { parts = [n.nodeValue]; }
+				parts.forEach(function (t) {
+					if (!t) { return; }
+					cur += escapeHtml(t);
+					if (SENTENCE_END.test(t)) { close(); }
+				});
+				return;
+			}
+			cur += nodeHtml(n);
+			if (1 === n.nodeType && SENTENCE_END.test(n.textContent || '')) { close(); }
+		});
+		if (cur) {
+			if (atoms.length && '' === cur.replace(/\s+/g, '')) { atoms[atoms.length - 1] += cur; } else { close(); }
+		}
+		return atoms;
+	}
+
+	function isHeadingUnit(u) {
+		return !(u.wraps && u.wraps.length) && /^<h[1-6][\s>]/i.test(u.html);
+	}
+
+	// A block that is too big for a page by itself, as smaller pieces that join
+	// back up into one block when they share a page: a paragraph as its
+	// sentences, a list as its items, a quote as its paragraphs. Each piece
+	// carries the wrappers it came out of (wraps, outermost first). Anything
+	// else cannot be cut.
 	function subUnits(unit) {
+		if (unit.atom) { return null; }
 		var box = document.createElement('div');
 		box.innerHTML = unit.html;
 		var el = box.firstElementChild;
-		if (!el || unit.wrap) { return null; }
+		if (!el) { return null; }
+		var base = unit.wraps || [];
 		var group = ++unitGroup;
+		function make(html, wraps, atom) { return { html: html, wraps: wraps, atom: atom, len: textLength(html) }; }
+		function sentences(host, wraps) {
+			var atoms = inlineAtoms(host);
+			return atoms.length < 2 ? null : atoms.map(function (a) { return make(a, wraps, true); });
+		}
 		if ('P' === el.tagName) {
-			var atoms = [];
-			Array.prototype.forEach.call(el.childNodes, function (n) {
-				if (3 === n.nodeType) {
-					var parts = n.nodeValue.match(/[^.!?…]+[.!?…]+["'”’)\]]*\s*|[^.!?…]+$/g);
-					(parts || [n.nodeValue]).forEach(function (t) { if (t) { atoms.push(escapeHtml(t)); } });
-				} else {
-					atoms.push(nodeHtml(n));
-				}
-			});
-			if (atoms.length < 2) { return null; }
-			return atoms.map(function (a) { return { html: a, wrap: 'p', group: group, len: textLength(a) }; });
+			return sentences(el, base.concat([{ tag: 'p', group: group }]));
 		}
 		if ('UL' === el.tagName || 'OL' === el.tagName) {
-			var items = Array.prototype.filter.call(el.children, function (c) { return 'LI' === c.tagName; });
-			if (items.length < 2) { return null; }
 			var tag = el.tagName.toLowerCase();
-			return items.map(function (li, i) { return { html: li.outerHTML, wrap: tag, group: group, start: i + 1, len: textLength(li.outerHTML) }; });
+			var items = Array.prototype.filter.call(el.children, function (c) { return 'LI' === c.tagName; });
+			if (1 === items.length) {
+				return sentences(items[0], base.concat([{ tag: tag, group: group, start: 1 }, { tag: 'li', group: ++unitGroup }]));
+			}
+			if (items.length < 2) { return null; }
+			return items.map(function (li, i) { return make(li.outerHTML, base.concat([{ tag: tag, group: group, start: i + 1 }]), true); });
+		}
+		if ('BLOCKQUOTE' === el.tagName) {
+			var parts = blockUnits(el.innerHTML);
+			var wraps = base.concat([{ tag: 'blockquote', group: group }]);
+			if (!parts.length) { return null; }
+			if (1 === parts.length) { return subUnits({ html: parts[0], wraps: wraps }); }
+			return parts.map(function (h) { return make(h, wraps, false); });
 		}
 		return null;
 	}
 
-	// Units back into html, joining neighbours that came from one block.
-	function unitsHtml(units) {
+	function sameWrap(a, b) { return !!a && !!b && a.tag === b.tag && a.group === b.group; }
+
+	// Units back into html, joining neighbours that came out of one block.
+	function unitsHtml(units, depth) {
+		depth = depth || 0;
 		var out = '';
 		var i = 0;
 		while (i < units.length) {
-			var u = units[i];
-			if (!u.wrap) { out += u.html; i++; continue; }
-			var inner = '';
+			var w = units[i].wraps && units[i].wraps[depth];
+			if (!w) { out += units[i].html; i++; continue; }
 			var j = i;
-			while (j < units.length && units[j].wrap === u.wrap && units[j].group === u.group) { inner += units[j].html; j++; }
-			out += 'ol' === u.wrap ? '<ol start="' + u.start + '">' + inner + '</ol>' : '<' + u.wrap + '>' + inner + '</' + u.wrap + '>';
+			while (j < units.length && sameWrap(units[j].wraps && units[j].wraps[depth], w)) { j++; }
+			var inner = unitsHtml(units.slice(i, j), depth + 1);
+			out += 'ol' === w.tag ? '<ol start="' + w.start + '">' + inner + '</ol>' : '<' + w.tag + '>' + inner + '</' + w.tag + '>';
 			i = j;
 		}
 		return out;
@@ -364,6 +423,8 @@
 				if (sub) { Array.prototype.splice.apply(units, [i, 1].concat(sub)); continue; }
 				j = i + 1; // cannot be cut any smaller: it keeps its own page and may scroll
 			}
+			// A heading never ends a page when its text is on the next one.
+			while (j - i > 1 && j < units.length && isHeadingUnit(units[j - 1])) { j--; }
 			pages.push([i, j]);
 			i = j;
 		}
@@ -391,6 +452,7 @@
 						to++;
 					}
 				}
+				while (to - from > 1 && to < units.length && isHeadingUnit(units[to - 1])) { to--; }
 				if (to === from || (1 === remainingPages && !fitsRange(from, to, 0 === p))) { ok = false; break; }
 				even.push([from, to]);
 				for (var q = from; q < to; q++) { left -= units[q].len || 0; }
@@ -424,7 +486,7 @@
 			units = (slide.items || []).map(function (it) { return { html: '', item: it, len: 1 }; });
 			makePage = function (us, first) { return copySlide(slide, { heading: first ? slide.heading : '', items: us.map(function (u) { return u.item; }) }); };
 		} else {
-			units = blockUnits(slide.html).map(function (h) { return { html: h, wrap: null, group: 0, len: textLength(h) }; });
+			units = blockUnits(slide.html).map(function (h) { return { html: h, wraps: [], len: textLength(h) }; });
 			makePage = function (us, first, last) {
 				var over = { html: unitsHtml(us), heading: first ? slide.heading : '' };
 				if ('quote' === slide.type) { over.attribution = last ? slide.attribution : ''; }
@@ -509,6 +571,10 @@
 		var lastW = 0;
 		var lastH = 0;
 		var resizeTimer = 0;
+		var picTimer = 0;
+		var seenPics = {};
+		var exporting = false;   // a PDF export is stepping through the pages: do not rebuild them under it
+		var refitWanted = false;
 
 		// Each slide parks off to whichever side it isn't showing on (is-past
 		// to the left, is-future to the right) and the active one sits at
@@ -669,24 +735,30 @@
 			loadHtml2Canvas(function () {
 				if (!window.html2canvas) { onDone([]); return; }
 				var originalIndex = index;
+				// The pages as they are now; a refit waits until the export is done.
+				var pages = slides.slice();
+				var pageCount = pages.length;
+				exporting = true;
 				backdrop.classList.add('twd-sb-exporting');
 				var canvases = [];
 				var i = 0;
 				function step() {
-					if (i >= total) {
+					if (i >= pageCount) {
 						backdrop.classList.remove('twd-sb-exporting');
+						exporting = false;
 						goTo(originalIndex);
 						onDone(canvases);
+						if (refitWanted) { refitWanted = false; refit(); }
 						return;
 					}
-					slides.forEach(function (slide, si) {
+					pages.forEach(function (slide, si) {
 						slide.classList.toggle('is-active', si === i);
 						slide.classList.toggle('is-past', si < i);
 						slide.classList.toggle('is-future', si > i);
 					});
-					if (onProgress) { onProgress(i + 1, total); }
+					if (onProgress) { onProgress(i + 1, pageCount); }
 					requestAnimationFrame(function () {
-						captureNode(slides[i].querySelector('.twd-sb-card'), function (canvas) {
+						captureNode(pages[i].querySelector('.twd-sb-card'), function (canvas) {
 							canvases.push(canvas);
 							i++;
 							step();
@@ -778,6 +850,7 @@
 			document.removeEventListener('keydown', onKeydown);
 			window.removeEventListener('resize', onResize);
 			clearTimeout(resizeTimer);
+			clearTimeout(picTimer);
 			if (opts.onClose) {
 				opts.onClose();
 			} else {
@@ -800,6 +873,7 @@
 
 		function refit() {
 			if (!fitData || closed) { return; }
+			if (exporting) { refitWanted = true; return; }
 			try {
 				var box = slidesWrap.getBoundingClientRect();
 				lastW = box.width;
@@ -839,6 +913,17 @@
 			window.addEventListener('resize', onResize);
 			// The book's own fonts arriving late change how much fits.
 			if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function () { refit(); }); }
+			// So do pictures: a page was measured before its picture had a height. Each
+			// picture address fits the book again once (the hidden copy never counts).
+			slidesWrap.addEventListener('load', function (e) {
+				var t = e.target;
+				if (!t || 'IMG' !== t.tagName || (t.closest && t.closest('.twd-sb-probe'))) { return; }
+				var key = t.currentSrc || t.src;
+				if (seenPics[key]) { return; }
+				seenPics[key] = true;
+				clearTimeout(picTimer);
+				picTimer = setTimeout(refit, 120);
+			}, true);
 		}
 		return { close: close };
 	}

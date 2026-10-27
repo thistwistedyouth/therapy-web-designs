@@ -1183,8 +1183,8 @@
 		showWorking(
 			'improve' === mode ? 'Improving your draft' : ('format' === mode ? 'Formatting your article' : 'Writing your article'),
 			'idea' === mode
-				? ['Reading your idea…', 'Shaping the article…', 'Writing the headings and summary…', 'Adding a title, tags and details…', 'Nearly there, this can take up to a minute…']
-				: ['Reading your text…', 'Tidying the structure…', 'Adding a title, summary and tags…', 'Nearly there, this can take up to a minute…']
+				? ['Reading your idea…', 'Shaping the article…', 'Writing the headings and summary…', 'Adding a title, tags and details…', 'Nearly there, this can take a minute or two…']
+				: ['Reading your text…', 'Tidying the structure…', 'Adding a title, summary and tags…', 'Nearly there, a long text can take a few minutes…']
 		);
 
 		function finish() {

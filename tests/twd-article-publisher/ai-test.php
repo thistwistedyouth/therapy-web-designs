@@ -135,6 +135,7 @@ t( 'filter complete: WP_Error passed through, key not in it', is_wp_error( $e ) 
 $GLOBALS['resp'] = ok_resp( 'ok' );
 t( 'filter complete: key never in a return value or request body', false === strpos( serialize( array( apply_filters( 'twd_ai_is_configured', false ), apply_filters( 'twd_ai_complete', null, 's', 'm', 1000 ) ) ), $SECRET ) && false === strpos( end( $GLOBALS['sent'] )[1]['body'], $SECRET ) );
 $GLOBALS['tr'] = array(); apply_filters( 'twd_ai_complete', null, 's', 'm', 1000 );
+t( 'filter complete: still waits only 120 seconds (the contract Site Kit depends on)', 120 === end( $GLOBALS['sent'] )[1]['timeout'], 'got ' . end( $GLOBALS['sent'] )[1]['timeout'] );
 t( 'filter complete: does not use up the daily 30', 30 === TWD_AP_AI_Generate::remaining() );
 
 echo "\n$pass passed, $fail failed\n";
