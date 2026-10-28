@@ -703,6 +703,27 @@ async function open(browser, name, o) {
 		t('new settings: saving sends all of them', body.related_layout === 'grid' && body.topics_align === 'center' && body.profile_in_all_books === true && String(body.look_h2_size) === '40' && String(body.look_h3_size) === '30' && body.look_h4_size === '', JSON.stringify([body.related_layout, body.topics_align, body.profile_in_all_books, body.look_h2_size, body.look_h3_size, body.look_h4_size]));
 		t('new settings: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
 		await r.ctx.close();
+		// a heading size outside the limits is shown the way it is saved: the box, the sample and what is sent agree
+		const rc = await open21();
+		const sample = (sel) => rc.page.locator('#twd-ap-gs-look-preview ' + sel).evaluate((e) => getComputedStyle(e).fontSize);
+		await rc.page.fill('#twd-ap-gs-look-h2', '5');
+		await rc.page.press('#twd-ap-gs-look-h2', 'Tab');
+		t('heading sizes: 5 becomes 14 in the box and in the sample', (await rc.page.inputValue('#twd-ap-gs-look-h2')) === '14' && (await sample('h2')) === '14px');
+		await rc.page.fill('#twd-ap-gs-look-h3', '100');
+		await rc.page.press('#twd-ap-gs-look-h3', 'Tab');
+		t('heading sizes: 100 becomes 64 in the box and in the sample', (await rc.page.inputValue('#twd-ap-gs-look-h3')) === '64' && (await sample('h3')) === '64px');
+		await rc.page.fill('#twd-ap-gs-look-h4', '20.7');
+		await rc.page.press('#twd-ap-gs-look-h4', 'Tab');
+		t('heading sizes: 20.7 becomes 21 in the box and in the sample', (await rc.page.inputValue('#twd-ap-gs-look-h4')) === '21' && (await sample('h4')) === '21px');
+		await rc.page.fill('#twd-ap-gs-look-h4', '0');
+		await rc.page.press('#twd-ap-gs-look-h4', 'Tab');
+		t('heading sizes: 0 empties the box (the plugin size)', (await rc.page.inputValue('#twd-ap-gs-look-h4')) === '' && (await sample('h4')) === '18px');
+		await rc.page.fill('#twd-ap-gs-look-h4', '9');
+		await rc.page.click('#twd-ap-gs-save');
+		await wait(300);
+		const cb = saved[saved.length - 1];
+		t('heading sizes: saving sends the sizes as shown (14, 64, and a 9 typed just before pressing Save becomes 14)', String(cb.look_h2_size) === '14' && String(cb.look_h3_size) === '64' && String(cb.look_h4_size) === '14', JSON.stringify([cb.look_h2_size, cb.look_h3_size, cb.look_h4_size]));
+		await rc.ctx.close();
 		// reset empties the heading boxes
 		const rr = await open21();
 		await rr.page.fill('#twd-ap-gs-look-h3', '33');

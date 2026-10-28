@@ -308,7 +308,7 @@ class TWD_AP_Shortcode {
 								<option value="left"><?php esc_html_e( 'Left aligned', 'twd-article-publisher' ); ?></option>
 								<option value="center"><?php esc_html_e( 'Centred', 'twd-article-publisher' ); ?></option>
 							</select>
-							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Applies wherever the Browse by topic row shows: the grid, category pages, the article index and the end of articles.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Applies wherever the Browse by topic row shows: the grid, category pages and the end of articles.', 'twd-article-publisher' ); ?></p>
 						</details>
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-cta-details">

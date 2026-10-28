@@ -472,28 +472,13 @@ class TWD_AP_Swipebook {
 	}
 
 	/**
-	 * Saves the article's tick. Only a choice that differs from the site-wide
-	 * default is stored, so an article left as it is keeps following the default
-	 * when the owner changes it later; an explicit "on" is never turned into
-	 * "follow" by a later save.
+	 * Saves a choice the author made: ticked is stored as on and unticked as off,
+	 * so it stays that way whatever the site-wide tick is later set to. An article
+	 * the author never touched has no stored choice and follows the site-wide tick
+	 * (the editor does not send the tick unless it was changed).
 	 */
 	public static function set_bio_choice( $post_id, $want ) {
-		$default = ! empty( TWD_AP_Grid_Settings::get()['profile_in_all_books'] );
-		$current = (string) get_post_meta( $post_id, self::META_BIO, true );
-		if ( $want ) {
-			if ( '1' === $current ) {
-				return;
-			}
-			if ( $default ) {
-				delete_post_meta( $post_id, self::META_BIO );
-			} else {
-				update_post_meta( $post_id, self::META_BIO, 1 );
-			}
-		} elseif ( $default ) {
-			update_post_meta( $post_id, self::META_BIO, 0 );
-		} else {
-			delete_post_meta( $post_id, self::META_BIO );
-		}
+		update_post_meta( $post_id, self::META_BIO, $want ? 1 : 0 );
 	}
 
 	private function maybe_bio_slide( $post ) {

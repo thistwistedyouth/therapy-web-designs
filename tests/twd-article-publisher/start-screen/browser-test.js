@@ -673,6 +673,21 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 		await new Promise((r) => setTimeout(r, 500));
 		t('T: saving sends the tick as it is on screen (ticked)', e.sx.saves.length >= 1 && e.sx.saves[e.sx.saves.length - 1].body.include_bio === true, JSON.stringify(e.sx.saves.map((x) => x.body.include_bio)));
 		await e.sx.ctx.close();
+		// a save where the author did not touch the tick does not send it (the article keeps following the site tick)
+		e = await bioOnEdit({ profileInAllBooks: 1 }, { include_bio: true });
+		await e.sx.page.fill('#twd-ap-title', 'Existing article, edited');
+		await e.sx.page.click('#twd-ap-update-btn, #twd-ap-publish-btn');
+		await new Promise((r) => setTimeout(r, 500));
+		t('T: a save where the tick was left alone does not send it', e.sx.saves.length >= 1 && !('include_bio' in e.sx.saves[e.sx.saves.length - 1].body), JSON.stringify(e.sx.saves.map((x) => Object.keys(x.body).filter((k) => k === 'include_bio'))));
+		await e.sx.ctx.close();
+		// ticking and unticking back to where it started still counts as a choice
+		e = await bioOnEdit({ profileInAllBooks: 1 }, { include_bio: true });
+		await e.sx.page.uncheck('#twd-ap-include-bio-toggle');
+		await e.sx.page.check('#twd-ap-include-bio-toggle');
+		await e.sx.page.click('#twd-ap-update-btn, #twd-ap-publish-btn');
+		await new Promise((r) => setTimeout(r, 500));
+		t('T: changing the tick and changing it back is still sent as the author left it (ticked)', e.sx.saves.length >= 1 && e.sx.saves[e.sx.saves.length - 1].body.include_bio === true, JSON.stringify(e.sx.saves.map((x) => x.body.include_bio)));
+		await e.sx.ctx.close();
 		e = await bioOnEdit({ profileInAllBooks: 1 }, { include_bio: true });
 		await e.sx.page.uncheck('#twd-ap-include-bio-toggle');
 		await e.sx.page.click('#twd-ap-update-btn, #twd-ap-publish-btn');

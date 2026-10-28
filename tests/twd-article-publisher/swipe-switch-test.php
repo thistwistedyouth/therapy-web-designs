@@ -265,45 +265,46 @@ $GLOBALS['current'] = 1;
 t( 'shortcode: the Summary Book button is left out when there is no published deck', ( function () use ( $sc ) { $o = $sc( array( 'id' => '7' ) ); return false === strpos( $o, 'summary-book' ); } )() );
 
 
-// ---------- the bio page in every swipe book (1.48.0) ----------
+// ---------- the bio page in every swipe book (1.48.0, choices pinned in 1.48.1) ----------
 $BIO = TWD_AP_Swipebook::META_BIO;
 $slide = new ReflectionMethod( 'TWD_AP_Swipebook', 'maybe_bio_slide' ); $slide->setAccessible( true );
 $sbk = ( new ReflectionClass( 'TWD_AP_Swipebook' ) )->newInstanceWithoutConstructor();
-mkpost( 20 ); mkpost( 21 ); mkpost( 22 );
+mkpost( 20 ); mkpost( 21 ); mkpost( 22 ); mkpost( 23 );
 TWD_AP_Grid_Settings::$bio_all = false;
 t( 'bio: with the site tick off, an article with no choice has no bio page (as before)', ! TWD_AP_Swipebook::bio_included( 20 ) && null === $slide->invoke( $sbk, $GLOBALS['posts'][20] ) );
 $m->invoke( $rest, 20, array( 'include_bio' => true ) );
 t( 'bio: ticking it for one article stores a choice and gives it the slide', 1 === $GLOBALS['meta'][20][ $BIO ] && TWD_AP_Swipebook::bio_included( 20 ) && 'bio' === $slide->invoke( $sbk, $GLOBALS['posts'][20] )['type'] );
 t( 'bio: and the edit data says ticked', true === $fp->invoke( $rest, 20, true )['include_bio'] );
 $m->invoke( $rest, 20, array( 'include_bio' => false ) );
-t( 'bio: unticking with the site tick off removes the choice (nothing to remember)', ! isset( $GLOBALS['meta'][20][ $BIO ] ) && ! TWD_AP_Swipebook::bio_included( 20 ) );
+t( 'bio: unticking stores an explicit off (it stays off even if the site tick is turned on later)', '0' === (string) $GLOBALS['meta'][20][ $BIO ] && ! TWD_AP_Swipebook::bio_included( 20 ) );
 
 TWD_AP_Grid_Settings::$bio_all = true;
 t( 'bio: ticking the site tick puts the bio page on articles published long ago, with no choice stored', TWD_AP_Swipebook::bio_included( 21 ) && TWD_AP_Swipebook::bio_included( 22 ) && 'bio' === $slide->invoke( $sbk, $GLOBALS['posts'][21] )['type'] && ! isset( $GLOBALS['meta'][21][ $BIO ] ) );
-t( 'bio: the edit data of such an article says ticked', true === $fp->invoke( $rest, 21, true )['include_bio'] );
-$m->invoke( $rest, 21, array( 'include_bio' => true ) );
-t( 'bio: saving it still ticked stores nothing, so it keeps following the site tick', ! isset( $GLOBALS['meta'][21][ $BIO ] ) );
+t( 'bio: an article with an explicit off still has none', ! TWD_AP_Swipebook::bio_included( 20 ) );
+t( 'bio: the edit data of an untouched article says ticked', true === $fp->invoke( $rest, 21, true )['include_bio'] );
+$m->invoke( $rest, 21, array( 'title' => 'a save that does not carry the tick (the editor sends it only when changed)' ) );
+t( 'bio: a save without the tick stores nothing, so the article keeps following the site tick', ! isset( $GLOBALS['meta'][21][ $BIO ] ) && TWD_AP_Swipebook::bio_included( 21 ) );
 $m->invoke( $rest, 21, array( 'include_bio' => false ) );
 t( 'bio: unticking it for this one article stores an explicit off, and its swipe book has no bio page', '0' === (string) $GLOBALS['meta'][21][ $BIO ] && ! TWD_AP_Swipebook::bio_included( 21 ) && null === $slide->invoke( $sbk, $GLOBALS['posts'][21] ) );
 t( 'bio: the edit data says unticked, and the other articles are not affected', false === $fp->invoke( $rest, 21, true )['include_bio'] && TWD_AP_Swipebook::bio_included( 22 ) );
 $m->invoke( $rest, 21, array( 'title' => 'an unrelated save' ) );
 t( 'bio: a save that does not carry the tick leaves the choice alone', '0' === (string) $GLOBALS['meta'][21][ $BIO ] );
 $m->invoke( $rest, 21, array( 'include_bio' => true ) );
-t( 'bio: ticking it again goes back to following the site tick', ! isset( $GLOBALS['meta'][21][ $BIO ] ) && TWD_AP_Swipebook::bio_included( 21 ) );
-// an article ticked on its own while the site tick was off keeps its bio page when the site tick is turned on and saved, and when it is turned off again
-TWD_AP_Grid_Settings::$bio_all = false;
-$m->invoke( $rest, 22, array( 'include_bio' => true ) );
-TWD_AP_Grid_Settings::$bio_all = true;
+t( 'bio: ticking it again is a choice too, stored as on', 1 === $GLOBALS['meta'][21][ $BIO ] && TWD_AP_Swipebook::bio_included( 21 ) );
+// a tick the author made is pinned: it survives the site tick being turned off
 $m->invoke( $rest, 22, array( 'include_bio' => true ) );
 TWD_AP_Grid_Settings::$bio_all = false;
-t( 'bio: an article ticked on its own stays on after a later save, even if the site tick is turned off again', 1 === $GLOBALS['meta'][22][ $BIO ] && TWD_AP_Swipebook::bio_included( 22 ) );
+t( 'bio: an article the author ticked keeps its bio page after the site tick is turned off', 1 === $GLOBALS['meta'][22][ $BIO ] && TWD_AP_Swipebook::bio_included( 22 ) && TWD_AP_Swipebook::bio_included( 21 ) );
+t( 'bio: and an untouched article loses it with the site tick', ! TWD_AP_Swipebook::bio_included( 23 ) );
+// an article stored as 1 by an earlier version stays on whatever the site tick says
+$GLOBALS['meta'][23][ $BIO ] = 1;
+t( 'bio: an article stored as 1 before this version is still on with the site tick off', TWD_AP_Swipebook::bio_included( 23 ) );
 TWD_AP_Grid_Settings::$bio_all = true;
 TWD_AP_Grid_Settings::$pname = '';
-t( 'bio: with no name in the profile there is no slide, whatever the ticks say', null === $slide->invoke( $sbk, $GLOBALS['posts'][22] ) && null === $slide->invoke( $sbk, $GLOBALS['posts'][20] ) );
+t( 'bio: with no name in the profile there is no slide, whatever the ticks say', null === $slide->invoke( $sbk, $GLOBALS['posts'][22] ) && null === $slide->invoke( $sbk, $GLOBALS['posts'][21] ) );
 TWD_AP_Grid_Settings::$pname = 'Jane Smith';
 t( 'bio: the slide carries the profile name, bio text and link', 'Jane Smith' === $slide->invoke( $sbk, $GLOBALS['posts'][22] )['heading'] && 'About me' === $slide->invoke( $sbk, $GLOBALS['posts'][22] )['bio'] );
 TWD_AP_Grid_Settings::$bio_all = false;
-
 
 // The popup is told the site-wide tick, so a new article's bio tick starts right.
 $me = new ReflectionMethod( 'TWD_AP_Frontend', 'maybe_enqueue' );

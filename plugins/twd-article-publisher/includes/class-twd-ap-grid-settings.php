@@ -308,10 +308,11 @@ class TWD_AP_Grid_Settings {
 				continue;
 			}
 			$raw = $input[ $key ];
-			if ( '' === $raw || null === $raw || ( is_numeric( $raw ) && 0 === (int) $raw ) ) {
+			if ( '' === $raw || null === $raw || ( is_numeric( $raw ) && 0.0 === round( (float) $raw ) ) ) {
 				$output[ $key ] = 0;
 			} elseif ( is_numeric( $raw ) ) {
-				$output[ $key ] = max( self::HEADING_MIN, min( self::HEADING_MAX, (int) round( (float) $raw ) ) );
+				// Clamped as a number first: a huge value must not overflow the whole-number cast.
+				$output[ $key ] = (int) round( max( (float) self::HEADING_MIN, min( (float) self::HEADING_MAX, (float) $raw ) ) );
 			}
 		}
 		if ( isset( $input['topics_align'] ) && in_array( $input['topics_align'], self::TOPICS_ALIGNS, true ) ) {

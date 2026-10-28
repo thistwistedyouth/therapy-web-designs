@@ -293,6 +293,16 @@ add_post( 5, 'Third', array( 2 ), '2026-02-01' );
 t( 'topics row: it is centred at the end of an article too', false !== strpos( TWD_AP_Related::html( 1 ), 'twd-ap-articles-topics twd-ap-topics-center' ) );
 TWD_AP_Grid_Settings::$s['topics_align'] = 'left';
 
+// 1.48.1: a block that is only the Browse by topic row (the list switched off) is not a grid and must not break out.
+reset_site();
+add_post( 1, 'Self', array( 2 ), '2026-03-01' );
+add_post( 2, 'Other', array( 2 ), '2026-03-02' );
+TWD_AP_Grid_Settings::$s['related_layout'] = 'grid';
+TWD_AP_Grid_Settings::$s['related_show'] = false;
+TWD_AP_Grid_Settings::$s['related_topics'] = true;
+$only = TWD_AP_Related::html( 1 );
+t( 'grid: with only the topics row showing the block is not marked wide', false !== strpos( $only, 'twd-ap-articles-topics' ) && false === strpos( $only, 'twd-ap-related-wide' ) && false === strpos( $only, 'twd-ap-related-card' ), $only );
+
 if ( getenv( 'TWD_RELATED_DUMP' ) ) {
 	reset_site();
 	TWD_AP_Grid_Settings::$s['related_topics'] = true;

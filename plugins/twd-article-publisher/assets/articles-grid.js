@@ -600,6 +600,13 @@
 		var LOOK_SERIF = 'Georgia, "Times New Roman", Times, serif';
 		var LOOK_LEADING = { compact: '1.55', relaxed: '1.95' };
 
+		// A heading size is a whole number of pixels from 14 to 64, or nothing (the plugin's own size). The box,
+		// the sample and what is saved all use this one rule, so they cannot disagree.
+		function clampHeading(v) {
+			var n = Math.round(parseFloat(v));
+			if (!isFinite(n) || n <= 0) { return 0; }
+			return Math.max(14, Math.min(64, n));
+		}
 		function applyLookPreview() {
 			var p = lookPreview;
 			if (!p) { return; }
@@ -613,8 +620,8 @@
 				if (lookState[key]) { p.style.setProperty(map[key], lookState[key]); } else { p.style.removeProperty(map[key]); }
 			});
 			[2, 3, 4].forEach(function (n) {
-				var px = parseInt(lookState['look_h' + n + '_size'], 10);
-				if (px >= 14 && px <= 64) { p.style.setProperty('--twd-ap-content-h' + n + '-size', px + 'px'); } else { p.style.removeProperty('--twd-ap-content-h' + n + '-size'); }
+				var px = clampHeading(lookState['look_h' + n + '_size']);
+				if (px) { p.style.setProperty('--twd-ap-content-h' + n + '-size', px + 'px'); } else { p.style.removeProperty('--twd-ap-content-h' + n + '-size'); }
 			});
 			p.style.removeProperty('--twd-ap-content-font');
 			p.style.removeProperty('font-family');
@@ -644,6 +651,11 @@
 				applyLookPreview();
 			});
 			el.addEventListener('change', function () {
+				if (el.type === 'number') {
+					// a finished heading size is shown the way it will be saved
+					var px = clampHeading(el.value);
+					el.value = px ? String(px) : '';
+				}
 				lookState[el.getAttribute('data-look')] = el.value;
 				applyLookPreview();
 			});
@@ -951,9 +963,9 @@
 				payload.look_font = lookState.look_font || 'system';
 				payload.look_size = lookState.look_size || 'medium';
 				payload.look_spacing = lookState.look_spacing || 'normal';
-				payload.look_h2_size = lookState.look_h2_size || '';
-				payload.look_h3_size = lookState.look_h3_size || '';
-				payload.look_h4_size = lookState.look_h4_size || '';
+				payload.look_h2_size = clampHeading(lookState.look_h2_size) || '';
+				payload.look_h3_size = clampHeading(lookState.look_h3_size) || '';
+				payload.look_h4_size = clampHeading(lookState.look_h4_size) || '';
 			}
 
 			setStatus('Saving…', false);
