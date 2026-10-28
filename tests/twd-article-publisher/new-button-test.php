@@ -35,9 +35,42 @@ t( 'a bad quote colour falls through to the link colour', 0 === strpos( $s, '--t
 $s = style( '#fc0', '' );
 t( 'short hex is expanded', 0 === strpos( $s, '--twd-ap-primary:#ffcc00;' ), $s );
 t( 'a light colour gets dark writing', false !== strpos( $s, '--twd-ap-primary-ink:#1f1d2b;' ), $s );
+t( 'under dark writing the hover is a lighter colour, so the label keeps its contrast', false !== strpos( $s, '--twd-ap-primary-dark:#ffd52e;' ), $s );
 t( 'white gets dark writing, black gets white writing', false !== strpos( style( '#ffffff', '' ), '#1f1d2b;' ) && false !== strpos( style( '#000000', '' ), '--twd-ap-primary-ink:#ffffff;' ) );
 t( 'black hover stays valid', false !== strpos( style( '#000000', '' ), '--twd-ap-primary-dark:#000000;' ) );
 t( 'upper case hex is accepted and the properties stay well formed', 1 === preg_match( '/^(--[a-z-]+:#[0-9a-fA-F]{6};){3}$/', style( '#AABBCC', '' ) ) );
+
+// Mid-tones: the writing is whichever of white or dark ink reads better, not a luma cut-off.
+function lum( $hex ) {
+	$h = ltrim( $hex, '#' );
+	if ( 3 === strlen( $h ) ) { $h = $h[0] . $h[0] . $h[1] . $h[1] . $h[2] . $h[2]; }
+	$c = array_map( function ( $v ) { $v = hexdec( $v ) / 255; return $v <= 0.03928 ? $v / 12.92 : pow( ( $v + 0.055 ) / 1.055, 2.4 ); }, str_split( $h, 2 ) );
+	return 0.2126 * $c[0] + 0.7152 * $c[1] + 0.0722 * $c[2];
+}
+function ratio( $a, $b ) { $x = lum( $a ); $y = lum( $b ); return ( max( $x, $y ) + 0.05 ) / ( min( $x, $y ) + 0.05 ); }
+function parts( $s ) { preg_match( '/primary:(#[0-9a-f]{6});--twd-ap-primary-dark:(#[0-9a-f]{6});--twd-ap-primary-ink:(#[0-9a-f]{6});/', $s, $m ); return $m; }
+foreach ( array( '#8a9dc0' => 'dusty blue', '#8a9a5b' => 'olive', '#c47a5a' => 'terracotta', '#999999' => 'grey', '#2a9d8f' => 'teal' ) as $hex => $name ) {
+	$m = parts( style( $hex, '' ) );
+	t( 'mid-tone ' . $name . ' (' . $hex . ') gets dark writing, which reads better there than white', '#1f1d2b' === $m[3] && ratio( $hex, '#1f1d2b' ) > ratio( $hex, '#ffffff' ), json_encode( $m ) );
+}
+mt_srand( 147 );
+$worse = 0; $hover_worse = 0; $below = 0;
+for ( $i = 0; $i < 3000; $i++ ) {
+	$hex = sprintf( '#%02x%02x%02x', mt_rand( 0, 255 ), mt_rand( 0, 255 ), mt_rand( 0, 255 ) );
+	$m   = parts( style( $hex, '' ) );
+	$other = '#ffffff' === $m[3] ? '#1f1d2b' : '#ffffff';
+	if ( ratio( $hex, $m[3] ) + 0.0001 < ratio( $hex, $other ) ) { $worse++; }
+	if ( ratio( $m[2], $m[3] ) + 0.0001 < ratio( $hex, $m[3] ) ) { $hover_worse++; }
+	if ( ratio( $hex, $m[3] ) < 4.5 ) { $below++; }
+}
+t( '3000 random colours: the writing chosen is never the worse of the two', 0 === $worse, $worse . ' worse' );
+t( '3000 random colours: the hover never has less contrast than the button itself', 0 === $hover_worse, $hover_worse . ' worse' );
+t( '3000 random colours: the worst case is far fewer than the 34% a luma cut-off left below 4.5:1', $below < 3000 * 0.2, $below . ' of 3000 below 4.5:1' );
+
+// A hex with a trailing newline passes WordPress's own check; it must not reach the style.
+t( 'a colour with a trailing newline is no colour', '' === style( "#aabbcc\n", '' ) && '' === style( "#abc\n", '' ) );
+t( 'and the next colour is used instead', 0 === strpos( style( "#abc\n", '#2255aa' ), '--twd-ap-primary:#2255aa;' ) );
+t( 'the style never contains a line break', false === strpos( style( "#aabbcc\n", '#2255aa' ), "\n" ) );
 
 echo "\n$pass passed, $fail failed\n";
 exit( $fail ? 1 : 0 );

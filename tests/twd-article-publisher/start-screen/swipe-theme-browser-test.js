@@ -66,17 +66,32 @@ const SURVEY = `(() => {
 	return { n, low };
 })()`;
 
-function page(deck) {
-	return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + CSS + '</style></head><body style="background:#fff">' +
+// The colour of the writing on an element against what is really behind it: every translucent background
+// from the backdrop down to the element laid over the page colour.
+const BEHIND = `(sel) => {
+	const parse = (c) => { const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) { return null; } const q = m[1].split(/[ ,\\/]+/).filter(Boolean).map(Number); return [q[0], q[1], q[2], q.length > 3 ? q[3] : 1]; };
+	const over = (f, bg) => [0, 1, 2].map((i) => f[i] * f[3] + bg[i] * (1 - f[3]));
+	const L = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+	const el = document.querySelector(sel);
+	const chain = []; for (let e = el; e && e.className !== 'twd-sb-backdrop twd-sb-theme-light'; e = e.parentElement) { chain.unshift(e); }
+	let bg = [250, 246, 236];
+	chain.forEach((e) => { const c = parse(getComputedStyle(e).backgroundColor); if (c && c[3] > 0) { bg = over(c, bg); } });
+	const fg = over(parse(getComputedStyle(el).color), bg);
+	const a = L(fg), b = L(bg);
+	return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}`;
+
+function page(deck, extraCss) {
+	return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + CSS + '</style><style>' + (extraCss || '') + '</style></head><body style="background:#fff">' +
 		'<h1 id="under">The article underneath</h1><script>' + JS + '</script></body></html>';
 }
 
-async function openBook(browser, theme, vp) {
+async function openBook(browser, theme, vp, extraCss) {
 	const ctx = await browser.newContext({ viewport: vp });
 	const p = await ctx.newPage();
 	const errors = [];
 	p.on('pageerror', (e) => errors.push(String(e)));
-	await p.route('https://example.test/**', (r) => r.fulfill({ contentType: 'text/html', body: page(DECK) }));
+	await p.route('https://example.test/**', (r) => r.fulfill({ contentType: 'text/html', body: page(DECK, extraCss) }));
 	await p.goto('https://example.test/article');
 	await p.waitForFunction(() => !!window.TWD_AP_SwipeBook);
 	const deck = Object.assign({}, DECK);
@@ -240,6 +255,38 @@ const CLOSE_PROBE = `(() => {
 		await wait(250);
 		const after = await p.evaluate(() => { const s = getComputedStyle(document.querySelector('.twd-sb-close')); return { o: s.opacity, bg: s.backgroundColor }; });
 		t('close button: fully opaque without hover, and hover only brightens it', before.o === '1' && after.o === '1', JSON.stringify([before, after]));
+		await ctx.close();
+	}
+
+	// A theme's own rules cannot take the cross away or stretch the button (a global svg and button sheet, as Elementor sites have).
+	{
+		const hostile = 'svg path { fill: currentColor !important; stroke: none !important; stroke-width: 0 !important; } button { min-height: 48px !important; max-height: none !important; }';
+		for (const theme of ['dark', 'light']) {
+			const { ctx, p } = await openBook(browser, theme, { width: 390, height: 700 }, hostile);
+			const c = await p.evaluate(() => { const b = document.querySelector('.twd-sb-close'); const r = b.getBoundingClientRect(); const s = getComputedStyle(b.querySelector('path')); return { w: r.width, h: r.height, stroke: s.stroke, sw: parseFloat(s.strokeWidth), fill: s.fill }; });
+			t(theme + ' book, hostile theme sheet: the cross is still drawn (stroke ' + c.stroke + ', width ' + c.sw + ')', c.stroke !== 'none' && c.sw >= 2 && c.fill === 'none', JSON.stringify(c));
+			t(theme + ' book, hostile theme sheet: the close button is still 36px high and wide', Math.round(c.w) === 36 && Math.round(c.h) === 36, JSON.stringify(c));
+			await ctx.close();
+		}
+	}
+
+	// A browser that does not know :focus-visible drops a whole rule that names it, so no rule may list it with :hover.
+	{
+		const rules = CSS.replace(/\/\*[\s\S]*?\*\//g, '').split('}').map((r) => r.split('{')[0]).filter((sel) => /:focus-visible/.test(sel) && /:hover/.test(sel));
+		t('no rule lists :hover and :focus-visible together (older Safari would lose the hover)', rules.length === 0, rules.join(' | '));
+	}
+
+	// The light book on hover and keyboard focus: the writing still reads on the lit-up chip.
+	{
+		const { ctx, p } = await openBook(browser, 'light', { width: 1100, height: 800 });
+		const low = [];
+		for (const sel of ['.twd-sb-share-btn', '.twd-sb-save-btn', '.twd-sb-pdf-btn', '.twd-sb-next', '.twd-sb-read-link']) {
+			await p.hover(sel);
+			await wait(300);
+			const ratio = await p.evaluate(`(${BEHIND})('${sel}')`);
+			if (ratio < 4.5) { low.push(sel + ' ' + ratio.toFixed(2)); }
+		}
+		t('light book: every button and link keeps 4.5:1 contrast while hovered', low.length === 0, low.join('; '));
 		await ctx.close();
 	}
 

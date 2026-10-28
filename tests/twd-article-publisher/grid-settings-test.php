@@ -90,5 +90,15 @@ TWD_AP_Grid_Settings::save( array( 'swipebook_theme' => 'dark' ) );
 t( 'swipe book colours: dark can be chosen again', 'dark' === TWD_AP_Grid_Settings::get()['swipebook_theme'] );
 t( 'swipe book colours: only dark and light exist', array( 'dark', 'light' ) === TWD_AP_Grid_Settings::SWIPEBOOK_THEMES );
 
+// Look colours: a trailing newline passes WordPress's own hex check and must not be stored (1.47.0 review).
+TWD_AP_Grid_Settings::save( array( 'look_quote_color' => '#aabbcc' ) );
+t( 'look colour: a plain hex is saved', '#aabbcc' === TWD_AP_Grid_Settings::get()['look_quote_color'] );
+foreach ( array( "#112233\n", "#112233 ", "\n#112233", array( '#112233' ), 5, true ) as $bad ) {
+	TWD_AP_Grid_Settings::save( array( 'look_quote_color' => $bad ) );
+	t( 'look colour: ' . json_encode( $bad ) . ' is not stored, the saved colour stays', '#aabbcc' === TWD_AP_Grid_Settings::get()['look_quote_color'] );
+}
+TWD_AP_Grid_Settings::save( array( 'look_quote_color' => '' ) );
+t( 'look colour: an empty value still clears it', '' === TWD_AP_Grid_Settings::get()['look_quote_color'] );
+
 echo "\n$pass passed, $fail failed\n";
 exit( $fail ? 1 : 0 );

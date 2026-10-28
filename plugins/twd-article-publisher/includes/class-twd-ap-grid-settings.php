@@ -215,7 +215,8 @@ class TWD_AP_Grid_Settings {
 		foreach ( array( 'look_text_color', 'look_heading_color', 'look_link_color', 'look_quote_color' ) as $key ) {
 			if ( isset( $input[ $key ] ) ) {
 				// An empty value clears the colour back to the plugin default.
-				$color            = '' === $input[ $key ] ? '' : sanitize_hex_color( $input[ $key ] );
+				// Three or six hex digits and nothing else (sanitize_hex_color alone lets a trailing newline through).
+				$color            = '' === $input[ $key ] ? '' : ( is_string( $input[ $key ] ) && preg_match( '/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/iD', $input[ $key ] ) ? sanitize_hex_color( $input[ $key ] ) : '' );
 				$output[ $key ]   = $color ? $color : ( '' === $input[ $key ] ? '' : $output[ $key ] );
 			}
 		}

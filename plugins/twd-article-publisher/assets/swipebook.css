@@ -89,7 +89,7 @@
   --twd-sb-img-shadow: 0 8px 22px rgba(60, 44, 20, 0.22);
   --twd-sb-photo-shadow: 0 10px 24px rgba(60, 44, 20, 0.28);
   --twd-sb-chip: rgba(138, 90, 0, 0.07);
-  --twd-sb-chip-hover: rgba(138, 90, 0, 0.15);
+  --twd-sb-chip-hover: rgba(138, 90, 0, 0.1);
   --twd-sb-chip-soft: rgba(138, 90, 0, 0.07);
   --twd-sb-btn-hover: rgba(138, 90, 0, 0.12);
   --twd-sb-primary: #8a5a00;
@@ -199,6 +199,8 @@ body {
   width: 36px !important;
   height: 36px !important;
   min-width: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
   margin: 0 !important;
   padding: 0 !important;
   border-radius: 50% !important;
@@ -217,12 +219,24 @@ body {
   height: 16px !important;
   pointer-events: none !important;
 }
-.twd-sb-close:hover,
-.twd-sb-close:focus-visible {
+/* The cross is drawn with attributes on the path; a theme's own svg rules
+   (Elementor's global styles, for one) beat attributes, so the path is set
+   here too. */
+.twd-sb-close svg path {
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2.6px !important;
+  stroke-linecap: round !important;
+}
+/* Two rules, not one list: a browser that does not know :focus-visible
+   (Safari before 15.4) drops a whole rule that names it. */
+.twd-sb-close:hover {
   background: var(--twd-sb-close-hover) !important;
   transform: scale(1.08) !important;
 }
 .twd-sb-close:focus-visible {
+  background: var(--twd-sb-close-hover) !important;
+  transform: scale(1.08) !important;
   outline: 2px solid var(--twd-sb-gold) !important;
   outline-offset: 2px !important;
 }
