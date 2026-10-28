@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.48.0
+Stable tag: 1.49.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,29 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.49.0): swipe book polish and a tidier resources page. Save as image
+now gives one even background colour. The logo is bigger. The Book a Session
+button now works and takes the reader to that page, closing the book first (other
+links in a swipe book page also work with a mouse click now). The arrows keep their circle and darken when you point
+at them, page numbers are bolder, and Read the full article is a small pill.
+Customise this grid > Related articles > Colours has a frame colour and an
+accent colour for the swipe book, shared by Light and Dark; the writing is
+adjusted automatically so it always stays readable. On the resources page the
+edit gear and a new round New article button sit to the left of the category
+drop down (hover for the name), the drop down says Select a category with All
+at the bottom, and Browse by topic is a row of soft pills in your link colour.
+The floating New article button on other pages is now the same round icon.
+
+NEW (1.48.1): fixes from the independent review of 1.48.0. The related
+articles grid now breaks out to 900px only when your article column is centred
+on the page; with a sidebar it stays inside its column, so it is never cut off
+and never makes the page scroll sideways (it also works on right-to-left pages).
+In a narrow column it shows 2 boxes across instead of 3 cramped ones, and a very
+long word in a title wraps. Heading sizes outside 14 to 64 are shown and saved
+the way they will be used. A bio page tick you make on an article now sticks
+even if the site-wide tick is later turned off; an article you never touched
+keeps following the site-wide tick.
 
 NEW (1.48.0): (1) Related articles can be a grid. In Customise this grid >
 Related articles, "Layout" can now be a grid of picture boxes (picture, title

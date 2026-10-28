@@ -145,6 +145,7 @@
 		var searchEl    = root.querySelector('.twd-ap-articles-search');
 		var selectEl    = root.querySelector('.twd-ap-articles-category-select');
 		var settingsBtn = root.querySelector('.twd-ap-articles-settings-btn');
+		var newArticleBtn = root.querySelector('.twd-ap-articles-new-btn');
 		// A page cached before this version has no such element; the stub
 		// keeps the code below from failing on it.
 		var noneEl      = root.querySelector('.twd-ap-articles-none') || { hidden: true };
@@ -281,7 +282,8 @@
 
 		if (selectEl) {
 			selectEl.addEventListener('change', function () {
-				state.category = selectEl.value;
+				// The last option, "All", and the first, "Select a category", both mean the default landing view.
+				state.category = '__all__' === selectEl.value ? '' : selectEl.value;
 				state.offset = 0;
 				// The empty-value "Show all" option means a full return to
 				// the default landing view, not just clearing the category
@@ -299,6 +301,11 @@
 			fetchArticles(false);
 		});
 
+		if (newArticleBtn) {
+			newArticleBtn.addEventListener('click', function () {
+				if (window.TWD_AP_OpenNew) { window.TWD_AP_OpenNew(); }
+			});
+		}
 		if (settingsBtn) {
 			settingsBtn.addEventListener('click', function () {
 				openGridSettings(root, config, function () {
@@ -365,12 +372,13 @@
 		}
 
 		function renderCategorySelect(categories) {
-			// "All" first, then the categories, so the default view and the way
-			// back to it are the first thing in the list.
-			var html = '<option value="">All</option>';
+			// "Select a category" first (the default view), then the categories,
+			// and "All" at the bottom of the list as the way back to the default view.
+			var html = '<option value="">Select a category</option>';
 			categories.forEach(function (cat) {
 				html += '<option value="' + escapeHtml(cat.slug) + '">' + escapeHtml(cat.name) + '</option>';
 			});
+			html += '<option value="__all__">All</option>';
 			selectEl.innerHTML = html;
 			selectEl.value = state.category;
 		}
@@ -567,6 +575,31 @@
 		var sbLabelInput = overlay.querySelector('#twd-ap-gs-sb-label');
 		var sbLogoBgSelect = overlay.querySelector('#twd-ap-gs-sb-logo-bg');
 		var sbThemeSelect = overlay.querySelector('#twd-ap-gs-sb-theme');
+		// The owner's own frame and accent colours for the book: '' means the book's own colour.
+		var sbColours = {};
+		['frame', 'accent'].forEach(function (name) {
+			var input = overlay.querySelector('#twd-ap-gs-sb-' + name);
+			if (!input) { return; }
+			var note = overlay.querySelector('#twd-ap-gs-sb-' + name + '-note');
+			var reset = overlay.querySelector('#twd-ap-gs-sb-' + name + '-reset');
+			var c = { input: input, value: '', set: function (v) {
+				c.value = /^#[0-9a-f]{6}$/i.test(v || '') ? v.toLowerCase() : '';
+				// With no colour chosen the swatch shows the colour the chosen book has by itself.
+				var dark = sbThemeSelect && 'light' !== sbThemeSelect.value;
+				input.value = c.value || input.getAttribute(dark ? 'data-default-dark' : 'data-default-light');
+				if (note) { note.textContent = c.value ? c.value : (note.getAttribute('data-empty') || ''); }
+				if (reset) { reset.hidden = !c.value; }
+			} };
+			input.addEventListener('input', function () { c.set(input.value); });
+			if (reset) { reset.addEventListener('click', function () { c.set(''); }); }
+			sbColours[name] = c;
+		});
+		// Choosing the other book moves the swatches of the colours not chosen to that book's own.
+		if (sbThemeSelect) {
+			sbThemeSelect.addEventListener('change', function () {
+				Object.keys(sbColours).forEach(function (name) { sbColours[name].set(sbColours[name].value); });
+			});
+		}
 		var sbExportBrandingBox = overlay.querySelector('#twd-ap-gs-sb-export-branding');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var topicsBox  = overlay.querySelector('#twd-ap-gs-topics');
@@ -600,6 +633,13 @@
 		var LOOK_SERIF = 'Georgia, "Times New Roman", Times, serif';
 		var LOOK_LEADING = { compact: '1.55', relaxed: '1.95' };
 
+		// A heading size is a whole number of pixels from 14 to 64, or nothing (the plugin's own size). The box,
+		// the sample and what is saved all use this one rule, so they cannot disagree.
+		function clampHeading(v) {
+			var n = Math.round(parseFloat(v));
+			if (!isFinite(n) || n <= 0) { return 0; }
+			return Math.max(14, Math.min(64, n));
+		}
 		function applyLookPreview() {
 			var p = lookPreview;
 			if (!p) { return; }
@@ -613,8 +653,8 @@
 				if (lookState[key]) { p.style.setProperty(map[key], lookState[key]); } else { p.style.removeProperty(map[key]); }
 			});
 			[2, 3, 4].forEach(function (n) {
-				var px = parseInt(lookState['look_h' + n + '_size'], 10);
-				if (px >= 14 && px <= 64) { p.style.setProperty('--twd-ap-content-h' + n + '-size', px + 'px'); } else { p.style.removeProperty('--twd-ap-content-h' + n + '-size'); }
+				var px = clampHeading(lookState['look_h' + n + '_size']);
+				if (px) { p.style.setProperty('--twd-ap-content-h' + n + '-size', px + 'px'); } else { p.style.removeProperty('--twd-ap-content-h' + n + '-size'); }
 			});
 			p.style.removeProperty('--twd-ap-content-font');
 			p.style.removeProperty('font-family');
@@ -644,6 +684,11 @@
 				applyLookPreview();
 			});
 			el.addEventListener('change', function () {
+				if (el.type === 'number') {
+					// a finished heading size is shown the way it will be saved
+					var px = clampHeading(el.value);
+					el.value = px ? String(px) : '';
+				}
 				lookState[el.getAttribute('data-look')] = el.value;
 				applyLookPreview();
 			});
@@ -832,6 +877,8 @@
 				sbLabelInput.value = data.swipebook_label || '';
 				sbLogoBgSelect.value = data.swipebook_logo_bg || 'light';
 				if (sbThemeSelect) { sbThemeSelect.value = 'light' === data.swipebook_theme ? 'light' : 'dark'; }
+				if (sbColours.frame) { sbColours.frame.set(data.swipebook_frame_color || ''); }
+				if (sbColours.accent) { sbColours.accent.set(data.swipebook_accent_color || ''); }
 				sbExportBrandingBox.checked = false !== data.swipebook_export_branding;
 				sbLogoId = data.swipebook_logo_id || 0;
 				renderSbLogoPreview(data.swipebook_logo_url || '');
@@ -928,6 +975,8 @@
 			if (sbPosition) { payload.swipebook_button_position = sbPosition.value; }
 			if (sbTopShortcode) { payload.swipebook_top_shortcode = !!sbTopShortcode.checked; }
 			if (sbThemeSelect) { payload.swipebook_theme = sbThemeSelect.value; }
+			if (sbColours.frame) { payload.swipebook_frame_color = sbColours.frame.value; }
+			if (sbColours.accent) { payload.swipebook_accent_color = sbColours.accent.value; }
 			if (relatedPlace) { payload.related_place = relatedPlace.value; }
 			if (relatedLayout) { payload.related_layout = relatedLayout.value; }
 			if (topicsAlign) { payload.topics_align = topicsAlign.value; }
@@ -951,9 +1000,9 @@
 				payload.look_font = lookState.look_font || 'system';
 				payload.look_size = lookState.look_size || 'medium';
 				payload.look_spacing = lookState.look_spacing || 'normal';
-				payload.look_h2_size = lookState.look_h2_size || '';
-				payload.look_h3_size = lookState.look_h3_size || '';
-				payload.look_h4_size = lookState.look_h4_size || '';
+				payload.look_h2_size = clampHeading(lookState.look_h2_size) || '';
+				payload.look_h3_size = clampHeading(lookState.look_h3_size) || '';
+				payload.look_h4_size = clampHeading(lookState.look_h4_size) || '';
 			}
 
 			setStatus('Saving…', false);

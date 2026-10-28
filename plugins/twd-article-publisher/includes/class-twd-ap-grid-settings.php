@@ -99,6 +99,10 @@ class TWD_AP_Grid_Settings {
 			// original, and the default so nothing changes) or 'light' (ivory pages,
 			// dark writing).
 			'swipebook_theme'    => 'dark',
+			// 1.49.0: the owner's own colours for the book, a hex colour or '' for the book's own: the frame
+			// around the pages and the accent (buttons, headings, links). See TWD_AP_Swipebook_Colours.
+			'swipebook_frame_color'  => '',
+			'swipebook_accent_color' => '',
 			'swipebook_export_branding' => true,
 			'profile_photo_id'   => 0,
 			'profile_name'       => '',
@@ -195,6 +199,8 @@ class TWD_AP_Grid_Settings {
 			'swipebook_logo_id'  => $current['swipebook_logo_id'],
 			'swipebook_logo_bg'  => $current['swipebook_logo_bg'],
 			'swipebook_theme'    => $current['swipebook_theme'],
+			'swipebook_frame_color'  => $current['swipebook_frame_color'],
+			'swipebook_accent_color' => $current['swipebook_accent_color'],
 			'swipebook_export_branding' => $current['swipebook_export_branding'],
 			'profile_photo_id'   => $current['profile_photo_id'],
 			'profile_name'       => $current['profile_name'],
@@ -308,10 +314,11 @@ class TWD_AP_Grid_Settings {
 				continue;
 			}
 			$raw = $input[ $key ];
-			if ( '' === $raw || null === $raw || ( is_numeric( $raw ) && 0 === (int) $raw ) ) {
+			if ( '' === $raw || null === $raw || ( is_numeric( $raw ) && 0.0 === round( (float) $raw ) ) ) {
 				$output[ $key ] = 0;
 			} elseif ( is_numeric( $raw ) ) {
-				$output[ $key ] = max( self::HEADING_MIN, min( self::HEADING_MAX, (int) round( (float) $raw ) ) );
+				// Clamped as a number first: a huge value must not overflow the whole-number cast.
+				$output[ $key ] = (int) round( max( (float) self::HEADING_MIN, min( (float) self::HEADING_MAX, (float) $raw ) ) );
 			}
 		}
 		if ( isset( $input['topics_align'] ) && in_array( $input['topics_align'], self::TOPICS_ALIGNS, true ) ) {
@@ -338,6 +345,16 @@ class TWD_AP_Grid_Settings {
 		}
 		if ( isset( $input['swipebook_logo_id'] ) ) {
 			$output['swipebook_logo_id'] = absint( $input['swipebook_logo_id'] );
+		}
+		// A hex colour, or empty for the book's own colour; anything else leaves the saved one alone.
+		foreach ( array( 'swipebook_frame_color', 'swipebook_accent_color' ) as $key ) {
+			if ( isset( $input[ $key ] ) ) {
+				if ( '' === $input[ $key ] ) {
+					$output[ $key ] = '';
+				} elseif ( is_string( $input[ $key ] ) && preg_match( '/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/iD', $input[ $key ] ) ) {
+					$output[ $key ] = strtolower( $input[ $key ] );
+				}
+			}
 		}
 		if ( isset( $input['swipebook_theme'] ) && in_array( $input['swipebook_theme'], self::SWIPEBOOK_THEMES, true ) ) {
 			$output['swipebook_theme'] = $input['swipebook_theme'];

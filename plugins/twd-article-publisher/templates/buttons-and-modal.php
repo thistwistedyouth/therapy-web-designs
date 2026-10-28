@@ -5,8 +5,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div id="twd-ap-buttons" class="twd-ap-buttons">
 	<?php if ( $show_new ) : ?>
-		<button type="button" id="twd-ap-new-btn" class="twd-ap-float-btn twd-ap-new-btn"<?php echo ( isset( $new_btn_style ) && '' !== $new_btn_style ) ? ' style="' . esc_attr( $new_btn_style ) . '"' : ''; ?>>
-			<span class="twd-ap-plus">+</span> <?php esc_html_e( 'New Article', 'twd-article-publisher' ); ?>
+		<?php // A round button with a plus and a pen (the same look as the one in the grid's toolbar); it says "New article" on hover. ?>
+		<button type="button" id="twd-ap-new-btn" class="twd-ap-float-btn twd-ap-new-btn" aria-label="<?php esc_attr_e( 'New article', 'twd-article-publisher' ); ?>" data-tip="<?php esc_attr_e( 'New article', 'twd-article-publisher' ); ?>"<?php echo ( isset( $new_btn_style ) && '' !== $new_btn_style ) ? ' style="' . esc_attr( $new_btn_style ) . '"' : ''; ?>>
+			<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false"><path class="twd-ap-icon-line" d="M4.5 3v6M1.5 6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /><g transform="translate(6.2 6.2) scale(.74)"><path class="twd-ap-icon-fill" fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></g></svg>
 		</button>
 	<?php endif; ?>
 </div>

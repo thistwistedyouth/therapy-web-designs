@@ -65,6 +65,7 @@ function get_categories() { $out = array(); foreach ( $GLOBALS['terms'] as $t ) 
 class TWD_AP_Index { static function index_url() { return $GLOBALS['index_url']; } }
 $GLOBALS['index_url'] = '';
 class TWD_AP_Grid_Settings { const RELATED_PLACES = array( 'auto', 'shortcode', 'off' ); static $s = array( 'related_show' => true, 'related_count' => 4, 'related_place' => 'auto', 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb', 'related_layout' => 'list', 'thumb_shape' => 'wide', 'show_thumbnails' => true, 'topics_align' => 'left' ); static function get() { return self::$s; } static function thumb_shape_class( $shape ) { return '4-3' === $shape ? 'twd-ap-thumbs-4-3' : ( 'square' === $shape ? 'twd-ap-thumbs-square' : '' ); } }
+require $plugin . 'includes/class-twd-ap-swipebook-colours.php';
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-related.php';
 
@@ -111,7 +112,7 @@ t( 'block: never lists the article itself', false === strpos( $html, 'post-1/' )
 t( 'block: nothing from another category and no drafts', false === strpos( $html, 'post-20/' ) && false === strpos( $html, 'post-21/' ) );
 t( 'block: the heading is "More in" plus a link to the category page', false !== strpos( $html, '<h2 class="twd-ap-related-title">More in <a href="https://example.test/category/anxiety/">Anxiety</a></h2>' ) );
 t( 'block: each link carries the date', false !== strpos( $html, '<span class="twd-ap-related-date">8 February 2026</span>' ) );
-t( 'block: it carries the saved accent colour', false !== strpos( $html, 'style="--twd-ap-accent-color:#2563eb;"' ) );
+t( 'block: it carries the saved accent colour and the writing colour for it (white on that blue)', false !== strpos( $html, 'style="--twd-ap-accent-color:#2563eb;--twd-ap-accent-ink:#ffffff;"' ), $html );
 $GLOBALS['meta'][3]['_twd_ap_featured'] = 1;
 t( 'block: a featured article in the category comes first, like the grid', 'https://example.test/post-3/' === links( TWD_AP_Related::html( 1 ) )[0] );
 $GLOBALS['meta'] = array();
@@ -292,6 +293,16 @@ TWD_AP_Grid_Settings::$s['related_topics'] = true;
 add_post( 5, 'Third', array( 2 ), '2026-02-01' );
 t( 'topics row: it is centred at the end of an article too', false !== strpos( TWD_AP_Related::html( 1 ), 'twd-ap-articles-topics twd-ap-topics-center' ) );
 TWD_AP_Grid_Settings::$s['topics_align'] = 'left';
+
+// 1.48.1: a block that is only the Browse by topic row (the list switched off) is not a grid and must not break out.
+reset_site();
+add_post( 1, 'Self', array( 2 ), '2026-03-01' );
+add_post( 2, 'Other', array( 2 ), '2026-03-02' );
+TWD_AP_Grid_Settings::$s['related_layout'] = 'grid';
+TWD_AP_Grid_Settings::$s['related_show'] = false;
+TWD_AP_Grid_Settings::$s['related_topics'] = true;
+$only = TWD_AP_Related::html( 1 );
+t( 'grid: with only the topics row showing the block is not marked wide', false !== strpos( $only, 'twd-ap-articles-topics' ) && false === strpos( $only, 'twd-ap-related-wide' ) && false === strpos( $only, 'twd-ap-related-card' ), $only );
 
 if ( getenv( 'TWD_RELATED_DUMP' ) ) {
 	reset_site();

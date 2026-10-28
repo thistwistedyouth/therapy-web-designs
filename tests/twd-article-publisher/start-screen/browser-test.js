@@ -673,12 +673,57 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 		await new Promise((r) => setTimeout(r, 500));
 		t('T: saving sends the tick as it is on screen (ticked)', e.sx.saves.length >= 1 && e.sx.saves[e.sx.saves.length - 1].body.include_bio === true, JSON.stringify(e.sx.saves.map((x) => x.body.include_bio)));
 		await e.sx.ctx.close();
+		// a save where the author did not touch the tick does not send it (the article keeps following the site tick)
+		e = await bioOnEdit({ profileInAllBooks: 1 }, { include_bio: true });
+		await e.sx.page.fill('#twd-ap-title', 'Existing article, edited');
+		await e.sx.page.click('#twd-ap-update-btn, #twd-ap-publish-btn');
+		await new Promise((r) => setTimeout(r, 500));
+		t('T: a save where the tick was left alone does not send it', e.sx.saves.length >= 1 && !('include_bio' in e.sx.saves[e.sx.saves.length - 1].body), JSON.stringify(e.sx.saves.map((x) => Object.keys(x.body).filter((k) => k === 'include_bio'))));
+		await e.sx.ctx.close();
+		// ticking and unticking back to where it started still counts as a choice
+		e = await bioOnEdit({ profileInAllBooks: 1 }, { include_bio: true });
+		await e.sx.page.uncheck('#twd-ap-include-bio-toggle');
+		await e.sx.page.check('#twd-ap-include-bio-toggle');
+		await e.sx.page.click('#twd-ap-update-btn, #twd-ap-publish-btn');
+		await new Promise((r) => setTimeout(r, 500));
+		t('T: changing the tick and changing it back is still sent as the author left it (ticked)', e.sx.saves.length >= 1 && e.sx.saves[e.sx.saves.length - 1].body.include_bio === true, JSON.stringify(e.sx.saves.map((x) => x.body.include_bio)));
+		await e.sx.ctx.close();
 		e = await bioOnEdit({ profileInAllBooks: 1 }, { include_bio: true });
 		await e.sx.page.uncheck('#twd-ap-include-bio-toggle');
 		await e.sx.page.click('#twd-ap-update-btn, #twd-ap-publish-btn');
 		await new Promise((r) => setTimeout(r, 500));
 		t('T: unticking it for this one article sends off', e.sx.saves.length >= 1 && e.sx.saves[e.sx.saves.length - 1].body.include_bio === false, JSON.stringify(e.sx.saves.map((x) => x.body.include_bio)));
 		await e.sx.ctx.close();
+	}
+
+
+	// ---------- U. the floating New Article button is a round icon (1.49.0) ----------
+	{
+		const sx = await open(browser, 'key-on', cfgOn);
+		const pg = sx.page;
+		const nb = await pg.locator('#twd-ap-new-btn').boundingBox();
+		t('U: the floating New Article button is a 54px circle, bottom right', Math.abs(nb.width - 54) <= 1 && Math.abs(nb.height - 54) <= 1 && Math.round(nb.x + nb.width) === 1100 - 20 && Math.round(nb.y + nb.height) > 900 - 60, JSON.stringify(nb));
+		const u = await pg.locator('#twd-ap-new-btn').evaluate((e) => ({ r: getComputedStyle(e).borderTopLeftRadius, text: e.innerText.trim(), label: e.getAttribute('aria-label'), svg: !!e.querySelector('svg'), tipBefore: getComputedStyle(e, '::after').opacity }));
+		t('U: it holds an icon (a plus and a pen), no words, and is named New article for screen readers', u.r === '50%' && u.text === '' && u.label === 'New article' && u.svg, JSON.stringify(u));
+		await pg.hover('#twd-ap-new-btn');
+		await new Promise((r) => setTimeout(r, 350));
+		const tip = await pg.locator('#twd-ap-new-btn').evaluate((e) => { const c = getComputedStyle(e, '::after'); return { o: c.opacity, content: c.content, right: parseFloat(c.right) }; });
+		t('U: hovering it says New article, to its left', u.tipBefore === '0' && tip.o === '1' && tip.content === '"New article"' && tip.right > 0, JSON.stringify(tip));
+		// a theme that restyles every svg path and every button
+		await pg.addStyleTag({ content: 'svg path { fill: currentColor !important; stroke: none !important; stroke-width: 0 !important; } button { min-height: 70px !important; min-width: 120px !important; max-width: none !important; padding: 14px !important; }' });
+		const hos = await pg.locator('#twd-ap-new-btn').evaluate((e) => { const b = e.getBoundingClientRect(); const line = e.querySelector('path.twd-ap-icon-line'); return { w: Math.round(b.width), h: Math.round(b.height), stroke: getComputedStyle(line).stroke, sw: getComputedStyle(line).strokeWidth }; });
+		t('U: under such a theme the floating button stays a 54px circle and its plus is still drawn', hos.w === 54 && hos.h === 54 && hos.stroke !== 'none' && hos.sw === '2px', JSON.stringify(hos));
+		await pg.click('#twd-ap-new-btn');
+		t('U: clicking it opens the popup on the start screen', await vis(pg, '#twd-ap-start'));
+		await sx.ctx.close();
+		// the grid's own New article circle starts an article through this one function
+		const sy = await open(browser, 'key-on', cfgOn);
+		t('U: window.TWD_AP_OpenNew exists and opens the popup on the start screen (what the grid circle calls)', (await sy.page.evaluate(() => typeof window.TWD_AP_OpenNew)) === 'function' && (await sy.page.evaluate(() => { window.TWD_AP_OpenNew(); return true; })) && await vis(sy.page, '#twd-ap-start'));
+		await sy.ctx.close();
+		const px = await open(browser, 'key-on', cfgOn, { width: 390, height: 800 });
+		const nb2 = await px.page.locator('#twd-ap-new-btn').boundingBox();
+		t('U: on a phone it stays a circle inside the screen', Math.abs(nb2.width - 54) <= 1 && nb2.x + nb2.width <= 390 && nb2.y + nb2.height <= 800, JSON.stringify(nb2));
+		await px.ctx.close();
 	}
 
 	await browser.close();

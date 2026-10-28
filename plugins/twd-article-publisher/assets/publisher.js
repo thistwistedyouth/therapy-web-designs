@@ -9,6 +9,7 @@
 		featuredMediaId: 0,
 		activeTab: 'visual',
 		dirty: false,
+		bioTouched: false,
 		categories: [],
 		primaryCategoryId: 0,
 		relatedIds: [],
@@ -47,6 +48,13 @@
 	// Lets the articles grid open the edit popup for any article card.
 	// Permission is still checked by the server when the article loads and
 	// when it is saved; this only opens the popup.
+	// Lets the grid's New article circle start a new article.
+	window.TWD_AP_OpenNew = function () {
+		if (els.overlay) {
+			openModal('new');
+		}
+	};
+
 	window.TWD_AP_OpenEditor = function (id) {
 		var postId = parseInt(id, 10);
 		if (postId && els.overlay) {
@@ -308,7 +316,11 @@
 			markDirty();
 		});
 		if (els.gridOrder) { els.gridOrder.addEventListener('input', markDirty); }
-		els.includeBioToggle.addEventListener('change', markDirty);
+		// Only a tick the author changed is sent (see the save below); one they left alone keeps following the site-wide tick.
+		els.includeBioToggle.addEventListener('change', function () {
+			state.bioTouched = true;
+			markDirty();
+		});
 
 		if (els.relatedPicker) {
 			els.relatedPicker.addEventListener('change', function (e) {
@@ -1439,6 +1451,7 @@
 		setGridOrder('');
 		// A new article starts as the site-wide "bio page in every swipe book" tick says.
 		els.includeBioToggle.checked = !!(parseInt(TWD_AP.profileInAllBooks, 10) || 0);
+		state.bioTouched = false;
 		els.swipebookToggle.checked = true;
 		state.relatedIds = [];
 		if (els.relatedPicker) { els.relatedPicker.innerHTML = ''; }
@@ -1548,6 +1561,7 @@
 				els.featuredToggle.checked = !!data.featured;
 				setGridOrder(data.grid_order > 0 ? String(data.grid_order) : '');
 				els.includeBioToggle.checked = !!data.include_bio;
+				state.bioTouched = false;
 				els.swipebookToggle.checked = false !== data.swipebook_enabled;
 				state.featuredMediaId = data.featured_media || 0;
 				renderFeaturedPreview(data.featured_media_url || '');
@@ -1694,7 +1708,6 @@
 			tags: els.tags.value,
 			featured: els.featuredToggle.checked,
 			grid_order: gridOrder,
-			include_bio: els.includeBioToggle.checked,
 			swipebook_enabled: els.swipebookToggle.checked,
 			related_ids: getCheckedRelatedIds(),
 			category_ids: getCheckedCategoryIds(),
@@ -1702,6 +1715,8 @@
 			featured_media: state.featuredMediaId,
 			status: status,
 		};
+		// The bio tick goes with the save only when the author changed it: otherwise the article keeps following the site-wide tick.
+		if (state.bioTouched) { payload.include_bio = els.includeBioToggle.checked; }
 
 		// Only included when this save actually carries a freshly-pasted
 		// draft -- see after_save() in class-twd-ap-rest.php, an absent key

@@ -115,6 +115,11 @@ foreach ( array( 'big', '12px', array( 30 ), true, '--1px' ) as $bad ) {
 }
 TWD_AP_Grid_Settings::save( array( 'accent_color' => '#334455' ) );
 t( 'heading sizes: saving something else leaves them alone', 14 === TWD_AP_Grid_Settings::get()['look_h2_size'] && 64 === TWD_AP_Grid_Settings::get()['look_h3_size'] && 19 === TWD_AP_Grid_Settings::get()['look_h4_size'] );
+foreach ( array( PHP_INT_MAX, '9223372036854775807', 9.2e18, 1e30, '1e30', INF ) as $huge ) {
+	TWD_AP_Grid_Settings::save( array( 'look_h3_size' => 22 ) );
+	TWD_AP_Grid_Settings::save( array( 'look_h3_size' => $huge ) );
+	t( 'heading sizes: a huge number (' . json_encode( is_float( $huge ) && is_infinite( $huge ) ? 'INF' : $huge ) . ') is brought to 64, not wrapped round to 14', 64 === TWD_AP_Grid_Settings::get()['look_h3_size'], json_encode( TWD_AP_Grid_Settings::get()['look_h3_size'] ) );
+}
 foreach ( array( '', 0, '0' ) as $clear ) {
 	TWD_AP_Grid_Settings::save( array( 'look_h2_size' => 30 ) );
 	TWD_AP_Grid_Settings::save( array( 'look_h2_size' => $clear ) );

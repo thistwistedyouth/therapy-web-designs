@@ -34,21 +34,96 @@
   color: #1f2937 !important;
   max-width: 220px !important;
 }
-.twd-ap-articles-settings-btn {
-  margin-left: auto !important;
-  width: 34px !important;
-  height: 34px !important;
-  border: 1px solid #d1d5db !important;
-  border-radius: 50% !important;
-  background: #fff !important;
-  color: #6b7280 !important;
-  font-size: 15px !important;
-  cursor: pointer !important;
+/* The gear (Customise this grid) and the New article circle: two round buttons in the link colour, one above
+   the other, to the left of the category list. Each says what it is on hover or keyboard focus. */
+.twd-ap-articles-tools {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
   flex-shrink: 0 !important;
 }
-.twd-ap-articles-settings-btn:hover {
-  color: #1f2937 !important;
-  border-color: #9ca3af !important;
+.twd-ap-articles-tool {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: var(--twd-ap-accent-color, #2563eb) !important;
+  color: var(--twd-ap-accent-ink, #fff) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease !important;
+}
+.twd-ap-articles-tool svg {
+  display: block !important;
+  pointer-events: none !important;
+}
+/* A theme's own svg rules (fill, stroke, stroke width) must not undo the drawn icons. */
+.twd-ap-articles-tool svg path.twd-ap-icon-fill {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+.twd-ap-articles-tool svg path.twd-ap-icon-line {
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+}
+/* hover and keyboard focus are two rules: a browser that does not know :focus-visible drops a whole grouped rule */
+.twd-ap-articles-tool:hover {
+  filter: brightness(0.9) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24) !important;
+}
+.twd-ap-articles-tool:focus-visible {
+  filter: brightness(0.9) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24) !important;
+}
+.twd-ap-articles-tool:focus-visible {
+  outline: 2px solid #1f2937 !important;
+  outline-offset: 2px !important;
+}
+.twd-ap-articles-tool::after {
+  content: attr(data-tip) !important;
+  position: absolute !important;
+  left: calc(100% + 10px) !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  padding: 5px 10px !important;
+  border-radius: 6px !important;
+  background: #1f2937 !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.15s ease !important;
+  z-index: 5 !important;
+}
+.twd-ap-articles-tool:hover::after {
+  opacity: 1 !important;
+}
+.twd-ap-articles-tool:focus-visible::after {
+  opacity: 1 !important;
+}
+/* Right-to-left pages: the circles sit at the right edge, so the name opens toward the left. */
+html[dir="rtl"] .twd-ap-articles-tool::after,
+body.rtl .twd-ap-articles-tool::after {
+  left: auto !important;
+  right: calc(100% + 10px) !important;
 }
 
 .twd-ap-articles-groups {
@@ -265,7 +340,7 @@
 .twd-ap-articles-topics ul {
   display: flex !important;
   flex-wrap: wrap !important;
-  gap: 10px 22px !important;
+  gap: 10px !important;
   margin: 0 !important;
   padding: 0 !important;
   list-style: none !important;
@@ -274,14 +349,37 @@
   margin: 0 !important;
   padding: 0 !important;
 }
-.twd-ap-articles-topics a {
+/* Every topic is the same small pill (1.49.0): a soft tint of the link colour, the link colour for the writing
+   and the border; the topic you are on is filled; All articles is outlined in grey. Browsers without color-mix()
+   keep the border and the writing in the link colour on white. */
+.twd-ap-articles-topics a,
+.twd-ap-topics-current span {
+  display: inline-block !important;
+  box-sizing: border-box !important;
+  padding: 7px 16px !important;
+  border: 1px solid var(--twd-ap-accent-color, #2563eb) !important;
+  border-radius: 999px !important;
+  background: #fff !important;
   color: var(--twd-ap-accent-color, #2563eb) !important;
   font-size: 16px !important;
   font-weight: 600 !important;
+  line-height: 1.3 !important;
   text-decoration: none !important;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+}
+@supports (background: color-mix(in srgb, red 10%, white)) {
+  .twd-ap-articles-topics a {
+    background: color-mix(in srgb, var(--twd-ap-accent-color, #2563eb) 10%, #fff) !important;
+    border-color: color-mix(in srgb, var(--twd-ap-accent-color, #2563eb) 45%, #fff) !important;
+    color: color-mix(in srgb, var(--twd-ap-accent-color, #2563eb) 45%, #000) !important;
+  }
+  .twd-ap-articles-topics a:hover {
+    background: color-mix(in srgb, var(--twd-ap-accent-color, #2563eb) 20%, #fff) !important;
+    border-color: var(--twd-ap-accent-color, #2563eb) !important;
+  }
 }
 .twd-ap-articles-topics a:hover {
-  text-decoration: underline !important;
+  text-decoration: none !important;
 }
 /* "Centre the Browse by topic row" (Customise this grid > Related articles). */
 .twd-ap-articles-topics.twd-ap-topics-center {
@@ -547,17 +645,22 @@
 
 /* The link to the full article index: a quiet text link (real, crawlable,
    not prominent), at the end of the Browse by topic row or on its own. */
-.twd-ap-topics-current span {
-  color: #1f2937 !important;
-  font-size: 16px !important;
+.twd-ap-articles-topics li.twd-ap-topics-current span {
+  background: var(--twd-ap-accent-color, #2563eb) !important;
+  border-color: var(--twd-ap-accent-color, #2563eb) !important;
+  color: var(--twd-ap-accent-ink, #fff) !important;
   font-weight: 700 !important;
 }
-.twd-ap-topics-all a {
-  color: #6b7280 !important;
+.twd-ap-articles-topics li.twd-ap-topics-all a {
+  background: transparent !important;
+  border-color: #d1d5db !important;
+  color: #4b5563 !important;
   font-weight: 500 !important;
 }
-.twd-ap-topics-all a:hover {
-  color: var(--twd-ap-accent-color, #2563eb) !important;
+.twd-ap-articles-topics li.twd-ap-topics-all a:hover {
+  background: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+  color: #1f2937 !important;
 }
 
 /* Small categories: one article is a wide card (image left, text right),
@@ -679,6 +782,16 @@
 }
 .twd-ap-gs-look-preview h4 {
   font-size: var(--twd-ap-content-h4-size, 18px) !important;
+}
+.twd-ap-gs-colour-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+.twd-ap-gs-colour-row[hidden],
+.twd-ap-gs-colour-row [hidden] {
+  display: none !important;
 }
 .twd-ap-gs-look-grid input[type="number"] {
   max-width: 96px !important;
@@ -888,7 +1001,6 @@
 
 /* On the plugin's own category page the toolbar holds only the gear. */
 .twd-ap-articles-toolbar-gear {
-  justify-content: flex-end !important;
   margin-bottom: 8px !important;
 }
 
@@ -957,16 +1069,25 @@
 }
 
 /* The related articles as a grid (1.48.0, Customise this grid > Related
-   articles > Layout). The block breaks out of the article column to 900px,
-   centred on it (or the screen width less 16px each side when that is less),
-   and holds at most 3 boxes across: 2 below 720px of screen, 1 below 520px.
-   Each box is one link: picture, title, date. */
+   articles > Layout). It is as wide as its column, up to 900px, and holds at
+   most 3 boxes across. When the article's column is narrower than that AND
+   centred on the page, article-content.js adds .twd-ap-related-break and the
+   block breaks out to 900px (or the screen width less 16px each side when that
+   is less), centred on the column. With a sidebar, or any column that is not
+   centred, it stays inside its column, so it is never cut off and never makes
+   the page scroll sideways. Each box is one link: picture, title, date. */
 .twd-ap-related.twd-ap-related-wide {
   box-sizing: border-box !important;
+  max-width: 900px !important;
+  container-type: inline-size !important;
+  container-name: twd-related !important;
+}
+.twd-ap-related.twd-ap-related-wide.twd-ap-related-break {
   width: min(900px, calc(100vw - 32px)) !important;
   max-width: none !important;
   margin-left: calc(50% - min(450px, 50vw - 16px)) !important;
-  margin-right: 0 !important;
+  margin-right: calc(50% - min(450px, 50vw - 16px)) !important;
+  flex: none !important;
 }
 .twd-ap-related-cards {
   display: grid !important;
@@ -1025,11 +1146,13 @@
   font-weight: 700 !important;
   line-height: 1.35 !important;
   color: #1f2937 !important;
+  overflow-wrap: anywhere !important;
 }
 .twd-ap-related-card .twd-ap-related-date {
   display: block !important;
   margin: 0 !important;
   padding: 0 16px 16px !important;
+  line-height: 1.4 !important;
   white-space: normal !important;
 }
 @supports (aspect-ratio: 1 / 1) {
@@ -1048,6 +1171,19 @@
   }
 }
 @media (max-width: 520px) {
+  .twd-ap-related-cards {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+/* By the width of the block itself where the browser can measure that (a
+   narrow column keeps its boxes a readable size); the screen width above is
+   the fallback. */
+@container twd-related (max-width: 639px) {
+  .twd-ap-related-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@container twd-related (max-width: 419px) {
   .twd-ap-related-cards {
     grid-template-columns: minmax(0, 1fr) !important;
   }

@@ -55,6 +55,7 @@ function wp_insert_post( $a ) {
 }
 
 class TWD_AP_Grid_Settings { static $s = array( 'accent_color' => '#2563eb', 'topic_category_ids' => 'all', 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false ); static function get() { return self::$s; } }
+require $plugin . 'includes/class-twd-ap-swipebook-colours.php';
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-cta.php';
 require $plugin . 'includes/class-twd-ap-index.php';

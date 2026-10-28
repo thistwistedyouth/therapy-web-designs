@@ -24,12 +24,22 @@
 }
 
 .twd-ap-float-btn {
+  position: relative !important;
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 6px !important;
-  padding: 12px 18px !important;
+  box-sizing: border-box !important;
+  width: 54px !important;
+  height: 54px !important;
+  min-width: 54px !important;
+  min-height: 54px !important;
+  max-width: 54px !important;
+  max-height: 54px !important;
+  margin: 0 !important;
+  padding: 0 !important;
   border: none !important;
-  border-radius: 30px !important;
+  border-radius: 50% !important;
   background: var(--twd-ap-primary) !important;
   color: var(--twd-ap-primary-ink, #fff) !important;
   font-size: 14px !important;
@@ -44,6 +54,46 @@
 .twd-ap-float-btn:hover {
   background: var(--twd-ap-primary-dark) !important;
   transform: translateY(-2px);
+}
+.twd-ap-float-btn svg {
+  display: block !important;
+  pointer-events: none !important;
+}
+/* A theme's own svg rules (fill, stroke, stroke width) must not undo the drawn icon. */
+.twd-ap-float-btn svg path.twd-ap-icon-fill {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+.twd-ap-float-btn svg path.twd-ap-icon-line {
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+}
+/* The label is a tooltip, to the left of the round button: "New article" on hover or keyboard focus. */
+.twd-ap-float-btn::after {
+  content: attr(data-tip) !important;
+  position: absolute !important;
+  right: calc(100% + 10px) !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  padding: 5px 10px !important;
+  border-radius: 6px !important;
+  background: #1f2937 !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.15s ease !important;
+}
+.twd-ap-float-btn:hover::after {
+  opacity: 1 !important;
+}
+.twd-ap-float-btn:focus-visible::after {
+  opacity: 1 !important;
 }
 .twd-ap-plus {
   font-size: 18px;

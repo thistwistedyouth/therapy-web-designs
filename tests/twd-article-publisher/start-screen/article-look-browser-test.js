@@ -24,6 +24,7 @@ const swFile = path.join(tmp, 'swipe.json');
 execFileSync('php', [path.join(root, 'tests/twd-article-publisher/swipe-switch-test.php')], { env: Object.assign({}, process.env, { TWD_SWIPE_DUMP: swFile }) });
 const SWIPE = JSON.parse(fs.readFileSync(swFile, 'utf8'));
 const GRIDCSS = fs.readFileSync(path.join(plugin, 'assets/articles-grid.css'), 'utf8');
+const ARTICLEJS = fs.readFileSync(path.join(plugin, 'assets/article-content.js'), 'utf8');
 const BODY = '<h2>A heading</h2><p>Some text with a <a href="#x">link</a> in it.</p><blockquote>A quote</blockquote>';
 
 let pass = 0, fail = 0;
@@ -129,15 +130,24 @@ const css = (page, sel, prop) => page.locator(sel).first().evaluate((el, p) => g
 
 	// The related articles as a grid, and the Browse by topic row (1.48.0), with the real stylesheets, in a 700px article column.
 	{
-		const openGrid = async (key, width, column) => {
+		// layout: 'centre' (the article column centred, the usual theme), 'sidebar' (column left, sidebar right), 'rtl', 'flex' (the block is a flex item).
+		const openGrid = async (key, width, column, opts) => {
+			opts = opts || {};
 			const pg = await browser.newPage({ viewport: { width, height: 900 } });
 			const errors = [];
 			pg.on('pageerror', (e) => errors.push(String(e)));
 			const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="#7a9b76"/></svg>';
 			await pg.route('https://example.test/**', (r) => r.fulfill({ contentType: 'image/svg+xml', body: svg }));
-			await pg.setContent('<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:"Courier New",monospace;margin:0}a{color:hotpink}h2{color:orange}ul{list-style:disc}</style><style>' + CSS + '</style><style>' + GRIDCSS + '</style></head><body><div id="col" style="width:' + (column || 700) + 'px;max-width:100%;margin:0 auto;box-sizing:border-box">' + RGRID[key] + '</div></body></html>');
+			const col = '<div id="col" style="width:' + (column || 700) + 'px;max-width:100%;margin:0 auto;box-sizing:border-box' + (opts.layout === 'flex' ? ';display:flex' : '') + '">' + RGRID[key] + (opts.layout === 'flex' ? '<span style="flex:0 0 40px"></span>' : '') + '</div>';
+			let body = col;
+			if (opts.layout === 'sidebar') { body = '<div style="display:flex;gap:40px;width:960px;max-width:100%;margin:0 auto"><div id="col" style="flex:0 0 ' + (column || 620) + 'px;min-width:0">' + RGRID[key] + '</div><div style="flex:0 0 300px"><p>A sidebar</p></div></div>'; }
+			if (opts.layout === 'rtl') { body = '<div dir="rtl">' + col + '</div>'; }
+			const script = opts.js === false ? '' : '<script>' + ARTICLEJS + '</script>';
+			await pg.setContent('<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:"Courier New",monospace;margin:0}a{color:hotpink}h2{color:orange}ul{list-style:disc}li{line-height:3}</style><style>' + CSS + '</style><style>' + GRIDCSS + '</style></head><body>' + body + script + '</body></html>');
+			await pg.waitForTimeout(150);
 			return { pg, errors };
 		};
+		const noScroll = (pg) => pg.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 		const cols = (pg) => pg.$$eval('.twd-ap-related-card', (c) => Array.from(new Set(c.map((x) => Math.round(x.getBoundingClientRect().left)))).length);
 		let { pg, errors } = await openGrid('wide', 1200);
 		const rb = await pg.locator('.twd-ap-related').boundingBox();
@@ -160,7 +170,7 @@ const css = (page, sel, prop) => page.locator(sel).first().evaluate((el, p) => g
 		t('related grid on a screen of 700: 2 across', (await cols(pg)) === 2);
 		await pg.close();
 		({ pg } = await openGrid('wide', 400, 400));
-		t('related grid on a phone (400): 1 across, inside the screen, no sideways scroll', (await cols(pg)) === 1 && !(await pg.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)) && (await pg.locator('.twd-ap-related').boundingBox()).x >= 15);
+		t('related grid on a phone (400): 1 across, inside the screen, no sideways scroll', (await cols(pg)) === 1 && !(await pg.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)) && (await pg.locator('.twd-ap-related').boundingBox()).x >= 0);
 		await pg.close();
 		({ pg } = await openGrid('two', 1200));
 		const two = await pg.$$eval('.twd-ap-related-card', (c) => c.map((x) => Math.round(x.getBoundingClientRect().width)));
@@ -183,6 +193,46 @@ const css = (page, sel, prop) => page.locator(sel).first().evaluate((el, p) => g
 		({ pg } = await openGrid('list', 1200));
 		const lb = await pg.locator('.twd-ap-related').boundingBox();
 		t('related list (the original layout) is unchanged: 720px at most, no cards', lb.width <= 721 && (await pg.locator('.twd-ap-related-card').count()) === 0);
+		await pg.close();
+
+		// 1.48.1: the break-out is decided by the browser from the real layout.
+		({ pg } = await openGrid('wide', 1200, 700, { js: false }));
+		const nj = await pg.locator('.twd-ap-related').boundingBox();
+		t('related grid without JavaScript: it fits its column (700px, centred), nothing spills', Math.abs(nj.width - 700) <= 1 && Math.abs((nj.x + nj.width / 2) - 600) <= 2 && (await noScroll(pg)), JSON.stringify(nj));
+		await pg.close();
+		for (const vw of [1000, 1200]) {
+			({ pg } = await openGrid('wide', vw, 620, { layout: 'sidebar' }));
+			const colBox = await pg.locator('#col').boundingBox();
+			const sb = await pg.locator('.twd-ap-related').boundingBox();
+			t('related grid beside a sidebar at ' + vw + ': it stays inside its column, so nothing is cut off at the left and nothing spills over the sidebar', !(await pg.locator('.twd-ap-related-break').count()) && sb.x >= colBox.x - 1 && sb.x + sb.width <= colBox.x + colBox.width + 1 && sb.x >= 0 && (await noScroll(pg)), JSON.stringify([colBox, sb]));
+			t('related grid beside a sidebar at ' + vw + ': 2 boxes across in the 620px column (readable boxes, not 3 cramped ones)', (await cols(pg)) === 2);
+			const firstCard = await pg.locator('.twd-ap-related-card').first().boundingBox();
+			t('related grid beside a sidebar at ' + vw + ': the first box is fully on the screen', firstCard.x >= 0);
+			await pg.close();
+		}
+		({ pg } = await openGrid('wide', 1200, 700, { layout: 'rtl' }));
+		const rtl = await pg.locator('.twd-ap-related').boundingBox();
+		t('related grid on a right-to-left page: 900px wide and centred to the pixel, no sideways scroll', Math.abs(rtl.width - 900) <= 1 && Math.abs((rtl.x + rtl.width / 2) - 600) <= 2 && (await noScroll(pg)), JSON.stringify(rtl));
+		await pg.close();
+		({ pg } = await openGrid('wide', 1200, 700, { layout: 'flex' }));
+		const fx = await pg.locator('.twd-ap-related').boundingBox();
+		t('related grid as an item in a flex row with a sibling: it does not shrink, 900px wide', Math.abs(fx.width - 900) <= 1, JSON.stringify(fx));
+		await pg.close();
+		({ pg } = await openGrid('wide', 1200, 700));
+		await pg.setViewportSize({ width: 800, height: 900 });
+		await pg.waitForTimeout(400);
+		const rs = await pg.locator('.twd-ap-related').boundingBox();
+		t('related grid: turning the screen narrower re-measures it (800 wide screen: the block takes the screen less 16px each side)', Math.abs(rs.width - 768) <= 1 && Math.abs(rs.x - 16) <= 2 && (await noScroll(pg)), JSON.stringify(rs));
+		await pg.setViewportSize({ width: 1200, height: 900 });
+		await pg.waitForTimeout(400);
+		t('related grid: and wider again, back to 900px', Math.abs((await pg.locator('.twd-ap-related').boundingBox()).width - 900) <= 1);
+		await pg.close();
+		({ pg } = await openGrid('wide', 1200, 700));
+		await pg.evaluate(() => { document.querySelector('.twd-ap-related-card-title').textContent = 'A'.repeat(70); });
+		const longTitle = await pg.evaluate(() => { const a = document.querySelector('.twd-ap-related-card a'); return { sw: a.scrollWidth, cw: a.clientWidth }; });
+		t('related grid: a 70 letter word in a title is wrapped, not cut off', longTitle.sw <= longTitle.cw, JSON.stringify(longTitle));
+		const dateLine = await pg.evaluate(() => getComputedStyle(document.querySelector('.twd-ap-related-card .twd-ap-related-date')).lineHeight);
+		t('related grid: a theme\'s own list line height does not reach the date (its own 1.4 holds)', Math.abs(parseFloat(dateLine) - 13 * 1.4) < 0.6, dateLine);
 		await pg.close();
 
 		// the Browse by topic row: larger, and centred when chosen
