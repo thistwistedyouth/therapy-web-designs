@@ -105,6 +105,8 @@ class TWD_AP_Frontend {
 				'aiLimit'         => class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::RATE_LIMIT : 0,
 				'aiRemaining'     => ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) ? TWD_AP_AI_Generate::remaining() : 0,
 				'aiMaxChars'      => class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::MAX_INPUT_CHARS : 0,
+				// 1.48.0: a new article's "Include bio page" tick starts as the site-wide tick says.
+				'profileInAllBooks' => ! empty( TWD_AP_Grid_Settings::get()['profile_in_all_books'] ) ? 1 : 0,
 				'i18n'          => array(
 					'saving'       => __( 'Saving…', 'twd-article-publisher' ),
 					'error'        => __( 'Something went wrong. Please try again.', 'twd-article-publisher' ),
@@ -113,6 +115,59 @@ class TWD_AP_Frontend {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Inline custom properties that give the floating New Article button the
+	 * colour of the quote bar in an article (the owner's quote colour from
+	 * Article look, else their link colour, which the bar falls back to), with
+	 * a hover colour and writing that reads on it. The writing is white or dark
+	 * ink, whichever has the better contrast (WCAG) on that colour, and the
+	 * hover moves the way that keeps the contrast: darker under white, lighter
+	 * under dark ink. '' when neither colour is set, so a site that never chose
+	 * colours keeps the original sage button.
+	 */
+	public static function new_button_style( $quote_color, $link_color ) {
+		$h = '';
+		foreach ( array( $quote_color, $link_color ) as $candidate ) {
+			// Three or six hex digits and nothing else (sanitize_hex_color alone lets
+			// a trailing newline through).
+			if ( is_string( $candidate ) && sanitize_hex_color( $candidate ) && preg_match( '/^#([0-9a-f]{3}|[0-9a-f]{6})$/iD', $candidate, $m ) ) {
+				$h = $m[1];
+				break;
+			}
+		}
+		if ( '' === $h ) {
+			return '';
+		}
+		if ( 3 === strlen( $h ) ) {
+			$h = $h[0] . $h[0] . $h[1] . $h[1] . $h[2] . $h[2];
+		}
+		$r = hexdec( substr( $h, 0, 2 ) );
+		$g = hexdec( substr( $h, 2, 2 ) );
+		$b = hexdec( substr( $h, 4, 2 ) );
+
+		$dark_ink = array( 31, 29, 43 ); // #1f1d2b
+		$lum      = self::luminance( $r, $g, $b );
+		$white_on = 1.05 / ( $lum + 0.05 );
+		$dark_on  = ( $lum + 0.05 ) / ( self::luminance( $dark_ink[0], $dark_ink[1], $dark_ink[2] ) + 0.05 );
+		$use_dark = $dark_on > $white_on;
+
+		if ( $use_dark ) {
+			$hover = sprintf( '#%02x%02x%02x', (int) round( $r + ( 255 - $r ) * 0.18 ), (int) round( $g + ( 255 - $g ) * 0.18 ), (int) round( $b + ( 255 - $b ) * 0.18 ) );
+		} else {
+			$hover = sprintf( '#%02x%02x%02x', (int) round( $r * 0.82 ), (int) round( $g * 0.82 ), (int) round( $b * 0.82 ) );
+		}
+		return '--twd-ap-primary:#' . $h . ';--twd-ap-primary-dark:' . $hover . ';--twd-ap-primary-ink:' . ( $use_dark ? '#1f1d2b' : '#ffffff' ) . ';';
+	}
+
+	/** WCAG relative luminance of an sRGB colour given as 0 to 255 channels. */
+	private static function luminance( $r, $g, $b ) {
+		$lin = function ( $v ) {
+			$v = $v / 255;
+			return $v <= 0.03928 ? $v / 12.92 : pow( ( $v + 0.055 ) / 1.055, 2.4 );
+		};
+		return 0.2126 * $lin( $r ) + 0.7152 * $lin( $g ) + 0.0722 * $lin( $b );
 	}
 
 	public function render_buttons_and_modal() {
@@ -125,6 +180,9 @@ class TWD_AP_Frontend {
 
 		$show_new  = $this->should_show_new_button();
 		$show_edit = $this->should_show_edit_button();
+		$look      = TWD_AP_Grid_Settings::get();
+		// The New Article button wears the colour of the article's quote bar.
+		$new_btn_style = self::new_button_style( $look['look_quote_color'], $look['look_link_color'] );
 
 		if ( ! $show_new && ! $show_edit ) {
 			return;

@@ -285,7 +285,7 @@ class TWD_AP_Shortcode {
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-related-details">
 							<summary><?php esc_html_e( 'Related articles', 'twd-article-publisher' ); ?></summary>
-							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'At the end of every article, a short list of links to more articles from the same category, with a link to the category page. It helps readers keep reading and helps search engines find your articles. Leave it off if your theme or another plugin already shows related posts.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'At the end of every article, a short list of links to more articles from the same category, with a link to the category page. It helps readers keep reading and helps search engines find your articles. Choose \'Nowhere\' below if your theme or another plugin already shows related posts.', 'twd-article-publisher' ); ?></p>
 							<label class="twd-ap-label" for="twd-ap-gs-related-place"><?php esc_html_e( 'Where it goes', 'twd-article-publisher' ); ?></label>
 							<select id="twd-ap-gs-related-place" class="twd-ap-input">
 								<option value="auto"><?php esc_html_e( 'Automatically at the end of every article', 'twd-article-publisher' ); ?></option>
@@ -294,9 +294,21 @@ class TWD_AP_Shortcode {
 							</select>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'With the shortcode you can put it anywhere, for example in your own single article template. [twd_related count="3"] changes how many links for that one place.', 'twd-article-publisher' ); ?></p>
 							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-related-show" /> <?php esc_html_e( 'Show "More in this category"', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-related-layout"><?php esc_html_e( 'Layout', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-related-layout" class="twd-ap-input">
+								<option value="list"><?php esc_html_e( 'A plain list of links (the original)', 'twd-article-publisher' ); ?></option>
+								<option value="grid"><?php esc_html_e( 'A grid of picture boxes, 3 across, 900px wide', 'twd-article-publisher' ); ?></option>
+							</select>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'The grid is wider than the article text, centred, with each box showing the article\'s picture, title and date. Choose 3 or 6 links below for full rows. It uses the card picture shape and the "Show thumbnails" choice from this grid.', 'twd-article-publisher' ); ?></p>
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-related-count"><?php esc_html_e( 'How many links', 'twd-article-publisher' ); ?></label>
 							<input type="number" id="twd-ap-gs-related-count" class="twd-ap-input" min="1" max="8" />
 							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-related-topics" /> <?php esc_html_e( 'Also show the "Browse by topic" links under it (the categories you chose above, and All articles)', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-topics-align"><?php esc_html_e( 'Browse by topic row', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-topics-align" class="twd-ap-input">
+								<option value="left"><?php esc_html_e( 'Left aligned', 'twd-article-publisher' ); ?></option>
+								<option value="center"><?php esc_html_e( 'Centred', 'twd-article-publisher' ); ?></option>
+							</select>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Applies wherever the Browse by topic row shows: the grid, category pages, the article index and the end of articles.', 'twd-article-publisher' ); ?></p>
 						</details>
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-cta-details">
@@ -342,6 +354,16 @@ class TWD_AP_Shortcode {
 								<option value="medium"><?php esc_html_e( 'Medium (default)', 'twd-article-publisher' ); ?></option>
 								<option value="large"><?php esc_html_e( 'Large', 'twd-article-publisher' ); ?></option>
 							</select>
+							<p class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Heading sizes (in pixels)', 'twd-article-publisher' ); ?></p>
+							<div class="twd-ap-gs-look-grid">
+								<label class="twd-ap-label" for="twd-ap-gs-look-h2"><?php esc_html_e( 'Main headings (H2)', 'twd-article-publisher' ); ?></label>
+								<input type="number" id="twd-ap-gs-look-h2" class="twd-ap-input" data-look="look_h2_size" min="<?php echo (int) TWD_AP_Grid_Settings::HEADING_MIN; ?>" max="<?php echo (int) TWD_AP_Grid_Settings::HEADING_MAX; ?>" placeholder="26" />
+								<label class="twd-ap-label" for="twd-ap-gs-look-h3"><?php esc_html_e( 'Sub headings (H3)', 'twd-article-publisher' ); ?></label>
+								<input type="number" id="twd-ap-gs-look-h3" class="twd-ap-input" data-look="look_h3_size" min="<?php echo (int) TWD_AP_Grid_Settings::HEADING_MIN; ?>" max="<?php echo (int) TWD_AP_Grid_Settings::HEADING_MAX; ?>" placeholder="21" />
+								<label class="twd-ap-label" for="twd-ap-gs-look-h4"><?php esc_html_e( 'Small headings (H4)', 'twd-article-publisher' ); ?></label>
+								<input type="number" id="twd-ap-gs-look-h4" class="twd-ap-input" data-look="look_h4_size" min="<?php echo (int) TWD_AP_Grid_Settings::HEADING_MIN; ?>" max="<?php echo (int) TWD_AP_Grid_Settings::HEADING_MAX; ?>" placeholder="18" />
+							</div>
+							<p class="twd-ap-muted twd-ap-hint"><?php echo esc_html( sprintf( /* translators: 1 and 2 are pixel sizes */ __( 'Leave a box empty to keep the plugin\'s own size (26, 21 and 18). Between %1$d and %2$d. Phones show them a little smaller. These are the headings inside the text of an article; the title at the top is set by your theme, and a Heading 1 in an article is saved as a Heading 2.', 'twd-article-publisher' ), TWD_AP_Grid_Settings::HEADING_MIN, TWD_AP_Grid_Settings::HEADING_MAX ) ); ?></p>
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-look-spacing"><?php esc_html_e( 'Line spacing', 'twd-article-publisher' ); ?></label>
 							<select id="twd-ap-gs-look-spacing" class="twd-ap-input" data-look="look_spacing">
 								<option value="compact"><?php esc_html_e( 'Compact', 'twd-article-publisher' ); ?></option>
@@ -349,9 +371,11 @@ class TWD_AP_Shortcode {
 								<option value="relaxed"><?php esc_html_e( 'Relaxed', 'twd-article-publisher' ); ?></option>
 							</select>
 							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-look-tidy" /> <?php esc_html_e( 'Tidy line endings: keep a short word (a, so, we, an) with the word after it', 'twd-article-publisher' ); ?></label>
-							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Stops a line ending on a one or two letter word. Headings are also balanced and paragraphs avoid a lonely last word in browsers that support it.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Stops a line ending on a one or two letter word, in English text. Headings are also balanced and paragraphs avoid a lonely last word in browsers that support it.', 'twd-article-publisher' ); ?></p>
 							<div class="twd-ap-gs-look-preview" id="twd-ap-gs-look-preview" aria-hidden="true">
-								<h4><?php esc_html_e( 'A sample heading', 'twd-article-publisher' ); ?></h4>
+								<h2><?php esc_html_e( 'A main heading', 'twd-article-publisher' ); ?></h2>
+								<h3><?php esc_html_e( 'A sub heading', 'twd-article-publisher' ); ?></h3>
+								<h4><?php esc_html_e( 'A small heading', 'twd-article-publisher' ); ?></h4>
 								<p><?php esc_html_e( 'This is how the text of an article will read, with a', 'twd-article-publisher' ); ?> <a href="#" tabindex="-1"><?php esc_html_e( 'link inside it', 'twd-article-publisher' ); ?></a>.</p>
 								<blockquote><?php esc_html_e( 'And this is how a quotation will look.', 'twd-article-publisher' ); ?></blockquote>
 							</div>
@@ -387,6 +411,13 @@ class TWD_AP_Shortcode {
 								<button type="button" id="twd-ap-gs-sb-logo-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
 							</div>
 
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-theme"><?php esc_html_e( 'Colours', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-sb-theme" class="twd-ap-input">
+								<option value="dark"><?php esc_html_e( 'Dark (the original)', 'twd-article-publisher' ); ?></option>
+								<option value="light"><?php esc_html_e( 'Light, with dark writing', 'twd-article-publisher' ); ?></option>
+							</select>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'For the swipe book and the Summary Book. The saved image and PDF follow it.', 'twd-article-publisher' ); ?></p>
+
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-logo-bg"><?php esc_html_e( 'Logo background', 'twd-article-publisher' ); ?></label>
 							<select id="twd-ap-gs-sb-logo-bg" class="twd-ap-input">
 								<option value="light"><?php esc_html_e( 'Light', 'twd-article-publisher' ); ?></option>
@@ -405,7 +436,9 @@ class TWD_AP_Shortcode {
 
 						<div class="twd-ap-section twd-ap-spaced">
 							<p class="twd-ap-section-heading"><?php esc_html_e( 'Profile page (for the swipe book bio slide)', 'twd-article-publisher' ); ?></p>
-							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Shown as the closing slide on any article with "Include bio page at end" ticked.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Shown as the closing slide on any article with "Include bio page at end" ticked. It needs at least a name below.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-profile-all" /> <?php esc_html_e( 'Put the bio page at the end of every swipe book', 'twd-article-publisher' ); ?></label>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'This includes articles you have already published. Any article can still leave it out: untick "Include bio page at end" when you edit that article.', 'twd-article-publisher' ); ?></p>
 
 							<div class="twd-ap-field-col">
 								<label class="twd-ap-label"><?php esc_html_e( 'Photo', 'twd-article-publisher' ); ?></label>

@@ -579,7 +579,10 @@ class TWD_AP_Cards {
 		if ( '' !== $index_url ) {
 			$items .= '<li class="twd-ap-topics-all"><a href="' . esc_url( $index_url ) . '">' . esc_html__( 'All articles', 'twd-article-publisher' ) . '</a></li>';
 		}
-		return '<nav class="twd-ap-articles-topics" aria-label="' . esc_attr__( 'Browse by topic', 'twd-article-publisher' ) . '">' .
+		// 1.48.0: the owner can centre the row (Customise this grid > Related articles).
+		$align = class_exists( 'TWD_AP_Grid_Settings' ) ? TWD_AP_Grid_Settings::get() : array();
+		$class = 'twd-ap-articles-topics' . ( isset( $align['topics_align'] ) && 'center' === $align['topics_align'] ? ' twd-ap-topics-center' : '' );
+		return '<nav class="' . $class . '" aria-label="' . esc_attr__( 'Browse by topic', 'twd-article-publisher' ) . '">' .
 			'<p class="twd-ap-articles-topics-title">' . esc_html__( 'Browse by topic', 'twd-article-publisher' ) . '</p>' .
 			'<ul>' . $items . '</ul>' .
 		'</nav>';

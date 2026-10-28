@@ -1437,7 +1437,8 @@
 		els.catAddInput.value = '';
 		els.featuredToggle.checked = false;
 		setGridOrder('');
-		els.includeBioToggle.checked = false;
+		// A new article starts as the site-wide "bio page in every swipe book" tick says.
+		els.includeBioToggle.checked = !!(parseInt(TWD_AP.profileInAllBooks, 10) || 0);
 		els.swipebookToggle.checked = true;
 		state.relatedIds = [];
 		if (els.relatedPicker) { els.relatedPicker.innerHTML = ''; }

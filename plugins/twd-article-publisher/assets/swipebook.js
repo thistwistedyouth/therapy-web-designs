@@ -134,9 +134,10 @@
 			? '<a class="twd-sb-companion-link" href="' + escapeAttr(data.companionUrl) + '" data-twd-ap-post-id="' + data.companionPostId + '" data-twd-ap-book-variant="' + escapeAttr(data.companionBookVariant || '') + '">' + escapeHtml(data.companionLabel || '') + '</a>'
 			: '';
 
-		return '<div class="twd-sb-backdrop" data-article-url="' + escapeAttr(data.articleUrl) + '" data-share-url="' + escapeAttr(data.shareUrl) + '" data-title="' + escapeAttr(data.title) + '" data-include-branding="' + (false === data.includeBranding ? '0' : '1') + '">' +
+		var themeClass = 'light' === data.theme ? ' twd-sb-theme-light' : '';
+		return '<div class="twd-sb-backdrop' + themeClass + '" data-article-url="' + escapeAttr(data.articleUrl) + '" data-share-url="' + escapeAttr(data.shareUrl) + '" data-title="' + escapeAttr(data.title) + '" data-include-branding="' + (false === data.includeBranding ? '0' : '1') + '">' +
 			'<div class="twd-sb-frame">' +
-				'<button type="button" class="twd-sb-close" aria-label="Close">&times;</button>' +
+				'<button type="button" class="twd-sb-close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>' +
 				'<div class="twd-sb-slides">' + slidesHtml + '</div>' +
 				'<div class="twd-sb-controls">' +
 					'<button type="button" class="twd-sb-btn twd-sb-prev" aria-label="Previous">&#8249;</button>' +
@@ -719,7 +720,9 @@
 		function captureNode(cardEl, onCanvas) {
 			var headerEl = includeBranding ? null : cardEl.querySelector('.twd-sb-card-header');
 			if (headerEl) { headerEl.style.display = 'none'; }
-			window.html2canvas(cardEl, { backgroundColor: '#13112e', scale: 2, useCORS: true }).then(function (canvas) {
+			// The solid colour behind the card in a saved image: the book's own, light or dark.
+			var exportBg = (window.getComputedStyle(backdrop).getPropertyValue('--twd-sb-export-bg') || '').trim() || '#13112e';
+			window.html2canvas(cardEl, { backgroundColor: exportBg, scale: 2, useCORS: true }).then(function (canvas) {
 				if (headerEl) { headerEl.style.display = ''; }
 				onCanvas(canvas);
 			});

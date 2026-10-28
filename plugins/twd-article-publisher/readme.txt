@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.46.0
+Stable tag: 1.48.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,32 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.48.0): (1) Related articles can be a grid. In Customise this grid >
+Related articles, "Layout" can now be a grid of picture boxes (picture, title
+and date), 3 across in a block 900px wide and centred, 2 across on a tablet and
+1 on a phone; the plain list is still the default. (2) The Browse by topic row
+can be centred (same section) and is a little larger everywhere. (3) Heading
+sizes: in Article look you can set the size of the H2, H3 and H4 headings in an
+article's text, in pixels. (4) "Put the bio page at the end of every swipe
+book", in the Profile section: it applies to articles you have already
+published, and any article can still leave it out with its own "Include bio
+page at end" tick.
+
+NEW (1.47.0): (1) A light swipe book. In Customise this grid > Related
+articles, "Colours" now offers Dark (the original) or Light, with dark writing
+on a warm ivory page and soft shading. (2) The close button on a swipe book is
+now a solid, always-visible button in its own strip at the top, instead of a
+faint circle that only reacted when the mouse was on the corner. (3) The floating
+New Article button takes the colour of the vertical bar beside quotes in an
+article (set in Article look); with no colours set it stays green.
+
+NEW (1.46.1): fixes to the line endings and [twd_related] from an independent
+review of 1.46.0. A run of short words is no longer glued together without
+limit (at most five in a row), shortcodes written in an article's text are left
+exactly as they are, the line endings step only runs on an English site (it can
+be overridden with the twd_ap_tidy_lines filter), and a [twd_related id="5"] for
+a different article no longer stops the article's own related block appearing.
 
 NEW (1.46.0): (1) A shortcode for the swipe book button. In Customise this
 grid, tick "Place the button under the title with a shortcode instead of

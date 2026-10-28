@@ -18,7 +18,12 @@ function add_shortcode( $tag, $cb ) { $GLOBALS['shortcodes'][ $tag ] = $cb; }
 function shortcode_atts( $pairs, $atts ) { return array_merge( $pairs, array_intersect_key( (array) $atts, $pairs ) ); }
 function wp_enqueue_style( $h ) { $GLOBALS['enqueued'][] = $h; }
 function wp_enqueue_script( $h ) { $GLOBALS['enqueued'][] = $h; }
-function wp_localize_script() {}
+function wp_localize_script( $h, $name, $data ) { $GLOBALS['localized'][ $name ] = $data; }
+function wp_enqueue_media() {}
+function get_the_ID() { return 1; }
+function is_user_logged_in() { return true; }
+function wp_get_current_user() { return (object) array( 'roles' => array( 'administrator' ) ); }
+function wp_create_nonce() { return 'nonce'; }
 function rest_url( $p = '' ) { return 'https://example.test/wp-json/' . $p; }
 function esc_url_raw( $s ) { return $s; }
 define( 'TWD_AP_URL', 'https://example.test/plugin/' );
@@ -45,7 +50,7 @@ function delete_post_meta( $id, $k ) { unset( $GLOBALS['meta'][ $id ][ $k ] ); r
 function get_option( $k, $d = false ) { return $GLOBALS['opt'][ $k ] ?? $d; }
 function get_posts( $args ) { $GLOBALS['q'] = $args; return array_values( array_filter( $GLOBALS['posts'], function ( $p ) use ( $args ) { return 'publish' === $p->post_status && ! in_array( $p->ID, $args['post__not_in'], true ) && ! ( isset( $GLOBALS['meta'][ $p->ID ]['_twd_ap_swipebook_off'] ) ); } ) ); }
 function rest_ensure_response( $x ) { return $x; }
-class TWD_AP_Grid_Settings { static $pos = 'both'; static $top = false; static function get() { return array( 'swipebook_color' => '#5b8a72', 'swipebook_button_position' => self::$pos, 'swipebook_top_shortcode' => self::$top ); } }
+class TWD_AP_Grid_Settings { static $pos = 'both'; static $top = false; static $bio_all = false; static $pname = 'Jane Smith'; static function get() { return array( 'swipebook_color' => '#5b8a72', 'swipebook_button_position' => self::$pos, 'swipebook_top_shortcode' => self::$top, 'profile_in_all_books' => self::$bio_all, 'profile_name' => self::$pname, 'profile_photo_id' => 0, 'profile_bio' => 'About me', 'profile_link_url' => '', 'profile_link_label' => '' ); } }
 class TWD_AP_Shortcode { static $on = false; static function rendered_on_this_page() { return self::$on; } }
 class TWD_AP_Sanitizer { static function strip_dashes( $s ) { return $s; } }
 require $plugin . 'includes/class-twd-ap-settings.php';
@@ -258,6 +263,56 @@ $GLOBALS['current'] = 0;
 t( 'shortcode: with no current article and no id prints nothing and does not fail', '' === $sc() );
 $GLOBALS['current'] = 1;
 t( 'shortcode: the Summary Book button is left out when there is no published deck', ( function () use ( $sc ) { $o = $sc( array( 'id' => '7' ) ); return false === strpos( $o, 'summary-book' ); } )() );
+
+
+// ---------- the bio page in every swipe book (1.48.0) ----------
+$BIO = TWD_AP_Swipebook::META_BIO;
+$slide = new ReflectionMethod( 'TWD_AP_Swipebook', 'maybe_bio_slide' ); $slide->setAccessible( true );
+$sbk = ( new ReflectionClass( 'TWD_AP_Swipebook' ) )->newInstanceWithoutConstructor();
+mkpost( 20 ); mkpost( 21 ); mkpost( 22 );
+TWD_AP_Grid_Settings::$bio_all = false;
+t( 'bio: with the site tick off, an article with no choice has no bio page (as before)', ! TWD_AP_Swipebook::bio_included( 20 ) && null === $slide->invoke( $sbk, $GLOBALS['posts'][20] ) );
+$m->invoke( $rest, 20, array( 'include_bio' => true ) );
+t( 'bio: ticking it for one article stores a choice and gives it the slide', 1 === $GLOBALS['meta'][20][ $BIO ] && TWD_AP_Swipebook::bio_included( 20 ) && 'bio' === $slide->invoke( $sbk, $GLOBALS['posts'][20] )['type'] );
+t( 'bio: and the edit data says ticked', true === $fp->invoke( $rest, 20, true )['include_bio'] );
+$m->invoke( $rest, 20, array( 'include_bio' => false ) );
+t( 'bio: unticking with the site tick off removes the choice (nothing to remember)', ! isset( $GLOBALS['meta'][20][ $BIO ] ) && ! TWD_AP_Swipebook::bio_included( 20 ) );
+
+TWD_AP_Grid_Settings::$bio_all = true;
+t( 'bio: ticking the site tick puts the bio page on articles published long ago, with no choice stored', TWD_AP_Swipebook::bio_included( 21 ) && TWD_AP_Swipebook::bio_included( 22 ) && 'bio' === $slide->invoke( $sbk, $GLOBALS['posts'][21] )['type'] && ! isset( $GLOBALS['meta'][21][ $BIO ] ) );
+t( 'bio: the edit data of such an article says ticked', true === $fp->invoke( $rest, 21, true )['include_bio'] );
+$m->invoke( $rest, 21, array( 'include_bio' => true ) );
+t( 'bio: saving it still ticked stores nothing, so it keeps following the site tick', ! isset( $GLOBALS['meta'][21][ $BIO ] ) );
+$m->invoke( $rest, 21, array( 'include_bio' => false ) );
+t( 'bio: unticking it for this one article stores an explicit off, and its swipe book has no bio page', '0' === (string) $GLOBALS['meta'][21][ $BIO ] && ! TWD_AP_Swipebook::bio_included( 21 ) && null === $slide->invoke( $sbk, $GLOBALS['posts'][21] ) );
+t( 'bio: the edit data says unticked, and the other articles are not affected', false === $fp->invoke( $rest, 21, true )['include_bio'] && TWD_AP_Swipebook::bio_included( 22 ) );
+$m->invoke( $rest, 21, array( 'title' => 'an unrelated save' ) );
+t( 'bio: a save that does not carry the tick leaves the choice alone', '0' === (string) $GLOBALS['meta'][21][ $BIO ] );
+$m->invoke( $rest, 21, array( 'include_bio' => true ) );
+t( 'bio: ticking it again goes back to following the site tick', ! isset( $GLOBALS['meta'][21][ $BIO ] ) && TWD_AP_Swipebook::bio_included( 21 ) );
+// an article ticked on its own while the site tick was off keeps its bio page when the site tick is turned on and saved, and when it is turned off again
+TWD_AP_Grid_Settings::$bio_all = false;
+$m->invoke( $rest, 22, array( 'include_bio' => true ) );
+TWD_AP_Grid_Settings::$bio_all = true;
+$m->invoke( $rest, 22, array( 'include_bio' => true ) );
+TWD_AP_Grid_Settings::$bio_all = false;
+t( 'bio: an article ticked on its own stays on after a later save, even if the site tick is turned off again', 1 === $GLOBALS['meta'][22][ $BIO ] && TWD_AP_Swipebook::bio_included( 22 ) );
+TWD_AP_Grid_Settings::$bio_all = true;
+TWD_AP_Grid_Settings::$pname = '';
+t( 'bio: with no name in the profile there is no slide, whatever the ticks say', null === $slide->invoke( $sbk, $GLOBALS['posts'][22] ) && null === $slide->invoke( $sbk, $GLOBALS['posts'][20] ) );
+TWD_AP_Grid_Settings::$pname = 'Jane Smith';
+t( 'bio: the slide carries the profile name, bio text and link', 'Jane Smith' === $slide->invoke( $sbk, $GLOBALS['posts'][22] )['heading'] && 'About me' === $slide->invoke( $sbk, $GLOBALS['posts'][22] )['bio'] );
+TWD_AP_Grid_Settings::$bio_all = false;
+
+
+// The popup is told the site-wide tick, so a new article's bio tick starts right.
+$me = new ReflectionMethod( 'TWD_AP_Frontend', 'maybe_enqueue' );
+$fe = ( new ReflectionClass( 'TWD_AP_Frontend' ) )->newInstanceWithoutConstructor();
+TWD_AP_Grid_Settings::$bio_all = false; $fe->maybe_enqueue();
+t( 'bio: the popup is told the site tick is off', 0 === $GLOBALS['localized']['TWD_AP']['profileInAllBooks'] );
+TWD_AP_Grid_Settings::$bio_all = true; $fe->maybe_enqueue();
+t( 'bio: and on', 1 === $GLOBALS['localized']['TWD_AP']['profileInAllBooks'] );
+TWD_AP_Grid_Settings::$bio_all = false;
 
 // ---------- the grid number (1.45.0): saving and loading ----------
 $GN = TWD_AP_Cards::ORDER_META;

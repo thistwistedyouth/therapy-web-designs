@@ -44,10 +44,10 @@ class TWD_AP_Related {
 	 * the article being shown; id="123" names another, count="3" changes how
 	 * many links for this one place. Prints nothing when the owner has chosen
 	 * "Nowhere", or when the article has nothing to show. When the owner has
-	 * left it on "automatically at the end" and the shortcode sits in the
-	 * article's own text, the automatic copy steps aside, so it never shows
-	 * twice there; in a template that prints after the text, choose "Only
-	 * where I place the shortcode".
+	 * left it on "automatically at the end" and the shortcode for THIS article
+	 * sits in the article's own text, the automatic copy steps aside, so it
+	 * never shows twice there; in a template that prints after the text, choose
+	 * "Only where I place the shortcode".
 	 */
 	public function shortcode( $atts ) {
 		if ( 'off' === self::place() ) {
@@ -64,7 +64,11 @@ class TWD_AP_Related {
 		$count = absint( $atts['count'] );
 		$box   = self::html( $id, $count ? max( 1, min( 8, $count ) ) : 0 );
 		if ( '' !== $box ) {
-			self::$placed = true;
+			// Only a block for the article being shown makes the automatic one step
+			// aside; one for a different article (id="5" in a sidebar) does not.
+			if ( $id === (int) get_queried_object_id() ) {
+				self::$placed = true;
+			}
 			TWD_AP_Article_Style::enqueue();
 		}
 		return $box;
@@ -129,7 +133,7 @@ class TWD_AP_Related {
 		$topic = self::topic_for( $post_id );
 		$list  = '';
 		if ( ! empty( $s['related_show'] ) && $topic ) {
-			$list = self::list_html( $post_id, $topic, $count ? max( 1, min( 8, (int) $count ) ) : max( 1, min( 8, (int) $s['related_count'] ) ) );
+			$list = self::list_html( $post_id, $topic, $count ? max( 1, min( 8, (int) $count ) ) : max( 1, min( 8, (int) $s['related_count'] ) ), 'grid' === $s['related_layout'], ! empty( $s['show_thumbnails'] ) );
 		}
 		$nav = '';
 		if ( ! empty( $s['related_topics'] ) ) {
@@ -138,14 +142,18 @@ class TWD_AP_Related {
 		if ( '' === $list && '' === $nav ) {
 			return '';
 		}
-		return '<aside class="twd-ap-related" style="' . esc_attr( '--twd-ap-accent-color:' . $s['accent_color'] . ';' ) . '">' . $list . $nav . '</aside>';
+		// 1.48.0: as a grid of picture cards the block is wider than the article column
+		// (up to 900px, centred); the card picture follows the grid's image shape.
+		$grid  = 'grid' === $s['related_layout'];
+		$class = 'twd-ap-related' . ( $grid ? ' twd-ap-related-wide ' . TWD_AP_Grid_Settings::thumb_shape_class( $s['thumb_shape'] ) : '' );
+		return '<aside class="' . esc_attr( trim( $class ) ) . '" style="' . esc_attr( '--twd-ap-accent-color:' . $s['accent_color'] . ';' ) . '">' . $list . $nav . '</aside>';
 	}
 
 	/**
 	 * The heading and the plain list of other articles in the topic, or ''
 	 * when the topic has no other articles.
 	 */
-	private static function list_html( $post_id, $topic, $count ) {
+	private static function list_html( $post_id, $topic, $count, $grid = false, $thumbs = true ) {
 		// One extra, so the article itself can be dropped and still leave $count.
 		$found = TWD_AP_Cards::fetch( $count + 1, 0, '', $topic->slug );
 		$items = '';
@@ -158,6 +166,10 @@ class TWD_AP_Related {
 				break;
 			}
 			$shown++;
+			if ( $grid ) {
+				$items .= self::card_html( $post, $thumbs );
+				continue;
+			}
 			$items .= '<li><a href="' . esc_url( get_permalink( $post ) ) . '">' . esc_html( html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ) ) . '</a> <span class="twd-ap-related-date">' . esc_html( get_the_date( '', $post ) ) . '</span></li>';
 		}
 		if ( 0 === $shown ) {
@@ -169,6 +181,28 @@ class TWD_AP_Related {
 			$name = '<a href="' . esc_url( $link ) . '">' . $name . '</a>';
 		}
 		return '<h2 class="twd-ap-related-title">' . esc_html__( 'More in', 'twd-article-publisher' ) . ' ' . $name . '</h2>' .
-			'<ul class="twd-ap-related-list">' . $items . '</ul>';
+			'<ul class="twd-ap-related-list' . ( $grid ? ' twd-ap-related-cards' : '' ) . '">' . $items . '</ul>';
+	}
+
+	/**
+	 * One box in the grid layout: the article's picture (or a plain block when it
+	 * has none; no picture at all when the grid's pictures are switched off), its
+	 * title and its date, the whole box one link.
+	 */
+	private static function card_html( $post, $thumbs ) {
+		$pic = '';
+		if ( $thumbs ) {
+			$thumb_id = get_post_thumbnail_id( $post );
+			$url      = $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '';
+			if ( $url ) {
+				$url = str_replace( "'", '%27', esc_url_raw( $url ) );
+				$pic = '<span class="twd-ap-related-thumb" style="' . esc_attr( "background-image:url('" . $url . "')" ) . '"></span>';
+			} else {
+				$pic = '<span class="twd-ap-related-thumb twd-ap-related-thumb-placeholder" aria-hidden="true">' . TWD_AP_Cards::PLACEHOLDER_SVG . '</span>';
+			}
+		}
+		return '<li class="twd-ap-related-card"><a href="' . esc_url( get_permalink( $post ) ) . '">' . $pic .
+			'<span class="twd-ap-related-card-title">' . esc_html( html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ) ) . '</span>' .
+			'<span class="twd-ap-related-date">' . esc_html( get_the_date( '', $post ) ) . '</span></a></li>';
 	}
 }

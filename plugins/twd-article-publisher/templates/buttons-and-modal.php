@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div id="twd-ap-buttons" class="twd-ap-buttons">
 	<?php if ( $show_new ) : ?>
-		<button type="button" id="twd-ap-new-btn" class="twd-ap-float-btn twd-ap-new-btn">
+		<button type="button" id="twd-ap-new-btn" class="twd-ap-float-btn twd-ap-new-btn"<?php echo ( isset( $new_btn_style ) && '' !== $new_btn_style ) ? ' style="' . esc_attr( $new_btn_style ) . '"' : ''; ?>>
 			<span class="twd-ap-plus">+</span> <?php esc_html_e( 'New Article', 'twd-article-publisher' ); ?>
 		</button>
 	<?php endif; ?>
@@ -147,7 +147,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 					<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
 						<input type="checkbox" id="twd-ap-include-bio-toggle" />
-						<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup)', 'twd-article-publisher' ); ?>
+						<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup). Your site can tick this for every swipe book in Customise this grid; untick it here to leave it out of this one.', 'twd-article-publisher' ); ?>
 					</label>
 
 					<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
@@ -264,7 +264,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<button type="button" id="twd-ap-copy-shortcode-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Copy', 'twd-article-publisher' ); ?></button>
 			</div>
 			<p class="twd-ap-muted"><?php esc_html_e( 'Optional: category="slug", tag="slug", count="6", columns="3" (max 4).', 'twd-article-publisher' ); ?></p>
-			<p class="twd-ap-muted"><?php esc_html_e( 'For your own single article template, two more shortcodes show the "View as a swipe book" button, [twd_swipebook_button], and the related articles, [twd_related count="4"], wherever you place them. Choose "shortcode" for them in Customise this grid so they are not also added automatically.', 'twd-article-publisher' ); ?></p>
+			<p class="twd-ap-muted"><?php esc_html_e( 'For your own single article template, two more shortcodes show the "View as a swipe book" button, [twd_swipebook_button], and the related articles, [twd_related count="4"], wherever you place them. In Customise this grid, tick the box for the swipe book button and choose "Only where I place the shortcode" for related articles, so they are not also added automatically.', 'twd-article-publisher' ); ?></p>
 
 			<p class="twd-ap-section-heading twd-ap-spaced"><?php esc_html_e( 'Writing HTML articles with an AI prompt', 'twd-article-publisher' ); ?></p>
 			<p><?php esc_html_e( 'Copy this prompt into ChatGPT, Claude or similar, fill in the brackets, then paste the HTML it gives you into the HTML tab above:', 'twd-article-publisher' ); ?></p>

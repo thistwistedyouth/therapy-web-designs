@@ -116,6 +116,7 @@ class WP_Query {
 	}
 }
 class TWD_AP_Grid_Settings {
+	const HEADING_MIN = 14; const HEADING_MAX = 64;
 	static $s = array( 'intro_show' => false, 'cta_heading' => '', 'cta_text' => '', 'cta_button_label' => '', 'cta_button_url' => '', 'cta_show_grid' => false, 'cta_show_categories' => false, 'cta_show_index' => false, 'cta_show_articles' => false, 'topic_category_ids' => 'all', 'category_order' => array(), 'categories_count' => 4, 'posts_per_category' => 6, 'show_thumbnails' => true, 'thumb_shape' => 'wide', 'read_more_color' => '#1d4ed8', 'accent_color' => '#2563eb' );
 	static function get() { return self::$s; }
 	// Same mapping as the real class (tested against the real one in grid-settings-test.php).

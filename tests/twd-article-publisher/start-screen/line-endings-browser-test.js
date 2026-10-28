@@ -23,7 +23,7 @@ function page(html, width) {
 // For every paragraph and heading: the last word of every line but the last, as the browser broke it.
 const LINES = `(() => {
 	const out = [];
-	document.querySelectorAll('.twd-ap-article-content p, .twd-ap-article-content h2').forEach((el) => {
+	document.querySelectorAll('.twd-ap-article-content p:not(.chain), .twd-ap-article-content h2').forEach((el) => {
 		const tn = []; const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); while (w.nextNode()) { tn.push(w.currentNode); }
 		const words = [];
 		tn.forEach((n) => {
@@ -38,7 +38,7 @@ const LINES = `(() => {
 		let lines = {};
 		words.forEach((x) => { (lines[x.top] = lines[x.top] || []).push(x); });
 		const tops = Object.keys(lines).map(Number).sort((a, b) => a - b);
-		tops.slice(0, -1).forEach((tp) => { const l = lines[tp]; const last = l[l.length - 1].text; out.push({ tag: el.tagName, last: last.split(/[\\u00a0 ]/).pop() }); });
+		tops.slice(0, -1).forEach((tp) => { const l = lines[tp]; const last = l[l.length - 1].text; out.push({ tag: el.tagName, last: last.split(/[\\u00a0 ]/).pop(), line: l.map((x) => x.text).join(' ').replace(/\\u00a0/g, '~') }); });
 		out.push({ tag: el.tagName, lineCount: tops.length, heading: el.tagName === 'H2' });
 	});
 	return out;
@@ -64,6 +64,14 @@ const shortWord = (w) => /^[\p{L}]{1,2}$/u.test(w); // no trailing punctuation: 
 		tidyBad += bad.length;
 		if (bad.length && tidyBad === bad.length) { console.log('      first miss at width ' + width + ': ' + JSON.stringify(bad)); }
 	}
+	// The tidy step must never make a paragraph wider than its column (a long run of short words glued together).
+	let wide = 0, widths2 = 0;
+	for (const width of [200, 240, 280, 320, 360]) {
+		widths2++;
+		await p.setContent(page(tidy, width));
+		wide += await p.evaluate(() => Array.from(document.querySelectorAll('.twd-ap-article-content p, .twd-ap-article-content h2')).filter((e) => e.scrollWidth > e.clientWidth + 1).length);
+	}
+	t('with the tidy step, no paragraph or heading is wider than its column at ' + widths2 + ' narrow widths (runs of short words are not glued without limit)', wide === 0, wide + ' overflowing');
 	t('without the tidy step, lines do end on a short word (this is the problem; ' + plainBad + ' across ' + widths + ' widths)', plainBad > 8, 'only ' + plainBad);
 	t('with the tidy step, no line ends on a one or two letter word at any of the ' + widths + ' widths', tidyBad === 0, tidyBad + ' lines');
 

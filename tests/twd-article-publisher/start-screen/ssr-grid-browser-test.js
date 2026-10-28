@@ -167,7 +167,7 @@ async function open(browser, name, o) {
 		const { ctx, page } = await open(browser, 'indexlink', { js: false });
 		const link = page.locator('.twd-ap-articles-topics .twd-ap-topics-all a');
 		const style = await link.evaluate((el) => { const c = getComputedStyle(el); return { bg: c.backgroundColor, color: c.color, size: parseFloat(c.fontSize) }; });
-		t('index link: a plain grey text link, no button background', style.bg === 'rgba(0, 0, 0, 0)' && style.color === 'rgb(107, 114, 128)' && style.size <= 15, JSON.stringify(style));
+		t('index link: a plain grey text link, no button background, the same size as the other topic links (16px since 1.48.0)', style.bg === 'rgba(0, 0, 0, 0)' && style.color === 'rgb(107, 114, 128)' && style.size <= 16, JSON.stringify(style));
 		t('index link: it reads All articles and sits on the same row as the topics', (await link.innerText()) === 'All articles' && (await page.locator('.twd-ap-articles-topics li').count()) >= 2);
 		const rows = await page.$$eval('.twd-ap-articles-topics li', (l) => new Set(l.map((x) => Math.round(x.getBoundingClientRect().top))).size);
 		t('index link: it does not drop onto a line of its own on a desktop', rows === 1, 'rows=' + rows);
@@ -642,6 +642,84 @@ async function open(browser, name, o) {
 		await q.page.click('#twd-ap-gs-look-details > summary');
 		t('shortcode settings: saved values load back into the boxes', (await q.page.inputValue('#twd-ap-gs-related-place')) === 'off' && (await q.page.isChecked('#twd-ap-gs-sb-top-shortcode')) && !(await q.page.isChecked('#twd-ap-gs-look-tidy')));
 		await q.ctx.close();
+		window_cta = {};
+	}
+
+	// 20. The gear popup: the swipe book colours (1.47.0).
+	{
+		const r = await open(browser, 'admin', { delay: 50 });
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.click('#twd-ap-gs-related-details > summary');
+		t('swipe book colours: dark to start with, offering dark and light', (await r.page.inputValue('#twd-ap-gs-sb-theme')) === 'dark' && (await r.page.locator('#twd-ap-gs-sb-theme option').evaluateAll((o) => o.map((x) => x.value))).join(',') === 'dark,light');
+		t('swipe book colours: the label says Colours and the light option says dark writing', (await r.page.locator('label[for="twd-ap-gs-sb-theme"]').innerText()).trim() === 'Colours' && (await r.page.locator('#twd-ap-gs-sb-theme option[value="light"]').innerText()).includes('dark writing'));
+		await r.page.selectOption('#twd-ap-gs-sb-theme', 'light');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		const body = saved[saved.length - 1];
+		t('swipe book colours: saving sends the choice', body.swipebook_theme === 'light', JSON.stringify(body.swipebook_theme));
+		t('swipe book colours: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+		// saved values load back in, and a value we do not know shows as dark
+		for (const [stored, shown] of [['light', 'light'], ['sepia', 'dark'], [undefined, 'dark']]) {
+			window_cta = stored === undefined ? {} : { swipebook_theme: stored };
+			const q = await open(browser, 'admin', { delay: 50 });
+			await q.page.click('.twd-ap-articles-settings-btn');
+			await q.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+			await q.page.click('#twd-ap-gs-related-details > summary');
+			t('swipe book colours: a saved ' + JSON.stringify(stored) + ' loads back as ' + shown, (await q.page.inputValue('#twd-ap-gs-sb-theme')) === shown);
+			await q.ctx.close();
+		}
+		window_cta = {};
+	}
+
+	// 21. The gear popup: heading sizes, topics row, related layout, bio page in every swipe book (1.48.0).
+	{
+		const open21 = async () => {
+			const r = await open(browser, 'admin', { delay: 50 });
+			await r.page.click('.twd-ap-articles-settings-btn');
+			await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+			await r.page.click('#twd-ap-gs-related-details > summary');
+			await r.page.click('#twd-ap-gs-look-details > summary');
+			return r;
+		};
+		const r = await open21();
+		t('new settings: they start as a list, left aligned, bio page not in every book, no heading sizes (the plugin sizes show as hints)', (await r.page.inputValue('#twd-ap-gs-related-layout')) === 'list' && (await r.page.inputValue('#twd-ap-gs-topics-align')) === 'left' && !(await r.page.isChecked('#twd-ap-gs-profile-all')) && (await r.page.inputValue('#twd-ap-gs-look-h2')) === '' && (await r.page.getAttribute('#twd-ap-gs-look-h2', 'placeholder')) === '26' && (await r.page.getAttribute('#twd-ap-gs-look-h3', 'placeholder')) === '21' && (await r.page.getAttribute('#twd-ap-gs-look-h4', 'placeholder')) === '18');
+		t('new settings: layout offers list and grid, the row offers left and centred, headings are limited to 14 to 64', (await r.page.locator('#twd-ap-gs-related-layout option').evaluateAll((o) => o.map((x) => x.value))).join(',') === 'list,grid' && (await r.page.locator('#twd-ap-gs-topics-align option').evaluateAll((o) => o.map((x) => x.value))).join(',') === 'left,center' && (await r.page.getAttribute('#twd-ap-gs-look-h2', 'min')) === '14' && (await r.page.getAttribute('#twd-ap-gs-look-h2', 'max')) === '64');
+		const sampleSize = (sel) => r.page.locator('#twd-ap-gs-look-preview ' + sel).evaluate((e) => getComputedStyle(e).fontSize);
+		t('heading sizes: the sample shows the plugin sizes to start with', (await sampleSize('h2')) === '26px' && (await sampleSize('h3')) === '21px' && (await sampleSize('h4')) === '18px');
+		await r.page.fill('#twd-ap-gs-look-h2', '40');
+		await r.page.fill('#twd-ap-gs-look-h4', '24');
+		t('heading sizes: the sample changes as you type', (await sampleSize('h2')) === '40px' && (await sampleSize('h3')) === '21px' && (await sampleSize('h4')) === '24px');
+		await r.page.fill('#twd-ap-gs-look-h4', '');
+		t('heading sizes: emptying a box brings the plugin size back in the sample', (await sampleSize('h4')) === '18px');
+		await r.page.fill('#twd-ap-gs-look-h3', '30');
+		await r.page.selectOption('#twd-ap-gs-related-layout', 'grid');
+		await r.page.selectOption('#twd-ap-gs-topics-align', 'center');
+		await r.page.check('#twd-ap-gs-profile-all');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		const body = saved[saved.length - 1];
+		t('new settings: saving sends all of them', body.related_layout === 'grid' && body.topics_align === 'center' && body.profile_in_all_books === true && String(body.look_h2_size) === '40' && String(body.look_h3_size) === '30' && body.look_h4_size === '', JSON.stringify([body.related_layout, body.topics_align, body.profile_in_all_books, body.look_h2_size, body.look_h3_size, body.look_h4_size]));
+		t('new settings: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+		// reset empties the heading boxes
+		const rr = await open21();
+		await rr.page.fill('#twd-ap-gs-look-h3', '33');
+		await rr.page.click('#twd-ap-gs-look-reset');
+		t('heading sizes: Reset to the plugin default empties the boxes', (await rr.page.inputValue('#twd-ap-gs-look-h3')) === '' && (await rr.page.locator('#twd-ap-gs-look-preview h3').evaluate((e) => getComputedStyle(e).fontSize)) === '21px');
+		await rr.ctx.close();
+		// saved values load back in
+		window_cta = { related_layout: 'grid', topics_align: 'center', profile_in_all_books: true, look_h2_size: 36, look_h3_size: 0, look_h4_size: 20 };
+		const q = await open21();
+		t('new settings: saved values load back into the boxes', (await q.page.inputValue('#twd-ap-gs-related-layout')) === 'grid' && (await q.page.inputValue('#twd-ap-gs-topics-align')) === 'center' && (await q.page.isChecked('#twd-ap-gs-profile-all')) && (await q.page.inputValue('#twd-ap-gs-look-h2')) === '36' && (await q.page.inputValue('#twd-ap-gs-look-h3')) === '' && (await q.page.inputValue('#twd-ap-gs-look-h4')) === '20');
+		t('heading sizes: and the sample shows them', (await q.page.locator('#twd-ap-gs-look-preview h2').evaluate((e) => getComputedStyle(e).fontSize)) === '36px' && (await q.page.locator('#twd-ap-gs-look-preview h4').evaluate((e) => getComputedStyle(e).fontSize)) === '20px');
+		await q.ctx.close();
+		// an unknown stored value shows as the default
+		window_cta = { related_layout: 'cards', topics_align: 'sideways' };
+		const u = await open21();
+		t('new settings: an unknown stored layout or alignment shows as list and left', (await u.page.inputValue('#twd-ap-gs-related-layout')) === 'list' && (await u.page.inputValue('#twd-ap-gs-topics-align')) === 'left');
+		await u.ctx.close();
 		window_cta = {};
 	}
 
