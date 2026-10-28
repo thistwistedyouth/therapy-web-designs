@@ -45,8 +45,8 @@ function page(data, standalone) {
 		'<script>' + JS + '</script></body></html>';
 }
 
-async function openBook(browser, data, vp, standalone) {
-	const ctx = await browser.newContext({ viewport: vp || { width: 560, height: 800 }, acceptDownloads: true });
+async function openBook(browser, data, vp, standalone, touch) {
+	const ctx = await browser.newContext({ viewport: vp || { width: 560, height: 800 }, acceptDownloads: true, hasTouch: !!touch });
 	const p = await ctx.newPage();
 	const errors = [];
 	p.on('pageerror', (e) => errors.push(String(e)));
@@ -62,6 +62,44 @@ async function openBook(browser, data, vp, standalone) {
 	await p.waitForSelector('.twd-sb-slide.is-active');
 	await wait(800); // the book fades in over 0.4s
 	return { ctx, p, errors };
+}
+
+// A deck with every kind of writing the book has on its card, then the bio page.
+const RICH = (extra) => DECK(Object.assign({ companionUrl: 'https://example.test/summary/', companionPostId: 7, companionBookVariant: 'summary', companionLabel: 'Read the Summary Book', slides: [
+	{ type: 'text', heading: 'A made-up article heading', html: '<p>Body text sentence one about breathing slowly and noticing the room.</p><h3>A sub heading</h3><p>More body text.</p><blockquote><p>A quoted line of text.</p></blockquote>' },
+	{ type: 'bio', heading: 'Jane Smith', photo: '', bio: 'A made-up bio for this test only.', link_url: 'https://example.test/book-a-session', link_label: 'Book a Session' },
+] }, extra || {}));
+
+// What the writing REALLY sits on: the book is photographed with the writing made transparent and the colour
+// behind it is read from the picture (the frame is a gradient and the card is a layer over it, so adding up the
+// elements' own background colours does not give the real answer). Returns the pieces that read too weakly.
+const FRAME_WRITING = [['.twd-sb-counter', 4.5, 'page numbers'], ['.twd-sb-next', 3, 'the arrow'], ['.twd-sb-prev', 3, 'the back arrow'], ['.twd-sb-share-btn', 4.5, 'Share'], ['.twd-sb-save-btn', 4.5, 'Save as image'], ['.twd-sb-read-link', 4.5, 'Read the full article']];
+const CARD_WRITING = [['.twd-sb-slide.is-active .twd-sb-heading', 4.5, 'heading'], ['.twd-sb-slide.is-active .twd-sb-body-text > p', 4.5, 'body text'], ['.twd-sb-slide.is-active .twd-sb-body-text h3', 4.5, 'sub heading'], ['.twd-sb-slide.is-active blockquote p', 4.5, 'quote'], ['.twd-sb-slide.is-active .twd-sb-title', 4.5, 'Swipe Book label'], ['.twd-sb-slide.is-active .twd-sb-sitename', 4.5, 'site name']];
+const BIO_WRITING = [['.twd-sb-slide.is-active .twd-sb-bio-link', 4.5, 'Book a Session']];
+async function weakWriting(p, targets) {
+	const info = await p.evaluate((list) => list.map((l) => { const e = document.querySelector(l[0]); if (!e) { return null; } const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, color: getComputedStyle(e).color }; }), targets);
+	await p.addStyleTag({ content: targets.map((l) => l[0] + ',' + l[0] + ':hover').join(',') + ' { color: transparent !important; text-shadow: none !important; transition: none !important; }' });
+	await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+	const points = [];
+	info.forEach((i) => { if (!i) { points.push([0, 0], [0, 0], [0, 0]); return; } [0.3, 0.5, 0.7].forEach((f) => points.push([i.x + i.w * f, i.y + i.h / 2])); });
+	const b64 = (await p.screenshot({ type: 'png' })).toString('base64');
+	const px = await p.evaluate(async ({ b64, points }) => {
+		const img = new Image(); img.src = 'data:image/png;base64,' + b64; await new Promise((res) => { img.onload = res; });
+		const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+		return points.map((q) => { const d = g.getImageData(Math.round(q[0]), Math.round(q[1]), 1, 1).data; return [d[0], d[1], d[2]]; });
+	}, { b64, points });
+	await p.evaluate(() => { const st = document.querySelectorAll('style'); st[st.length - 1].remove(); });
+	const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+	const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+	const parse = (c) => { const q = c.match(/rgba?\(([^)]+)\)/)[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return [q[0], q[1], q[2], q.length > 3 ? q[3] : 1]; };
+	const low = [];
+	targets.forEach((l, k) => {
+		const i = info[k]; if (!i) { low.push(l[2] + ' missing'); return; }
+		const f = parse(i.color);
+		const worst = Math.min(...px.slice(k * 3, k * 3 + 3).map((bg) => ratio([0, 1, 2].map((n) => f[n] * f[3] + bg[n] * (1 - f[3])), bg)));
+		if (worst < l[1]) { low.push(l[2] + ' ' + worst.toFixed(2)); }
+	});
+	return low;
 }
 
 // The colour of the writing on an element against what is behind it: every translucent layer from `base` up.
@@ -199,6 +237,42 @@ const hexToRgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16
 		await ctx.close();
 	}
 
+	// a pen that leaves the pages before it is lifted ends the swipe (no stale "dragging" state), and a touch the
+	// browser cancels is no swipe at all (a cancelled touch reports no real position)
+	{
+		const { ctx, p } = await openBook(browser, DECK({ theme: 'light' }), { width: 900, height: 800 }, false, true);
+		const cdp = await ctx.newCDPSession(p);
+		const slide = await p.locator('.twd-sb-slide.is-active').boundingBox();
+		const ctl = await p.locator('.twd-sb-counter').boundingBox();
+		const pen = (type, x, y) => cdp.send('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: type === 'mouseMoved' ? 0 : 1, pointerType: 'pen' });
+		await pen('mousePressed', slide.x + slide.width / 2, slide.y + slide.height - 30);
+		await pen('mouseMoved', slide.x + slide.width / 2, slide.y + slide.height + 10);
+		await pen('mouseMoved', ctl.x + ctl.width / 2, ctl.y + ctl.height / 2);
+		await pen('mouseReleased', ctl.x + ctl.width / 2, ctl.y + ctl.height / 2);
+		await wait(300);
+		t('a pen drag that leaves the pages and is lifted elsewhere does not leave the book in the dragging state', !(await p.evaluate(() => document.querySelector('.twd-sb-backdrop').classList.contains('is-dragging'))));
+		const before = await p.evaluate(() => document.querySelector('.twd-sb-counter').textContent.trim());
+		const sx = slide.x + slide.width / 2, sy = slide.y + slide.height / 2;
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: sx + 120, y: sy }] });
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: sx + 100, y: sy + 4 }] });
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+		await wait(300);
+		t('a touch the browser cancels after a small movement is no swipe: the page does not turn', (await p.evaluate(() => document.querySelector('.twd-sb-counter').textContent.trim())) === before && !(await p.evaluate(() => document.querySelector('.twd-sb-backdrop').classList.contains('is-dragging'))), before);
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: sx + 120, y: sy }] });
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: sx + 60, y: sy + 2 }] });
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: sx - 40, y: sy + 4 }] });
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+		await wait(500);
+		t('a touch swipe to the left turns the page (the browser may cancel it part way; the last position seen is used, not the 0, 0 a cancel reports)', /^2 \/ 3$/.test(await p.evaluate(() => document.querySelector('.twd-sb-counter').textContent.trim())), await p.evaluate(() => document.querySelector('.twd-sb-counter').textContent.trim()));
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: sx - 120, y: sy }] });
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: sx - 60, y: sy + 2 }] });
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: sx + 60, y: sy + 4 }] });
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+		await wait(500);
+		t('a touch swipe to the right turns back a page (not forward)', /^1 \/ 3$/.test(await p.evaluate(() => document.querySelector('.twd-sb-counter').textContent.trim())), await p.evaluate(() => document.querySelector('.twd-sb-counter').textContent.trim()));
+		await ctx.close();
+	}
+
 	// ---------- arrows, page numbers, the Read the full article pill ----------
 	for (const theme of ['light', 'dark']) {
 		const { ctx, p } = await openBook(browser, DECK({ theme }), { width: 900, height: 800 });
@@ -222,22 +296,27 @@ const hexToRgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16
 	const keys = Object.keys(COMBOS);
 	for (const key of keys) {
 		const c = COMBOS[key];
-		const { ctx, p, errors } = await openBook(browser, DECK({ theme: c.theme, style: c.style }), { width: 900, height: 800 });
+		const { ctx, p, errors } = await openBook(browser, RICH({ theme: c.theme, style: c.style }), { width: 900, height: 800 });
 		const label = key + ': ';
 		const bgImage = await p.evaluate(() => getComputedStyle(document.querySelector('.twd-sb-frame')).backgroundImage);
 		if (c.frame) {
 			const rgb = hexToRgb(c.frame).slice(0, 3).join(', ');
 			t(label + 'the frame uses the chosen colour', bgImage.indexOf('rgb(' + rgb + ')') !== -1, bgImage.slice(0, 160));
-			const base = hexToRgb(c.frame);
-			const low = [];
-			for (const [sel, min] of [['.twd-sb-counter', 4.5], ['.twd-sb-share-btn', 4.5], ['.twd-sb-save-btn', 4.5], ['.twd-sb-read-link', 4.5], ['.twd-sb-next', 3]]) {
-				const rr = await p.evaluate(`(${RATIO})({ sel: ${JSON.stringify(sel)}, base: ${JSON.stringify(base)} })`);
-				if (rr === null || rr < min) { low.push(sel + ' ' + (rr === null ? 'missing' : rr.toFixed(2))); }
-			}
-			t(label + 'everything on the frame (page numbers, Share, Save as image, Read the full article, the arrow) reads on it', low.length === 0, low.join('; '));
 		} else {
 			t(label + 'no frame colour: the frame is the book\'s own', bgImage.indexOf('linear-gradient') !== -1);
 		}
+		const lowFrame = await weakWriting(p, FRAME_WRITING);
+		t(label + 'on the frame (page numbers, arrows, Share, Save as image, Read the full article) every piece of writing reads on what is really behind it', lowFrame.length === 0, lowFrame.join('; '));
+		await p.hover('.twd-sb-companion-link'); await wait(250);
+		const lowComp = await weakWriting(p, [['.twd-sb-companion-link', 4.5, 'the other book link, pointed at']]);
+		await p.mouse.move(5, 5); await wait(250);
+		t(label + 'the link to the other book reads on the frame, also when it is pointed at', lowComp.length === 0, lowComp.join('; '));
+		const lowCard = await weakWriting(p, CARD_WRITING);
+		t(label + 'on the card (heading, text, sub heading, quote, label, site name) every piece of writing reads on what is really behind it', lowCard.length === 0, lowCard.join('; '));
+		await p.keyboard.press('ArrowRight'); await wait(700);
+		const lowBio = await weakWriting(p, BIO_WRITING);
+		t(label + 'the bio page button reads on what is really behind it', lowBio.length === 0, lowBio.join('; '));
+		await p.keyboard.press('ArrowLeft'); await wait(500);
 		if (c.accent) {
 			const fill = await p.evaluate(() => { const e = document.querySelector('.twd-sb-pdf-btn'); const s = getComputedStyle(e); return { bg: s.backgroundColor, color: s.color }; });
 			t(label + 'the Download as PDF button is the chosen accent', fill.bg === 'rgb(' + hexToRgb(c.accent).slice(0, 3).join(', ') + ')', JSON.stringify(fill));

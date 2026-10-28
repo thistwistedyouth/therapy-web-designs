@@ -53,7 +53,7 @@ class TWD_AP_Shortcode {
 	 */
 	private static function tools_html( $with_new ) {
 		$gear = '<button type="button" class="twd-ap-articles-settings-btn twd-ap-articles-tool" aria-label="' . esc_attr__( 'Customise this grid', 'twd-article-publisher' ) . '" data-tip="' . esc_attr__( 'Customise this grid', 'twd-article-publisher' ) . '">' .
-			'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" /></svg></button>';
+			'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path class="twd-ap-icon-fill" fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" /></svg></button>';
 		$new  = '';
 		if ( $with_new && TWD_AP_Frontend::new_article_allowed() ) {
 			self::$new_circle_rendered = true;
@@ -63,7 +63,7 @@ class TWD_AP_Shortcode {
 	}
 
 	/** A plus and a pen: the New article icon, used by the grid's circle and the floating button. */
-	const NEW_ARTICLE_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4.5 3v6M1.5 6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /><g transform="translate(6.2 6.2) scale(.74)"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></g></svg>';
+	const NEW_ARTICLE_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path class="twd-ap-icon-line" d="M4.5 3v6M1.5 6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /><g transform="translate(6.2 6.2) scale(.74)"><path class="twd-ap-icon-fill" fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></g></svg>';
 
 	private function __construct() {
 		add_shortcode( 'twd_articles', array( $this, 'render' ) );
@@ -448,14 +448,14 @@ class TWD_AP_Shortcode {
 
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-frame"><?php esc_html_e( 'Frame colour', 'twd-article-publisher' ); ?></label>
 							<div class="twd-ap-gs-colour-row">
-								<input type="color" id="twd-ap-gs-sb-frame" class="twd-ap-gs-color-input" data-default="#f6eedb" />
-								<span id="twd-ap-gs-sb-frame-note" class="twd-ap-muted"><?php esc_html_e( 'The book\'s own colour', 'twd-article-publisher' ); ?></span>
+								<input type="color" id="twd-ap-gs-sb-frame" class="twd-ap-gs-color-input" data-default-light="#f6eedb" data-default-dark="#100e20" />
+								<span id="twd-ap-gs-sb-frame-note" class="twd-ap-muted" data-empty="<?php echo esc_attr__( 'The book\'s own colour', 'twd-article-publisher' ); ?>"><?php esc_html_e( 'The book\'s own colour', 'twd-article-publisher' ); ?></span>
 								<button type="button" id="twd-ap-gs-sb-frame-reset" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Use the book\'s own', 'twd-article-publisher' ); ?></button>
 							</div>
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-accent"><?php esc_html_e( 'Accent colour', 'twd-article-publisher' ); ?></label>
 							<div class="twd-ap-gs-colour-row">
-								<input type="color" id="twd-ap-gs-sb-accent" class="twd-ap-gs-color-input" data-default="#8a5a00" />
-								<span id="twd-ap-gs-sb-accent-note" class="twd-ap-muted"><?php esc_html_e( 'The book\'s own colour', 'twd-article-publisher' ); ?></span>
+								<input type="color" id="twd-ap-gs-sb-accent" class="twd-ap-gs-color-input" data-default-light="#8a5a00" data-default-dark="#ffd166" />
+								<span id="twd-ap-gs-sb-accent-note" class="twd-ap-muted" data-empty="<?php echo esc_attr__( 'The book\'s own colour', 'twd-article-publisher' ); ?>"><?php esc_html_e( 'The book\'s own colour', 'twd-article-publisher' ); ?></span>
 								<button type="button" id="twd-ap-gs-sb-accent-reset" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Use the book\'s own', 'twd-article-publisher' ); ?></button>
 							</div>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'The frame is the colour around the pages. The accent is the colour of the buttons, headings and links. They work with both the Light and the Dark book. The writing always stays easy to read: if a colour is too pale or too dark for its job, it is adjusted a little.', 'twd-article-publisher' ); ?></p>

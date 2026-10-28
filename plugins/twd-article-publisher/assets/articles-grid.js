@@ -584,14 +584,22 @@
 			var reset = overlay.querySelector('#twd-ap-gs-sb-' + name + '-reset');
 			var c = { input: input, value: '', set: function (v) {
 				c.value = /^#[0-9a-f]{6}$/i.test(v || '') ? v.toLowerCase() : '';
-				input.value = c.value || input.getAttribute('data-default');
-				if (note) { note.textContent = c.value ? c.value : "The book's own colour"; }
+				// With no colour chosen the swatch shows the colour the chosen book has by itself.
+				var dark = sbThemeSelect && 'light' !== sbThemeSelect.value;
+				input.value = c.value || input.getAttribute(dark ? 'data-default-dark' : 'data-default-light');
+				if (note) { note.textContent = c.value ? c.value : (note.getAttribute('data-empty') || ''); }
 				if (reset) { reset.hidden = !c.value; }
 			} };
 			input.addEventListener('input', function () { c.set(input.value); });
 			if (reset) { reset.addEventListener('click', function () { c.set(''); }); }
 			sbColours[name] = c;
 		});
+		// Choosing the other book moves the swatches of the colours not chosen to that book's own.
+		if (sbThemeSelect) {
+			sbThemeSelect.addEventListener('change', function () {
+				Object.keys(sbColours).forEach(function (name) { sbColours[name].set(sbColours[name].value); });
+			});
+		}
 		var sbExportBrandingBox = overlay.querySelector('#twd-ap-gs-sb-export-branding');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var topicsBox  = overlay.querySelector('#twd-ap-gs-topics');

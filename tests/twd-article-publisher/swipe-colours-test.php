@@ -52,49 +52,104 @@ t( 'clean_hex: three digits expand, case folds, junk is empty', '#ffcc00' === C(
 // ---------- a pastel green frame in the light book ----------
 $s = C()::style( 'light', '#cfe6d2', '' );
 $v = vars( $s );
-t( 'frame only: the frame gradient, the shadow, the veil, the saved picture and the controls are set, the accent is not', isset( $v['--twd-sb-frame-bg'], $v['--twd-sb-frame-shadow'], $v['--twd-sb-veil'], $v['--twd-sb-export-bg'], $v['--twd-sb-ctl'] ) && ! isset( $v['--twd-sb-gold'] ) && ! isset( $v['--twd-sb-primary'] ), $s );
+t( 'frame only: the frame gradient, the shadow, the veil, the solid card, the saved picture and the controls are set, the button colour is not', isset( $v['--twd-sb-frame-bg'], $v['--twd-sb-frame-shadow'], $v['--twd-sb-veil'], $v['--twd-sb-export-bg'], $v['--twd-sb-ctl'], $v['--twd-sb-card-bg'] ) && ! isset( $v['--twd-sb-primary'] ), $s );
 t( 'frame only: the frame gradient uses the chosen colour', false !== strpos( $v['--twd-sb-frame-bg'], '#cfe6d2' ), $v['--twd-sb-frame-bg'] );
 t( 'frame only: the saved picture stays the card\'s own colour (a light book, so a light colour), only a little tinted', C()::luminance( $v['--twd-sb-export-bg'] ) > 0.85, $v['--twd-sb-export-bg'] );
-t( 'frame only: the controls on the frame read on it (4.5:1)', C()::contrast( $v['--twd-sb-ctl'], '#cfe6d2' ) >= 4.5, $v['--twd-sb-ctl'] );
+t( 'frame only: the controls on the frame read on it (4.5:1)', C()::min_contrast( $v['--twd-sb-ctl'], array( '#cfe6d2' ) ) >= 4.5, $v['--twd-sb-ctl'] );
+t( 'frame only: the card is solid and the saved picture is that same colour', 1 === preg_match( '/^#[0-9a-f]{6}$/', $v['--twd-sb-card-bg'] ) && $v['--twd-sb-card-bg'] === $v['--twd-sb-export-bg'], $v['--twd-sb-card-bg'] . ' ' . $v['--twd-sb-export-bg'] );
 t( 'frame only: the output has only numbers, colours and fixed words', 1 === preg_match( '/^[-a-z0-9:;#%.,() ]*$/', $s ), $s );
 
 // ---------- accent ----------
 $s = C()::style( 'light', '', '#5fa36a' );
 $v = vars( $s );
-t( 'accent only: headings and links read on the card (4.5:1) though the pick was pale, buttons use the pick as chosen', C()::contrast( $v['--twd-sb-gold'], C()::CARD_LIGHT ) >= 4.5 && '#5fa36a' === $v['--twd-sb-primary'], $s );
+t( 'accent only: headings and links read on the card (4.5:1) though the pick was pale, buttons use the pick as chosen', C()::contrast( $v['--twd-sb-gold'], $v['--twd-sb-card-bg'] ) >= 4.5 && '#5fa36a' === $v['--twd-sb-primary'], $s );
 t( 'accent only: the filled button writing is white or dark, whichever reads better, at 4.5:1 or more', C()::contrast( $v['--twd-sb-primary-ink'], '#5fa36a' ) >= 4.5, $v['--twd-sb-primary-ink'] );
 t( 'accent only: the frame is not touched, the controls follow the accent', ! isset( $v['--twd-sb-frame-bg'] ) && isset( $v['--twd-sb-ctl'] ), $s );
 $s = C()::style( 'dark', '', '#2d6a4f' );
 $v = vars( $s );
-t( 'a dark accent in the dark book is lightened until it reads on the dark card', C()::contrast( $v['--twd-sb-gold'], C()::CARD_DARK ) >= 4.5, $v['--twd-sb-gold'] );
+t( 'a dark accent in the dark book is lightened until it reads on the dark card', C()::contrast( $v['--twd-sb-gold'], $v['--twd-sb-card-bg'] ) >= 4.5, $v['--twd-sb-gold'] );
 
-// ---------- 3000 random colours, both books: nothing can be made unreadable ----------
+// ---------- what the writing is painted on, read back from the printed variables ----------
+// The frame is a gradient with a glow at the top: the controls have to read on every colour of it, not just its middle.
+function own_stops( $theme ) { return 'light' === $theme ? array( C()::mix( '#fffdf8', '#d69e2e', 0.18 ), '#fffdf8', '#f8f1e3', '#efe5d1' ) : array( C()::mix( '#1b1836', '#ffd166', 0.06 ), '#1b1836', '#100e20', '#0a0912' ); }
+function frame_stops( $v, $theme ) {
+	if ( ! isset( $v['--twd-sb-frame-bg'] ) ) { return own_stops( $theme ); }
+	if ( ! preg_match( '/rgba\(255, 255, 255, ([0-9.]+)\) 0%.*linear-gradient\(180deg, (#[0-9a-f]{6}) 0%, (#[0-9a-f]{6}) 58%, (#[0-9a-f]{6}) 100%\)/', $v['--twd-sb-frame-bg'], $m ) ) { return array(); }
+	return array( C()::mix( $m[2], '#ffffff', (float) $m[1] ), $m[2], $m[3], $m[4] );
+}
+function over_card( $css, $card ) { return preg_match( '/^rgba\((\d+), (\d+), (\d+), ([0-9.]+)\)$/', $css, $m ) ? C()::mix( $card, sprintf( '#%02x%02x%02x', $m[1], $m[2], $m[3] ), (float) $m[4] ) : $css; }
+/** Every contrast the book promises, for one printed style: a list of the ones that fail. */
+function failures( $theme, $style, $label ) {
+	$bad = array();
+	$v   = vars( $style );
+	$light = 'light' === $theme;
+	$stops = frame_stops( $v, $theme );
+	$card  = $v['--twd-sb-card-bg'] ?? '';
+	if ( ! $stops || 1 !== preg_match( '/^#[0-9a-f]{6}$/', $card ) ) { return array( "$label stops or card unreadable" ); }
+	$gold = $v['--twd-sb-gold'];
+	// on the card: headings and links, on their own pale tint, and the softer variants
+	if ( C()::contrast( $gold, $card ) < 4.5 ) { $bad[] = "$label gold on card"; }
+	foreach ( array( '--twd-sb-chip', '--twd-sb-chip-hover', '--twd-sb-chip-soft', '--twd-sb-btn-rest', '--twd-sb-btn-hover' ) as $k ) { if ( C()::contrast( $gold, over_card( $v[ $k ], $card ) ) < 4.5 && '--twd-sb-btn-hover' !== $k ) { $bad[] = "$label gold on $k"; } }
+	if ( C()::contrast( $gold, over_card( $v['--twd-sb-btn-hover'], $card ) ) < 3 ) { $bad[] = "$label gold on btn-hover"; }
+	if ( C()::contrast( over_card( $v['--twd-sb-gold-soft'], $card ), $card ) < 4.5 ) { $bad[] = "$label gold-soft on card"; }
+	// the book's writing on the card (the book's own colours unless they would not read)
+	$cream = $v['--twd-sb-cream'] ?? ( $light ? '#2b2540' : 'rgba(255, 248, 236, 0.92)' );
+	$muted = $v['--twd-sb-cream-muted'] ?? ( $light ? 'rgba(43, 37, 64, 0.68)' : 'rgba(255, 248, 236, 0.62)' );
+	if ( C()::contrast( over_card( $cream, $card ), $card ) < 4.5 ) { $bad[] = "$label cream on card"; }
+	if ( C()::contrast( over_card( $muted, $card ), $card ) < 4.5 ) { $bad[] = "$label cream-muted on card"; }
+	// the filled button
+	if ( isset( $v['--twd-sb-primary'] ) ) {
+		if ( C()::contrast( $v['--twd-sb-primary-ink'], $v['--twd-sb-primary'] ) < 4.5 ) { $bad[] = "$label primary ink"; }
+		if ( C()::contrast( $v['--twd-sb-primary-ink'], $v['--twd-sb-primary-hover'] ) < 4.0 ) { $bad[] = "$label primary ink on hover"; }
+	}
+	// the saved picture carries the book's own writing
+	if ( isset( $v['--twd-sb-export-bg'] ) ) {
+		if ( $v['--twd-sb-export-bg'] !== $card ) { $bad[] = "$label export is not the card"; }
+		if ( C()::contrast( $light ? '#2b2540' : '#fff8ec', $v['--twd-sb-export-bg'] ) < 7 ) { $bad[] = "$label export"; }
+	}
+	// on the frame: against EVERY colour of it
+	$ctl = $v['--twd-sb-ctl']; $ink = $v['--twd-sb-read']; $ink_h = $v['--twd-sb-read-hover'];
+	foreach ( $stops as $n => $stop ) {
+		if ( C()::contrast( $ctl, $stop ) < 4.5 ) { $bad[] = "$label ctl on frame stop $n"; }
+		if ( C()::contrast( $ink, $stop ) < 4.5 ) { $bad[] = "$label read ink on frame stop $n"; }
+		if ( C()::contrast( $ink_h, $stop ) < 4.5 ) { $bad[] = "$label read hover on frame stop $n"; }
+		// Share, Save, the Read link: small writing on the pale tint of the control colour
+		foreach ( array( '--twd-sb-ctl-chip', '--twd-sb-ctl-chip-hover' ) as $k ) {
+			$bg = over_card( $v[ $k ], $stop );
+			if ( C()::contrast( $ctl, $bg ) < 4.5 ) { $bad[] = "$label ctl on $k at stop $n"; }
+			if ( C()::contrast( $ink, $bg ) < 4.5 ) { $bad[] = "$label read ink on $k at stop $n"; }
+		}
+		// the 20px arrows
+		foreach ( array( '--twd-sb-ctl-rest', '--twd-sb-ctl-hover' ) as $k ) { if ( C()::contrast( $ctl, over_card( $v[ $k ], $stop ) ) < 3 ) { $bad[] = "$label arrow on $k at stop $n"; } }
+	}
+	if ( 1 !== preg_match( '/^[-a-z0-9:;#%.,() ]*$/', $style ) ) { $bad[] = "$label characters"; }
+	return $bad;
+}
+
+// ---------- 3000 random colours and every three-digit colour, both books: nothing can be made unreadable ----------
 mt_srand( 149 );
 $bad = array();
+$n   = 0;
 for ( $i = 0; $i < 3000; $i++ ) {
 	$f = sprintf( '#%02x%02x%02x', mt_rand( 0, 255 ), mt_rand( 0, 255 ), mt_rand( 0, 255 ) );
 	$a = sprintf( '#%02x%02x%02x', mt_rand( 0, 255 ), mt_rand( 0, 255 ), mt_rand( 0, 255 ) );
 	foreach ( array( 'light', 'dark' ) as $theme ) {
-		$card = 'light' === $theme ? C()::CARD_LIGHT : C()::CARD_DARK;
-		$v    = vars( C()::style( $theme, $f, $a ) );
-		if ( C()::contrast( $v['--twd-sb-gold'], $card ) < 4.5 ) { $bad[] = "$theme gold $f $a " . $v['--twd-sb-gold']; }
-		if ( C()::contrast( rgba_hex( $v['--twd-sb-gold-soft'] ), $card ) < 4.4 ) { $bad[] = "$theme gold-soft $f $a"; }
-		if ( C()::contrast( $v['--twd-sb-ctl'], $f ) < 4.5 ) { $bad[] = "$theme ctl $f $a " . $v['--twd-sb-ctl']; }
-		if ( C()::contrast( $v['--twd-sb-primary-ink'], $v['--twd-sb-primary'] ) < 4.5 ) { $bad[] = "$theme ink $a"; }
-		if ( C()::contrast( $v['--twd-sb-primary-ink'], $v['--twd-sb-primary-hover'] ) < 4.0 ) { $bad[] = "$theme ink-hover $a " . $v['--twd-sb-primary-hover']; }
-		// the saved picture's colour must carry the book's own writing: the light book's dark ink, the dark book's cream
-		$ink = 'light' === $theme ? '#2b2540' : '#fff8ec';
-		if ( C()::contrast( $ink, $v['--twd-sb-export-bg'] ) < 7 ) { $bad[] = "$theme export $f " . $v['--twd-sb-export-bg']; }
-		// the writing on its own tint: small writing (Share, Save, Read the full article) 4.5:1, the 20px arrows 3:1
-		foreach ( array( '--twd-sb-ctl-chip', '--twd-sb-ctl-chip-hover' ) as $k ) { if ( C()::contrast( $v['--twd-sb-ctl'], tint_bg( $f, $v[ $k ] ) ) < 4.5 ) { $bad[] = "$theme $k $f $a"; } }
-		foreach ( array( '--twd-sb-ctl-rest', '--twd-sb-ctl-hover' ) as $k ) { if ( C()::contrast( $v['--twd-sb-ctl'], tint_bg( $f, $v[ $k ] ) ) < 3 ) { $bad[] = "$theme $k $f $a"; } }
-		// read-link writing on the frame
-		if ( C()::contrast( rgba_hex( $v['--twd-sb-read'] ), $f ) < 4.5 ) { $bad[] = "$theme read $f"; }
-		if ( C()::contrast( rgba_hex( $v['--twd-sb-read-hover'] ), $f ) < 4.5 ) { $bad[] = "$theme read-hover $f"; }
-		if ( 1 !== preg_match( '/^[-a-z0-9:;#%.,() ]*$/', C()::style( $theme, $f, $a ) ) ) { $bad[] = 'chars'; }
+		foreach ( array( array( $f, $a ), array( $f, '' ), array( '', $a ) ) as $pair ) { $n++; $bad = array_merge( $bad, failures( $theme, C()::style( $theme, $pair[0], $pair[1] ), "$theme frame={$pair[0]} accent={$pair[1]}" ) ); }
 	}
 }
-t( '3000 random frame and accent colours, both books: headings, controls, buttons, the read link and the saved picture always read', 0 === count( $bad ), implode( ' | ', array_slice( $bad, 0, 5 ) ) . ' (' . count( $bad ) . ')' );
+t( "3000 random frame and accent colours (frame and accent, frame only, accent only), both books, $n styles: every piece of writing reads on what is really behind it", 0 === count( $bad ), implode( ' | ', array_slice( $bad, 0, 5 ) ) . ' (' . count( $bad ) . ' failures)' );
+$bad = array();
+$n   = 0;
+for ( $r = 0; $r < 16; $r++ ) { for ( $g = 0; $g < 16; $g++ ) { for ( $b = 0; $b < 16; $b++ ) {
+	$f = sprintf( '#%x%x%x', $r, $g, $b );
+	foreach ( array( 'light', 'dark' ) as $theme ) { $n++; $bad = array_merge( $bad, failures( $theme, C()::style( $theme, $f, '' ), "$theme frame=$f" ) ); }
+} } }
+t( "every three-digit frame colour with no accent, both books, $n styles: every piece of writing reads on what is really behind it", 0 === count( $bad ), implode( ' | ', array_slice( $bad, 0, 5 ) ) . ' (' . count( $bad ) . ' failures)' );
+$bad = array();
+foreach ( array( '#000', '#fff', '#777', '#888', '#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff', '#ffd166', '#8a5a00' ) as $f ) { foreach ( array( '#000', '#fff', '#777', '#f00', '#0f0', '#00f', '#ff0', '#ffd166', '#8a5a00', '#5fa36a' ) as $a ) { foreach ( array( 'light', 'dark' ) as $theme ) { $bad = array_merge( $bad, failures( $theme, C()::style( $theme, $f, $a ), "$theme frame=$f accent=$a" ) ); } } }
+t( 'extreme and mid-tone pairs (black, white, grey, pure colours), both books: every piece of writing reads', 0 === count( $bad ), implode( ' | ', array_slice( $bad, 0, 5 ) ) . ' (' . count( $bad ) . ' failures)' );
+t( 'a mid-grey frame is flat (no gradient that no writing could read on)', 1 === preg_match( '/linear-gradient\(180deg, (#[0-9a-f]{6}) 0%, \1 58%, \1 100%\)/', vars( C()::style( 'dark', '#777777', '' ) )['--twd-sb-frame-bg'] ) );
+t( 'a plain frame keeps its gradient', 1 === preg_match( '/linear-gradient\(180deg, (#[0-9a-f]{6}) 0%, (#[0-9a-f]{6}) 58%, (#[0-9a-f]{6}) 100%\)/', vars( C()::style( 'light', '#cfe6d2', '' ) )['--twd-sb-frame-bg'], $mm ) && $mm[1] !== $mm[3] );
 
 // ---------- the settings ----------
 $d = TWD_AP_Grid_Settings::get();

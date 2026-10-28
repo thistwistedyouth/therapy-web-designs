@@ -29,8 +29,13 @@
   align-items: center !important;
   justify-content: center !important;
   gap: 6px !important;
+  box-sizing: border-box !important;
   width: 54px !important;
   height: 54px !important;
+  min-width: 54px !important;
+  min-height: 54px !important;
+  max-width: 54px !important;
+  max-height: 54px !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
@@ -54,6 +59,17 @@
   display: block !important;
   pointer-events: none !important;
 }
+/* A theme's own svg rules (fill, stroke, stroke width) must not undo the drawn icon. */
+.twd-ap-float-btn svg path.twd-ap-icon-fill {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+.twd-ap-float-btn svg path.twd-ap-icon-line {
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+}
 /* The label is a tooltip, to the left of the round button: "New article" on hover or keyboard focus. */
 .twd-ap-float-btn::after {
   content: attr(data-tip) !important;
@@ -73,7 +89,9 @@
   pointer-events: none !important;
   transition: opacity 0.15s ease !important;
 }
-.twd-ap-float-btn:hover::after,
+.twd-ap-float-btn:hover::after {
+  opacity: 1 !important;
+}
 .twd-ap-float-btn:focus-visible::after {
   opacity: 1 !important;
 }

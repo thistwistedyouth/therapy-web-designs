@@ -47,8 +47,13 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  box-sizing: border-box !important;
   width: 40px !important;
   height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
@@ -63,7 +68,23 @@
   display: block !important;
   pointer-events: none !important;
 }
-.twd-ap-articles-tool:hover,
+/* A theme's own svg rules (fill, stroke, stroke width) must not undo the drawn icons. */
+.twd-ap-articles-tool svg path.twd-ap-icon-fill {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+.twd-ap-articles-tool svg path.twd-ap-icon-line {
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+}
+/* hover and keyboard focus are two rules: a browser that does not know :focus-visible drops a whole grouped rule */
+.twd-ap-articles-tool:hover {
+  filter: brightness(0.9) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24) !important;
+}
 .twd-ap-articles-tool:focus-visible {
   filter: brightness(0.9) !important;
   transform: translateY(-1px) !important;
@@ -92,9 +113,17 @@
   transition: opacity 0.15s ease !important;
   z-index: 5 !important;
 }
-.twd-ap-articles-tool:hover::after,
+.twd-ap-articles-tool:hover::after {
+  opacity: 1 !important;
+}
 .twd-ap-articles-tool:focus-visible::after {
   opacity: 1 !important;
+}
+/* Right-to-left pages: the circles sit at the right edge, so the name opens toward the left. */
+html[dir="rtl"] .twd-ap-articles-tool::after,
+body.rtl .twd-ap-articles-tool::after {
+  left: auto !important;
+  right: calc(100% + 10px) !important;
 }
 
 .twd-ap-articles-groups {
@@ -342,7 +371,7 @@
   .twd-ap-articles-topics a {
     background: color-mix(in srgb, var(--twd-ap-accent-color, #2563eb) 10%, #fff) !important;
     border-color: color-mix(in srgb, var(--twd-ap-accent-color, #2563eb) 45%, #fff) !important;
-    color: color-mix(in srgb, var(--twd-ap-accent-color, #2563eb) 78%, #000) !important;
+    color: color-mix(in srgb, var(--twd-ap-accent-color, #2563eb) 45%, #000) !important;
   }
   .twd-ap-articles-topics a:hover {
     background: color-mix(in srgb, var(--twd-ap-accent-color, #2563eb) 20%, #fff) !important;

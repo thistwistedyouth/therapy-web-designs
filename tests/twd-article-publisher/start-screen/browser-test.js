@@ -709,6 +709,10 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 		await new Promise((r) => setTimeout(r, 350));
 		const tip = await pg.locator('#twd-ap-new-btn').evaluate((e) => { const c = getComputedStyle(e, '::after'); return { o: c.opacity, content: c.content, right: parseFloat(c.right) }; });
 		t('U: hovering it says New article, to its left', u.tipBefore === '0' && tip.o === '1' && tip.content === '"New article"' && tip.right > 0, JSON.stringify(tip));
+		// a theme that restyles every svg path and every button
+		await pg.addStyleTag({ content: 'svg path { fill: currentColor !important; stroke: none !important; stroke-width: 0 !important; } button { min-height: 70px !important; min-width: 120px !important; max-width: none !important; padding: 14px !important; }' });
+		const hos = await pg.locator('#twd-ap-new-btn').evaluate((e) => { const b = e.getBoundingClientRect(); const line = e.querySelector('path.twd-ap-icon-line'); return { w: Math.round(b.width), h: Math.round(b.height), stroke: getComputedStyle(line).stroke, sw: getComputedStyle(line).strokeWidth }; });
+		t('U: under such a theme the floating button stays a 54px circle and its plus is still drawn', hos.w === 54 && hos.h === 54 && hos.stroke !== 'none' && hos.sw === '2px', JSON.stringify(hos));
 		await pg.click('#twd-ap-new-btn');
 		t('U: clicking it opens the popup on the start screen', await vis(pg, '#twd-ap-start'));
 		await sx.ctx.close();

@@ -151,7 +151,7 @@ async function open(browser, name, o) {
 		await wait(700);
 		const opts = await page.$$eval('.twd-ap-articles-category-select option', (o) => o.map((x) => x.textContent));
 		t('filter: "Select a category" first, then the categories in order, then All at the bottom, no Show all', JSON.stringify(opts) === JSON.stringify(['Select a category', 'Anxiety', 'Sleep', 'All']), JSON.stringify(opts));
-		t('filter: All is selected to start with', (await page.locator('.twd-ap-articles-category-select').inputValue()) === '');
+		t('filter: "Select a category" (the default view) is selected to start with', (await page.locator('.twd-ap-articles-category-select').inputValue()) === '');
 		await page.selectOption('.twd-ap-articles-category-select', 'sleep');
 		await wait(500);
 		t('filter: choosing a category asks for just that category', requests.some((u) => /category=sleep/.test(u)));
@@ -655,10 +655,31 @@ async function open(browser, name, o) {
 		await r.page.click('#twd-ap-gs-related-details > summary');
 		t('swipe book colours: dark to start with, offering dark and light', (await r.page.inputValue('#twd-ap-gs-sb-theme')) === 'dark' && (await r.page.locator('#twd-ap-gs-sb-theme option').evaluateAll((o) => o.map((x) => x.value))).join(',') === 'dark,light');
 		t('swipe book colours: the label says Colours and the light option says dark writing', (await r.page.locator('label[for="twd-ap-gs-sb-theme"]').innerText()).trim() === 'Colours' && (await r.page.locator('#twd-ap-gs-sb-theme option[value="light"]').innerText()).includes('dark writing'));
+		// the frame and accent colour pickers (1.49.0)
+		const swatch = (n) => r.page.evaluate((id) => ({ v: document.querySelector('#twd-ap-gs-sb-' + id).value, note: document.querySelector('#twd-ap-gs-sb-' + id + '-note').textContent, resetHidden: document.querySelector('#twd-ap-gs-sb-' + id + '-reset').hidden }), n);
+		const pick = (n, hex) => r.page.evaluate(({ id, hex }) => { const i = document.querySelector('#twd-ap-gs-sb-' + id); i.value = hex; i.dispatchEvent(new Event('input', { bubbles: true })); }, { id: n, hex });
+		let fr = await swatch('frame'), ac = await swatch('accent');
+		t('swipe book colours: with the dark book and no colour chosen the swatches show the dark book\'s own colours, the note says so and there is nothing to reset', fr.v === '#100e20' && ac.v === '#ffd166' && /own colour/.test(fr.note) && /own colour/.test(ac.note) && fr.resetHidden && ac.resetHidden, JSON.stringify([fr, ac]));
 		await r.page.selectOption('#twd-ap-gs-sb-theme', 'light');
+		fr = await swatch('frame'); ac = await swatch('accent');
+		t('swipe book colours: choosing the light book moves the swatches that are not chosen to the light book\'s own colours', fr.v === '#f6eedb' && ac.v === '#8a5a00', JSON.stringify([fr, ac]));
+		await pick('frame', '#cfe6d2');
+		fr = await swatch('frame');
+		t('swipe book colours: a chosen colour shows its code and offers a reset', fr.v === '#cfe6d2' && fr.note === '#cfe6d2' && !fr.resetHidden, JSON.stringify(fr));
+		await r.page.selectOption('#twd-ap-gs-sb-theme', 'dark');
+		t('swipe book colours: a chosen colour stays when the other book is chosen', (await swatch('frame')).v === '#cfe6d2');
+		await r.page.selectOption('#twd-ap-gs-sb-theme', 'light');
+		await pick('accent', '#5FA36A');
 		await r.page.click('#twd-ap-gs-save');
 		await wait(300);
 		const body = saved[saved.length - 1];
+		t('swipe book colours: saving sends both colours in lower case', body.swipebook_frame_color === '#cfe6d2' && body.swipebook_accent_color === '#5fa36a', JSON.stringify([body.swipebook_frame_color, body.swipebook_accent_color]));
+		await r.page.click('#twd-ap-gs-sb-frame-reset');
+		fr = await swatch('frame');
+		t('swipe book colours: Reset puts the book\'s own colour back and hides itself', fr.v === '#f6eedb' && /own colour/.test(fr.note) && fr.resetHidden, JSON.stringify(fr));
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		t('swipe book colours: a reset colour is sent as empty (it clears the saved one)', saved[saved.length - 1].swipebook_frame_color === '' && saved[saved.length - 1].swipebook_accent_color === '#5fa36a', JSON.stringify(saved[saved.length - 1]));
 		t('swipe book colours: saving sends the choice', body.swipebook_theme === 'light', JSON.stringify(body.swipebook_theme));
 		t('swipe book colours: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
 		await r.ctx.close();
@@ -670,6 +691,16 @@ async function open(browser, name, o) {
 			await q.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
 			await q.page.click('#twd-ap-gs-related-details > summary');
 			t('swipe book colours: a saved ' + JSON.stringify(stored) + ' loads back as ' + shown, (await q.page.inputValue('#twd-ap-gs-sb-theme')) === shown);
+			await q.ctx.close();
+		}
+		window_cta = { swipebook_frame_color: '#cfe6d2', swipebook_accent_color: '#5fa36a', swipebook_theme: 'light' };
+		{
+			const q = await open(browser, 'admin', { delay: 50 });
+			await q.page.click('.twd-ap-articles-settings-btn');
+			await q.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+			await q.page.click('#twd-ap-gs-related-details > summary');
+			const v = await q.page.evaluate(() => ({ f: document.querySelector('#twd-ap-gs-sb-frame').value, a: document.querySelector('#twd-ap-gs-sb-accent').value }));
+			t('swipe book colours: saved colours load back into the pickers', v.f === '#cfe6d2' && v.a === '#5fa36a', JSON.stringify(v));
 			await q.ctx.close();
 		}
 		window_cta = {};
@@ -766,6 +797,16 @@ async function open(browser, name, o) {
 			t('toolbar: ' + text + ' is named on hover (and for screen readers)', before === '0' && after.o === '1' && after.c === '"' + text + '"' && after.label === text && Math.abs(after.left - (after.w + 10)) <= 1, JSON.stringify([before, after]));
 			await r.page.mouse.move(5, 5); await wait(200);
 		}
+		// a theme's own svg and button rules do not undo the drawn icons or stretch the circles
+		await r.page.addStyleTag({ content: 'svg path { fill: currentColor !important; stroke: none !important; stroke-width: 0 !important; } button { min-height: 48px !important; min-width: 90px !important; max-width: none !important; padding: 14px !important; }' });
+		const hostile = await r.page.evaluate(() => ['.twd-ap-articles-settings-btn', '.twd-ap-articles-new-btn'].map((q) => { const e = document.querySelector(q); const b = e.getBoundingClientRect(); const line = e.querySelector('path.twd-ap-icon-line'); return { q, w: Math.round(b.width), h: Math.round(b.height), stroke: line ? getComputedStyle(line).stroke : null, sw: line ? getComputedStyle(line).strokeWidth : null, fill: getComputedStyle(e.querySelector('path.twd-ap-icon-fill')).fill }; }));
+		t('toolbar: under a theme that restyles every svg path and every button, the circles stay 40px circles and the plus is still drawn', hostile.every((h) => h.w === 40 && h.h === 40 && h.fill !== 'none') && hostile[1].stroke !== 'none' && hostile[1].sw === '2px', JSON.stringify(hostile));
+		await r.page.evaluate(() => { const st = document.querySelectorAll('style'); st[st.length - 1].remove(); });
+		// right-to-left: the name opens toward the left of the circle
+		await r.page.evaluate(() => { document.documentElement.setAttribute('dir', 'rtl'); });
+		const rtlTip = await r.page.locator('.twd-ap-articles-new-btn').evaluate((e) => { const c = getComputedStyle(e, '::after'); return { left: c.left, right: c.right, w: e.getBoundingClientRect().width }; });
+		await r.page.evaluate(() => { document.documentElement.removeAttribute('dir'); });
+		t('toolbar: on a right-to-left page the name opens toward the left of the circle, not off the edge of the screen', parseFloat(rtlTip.left) < 0 && Math.abs(parseFloat(rtlTip.right) - (rtlTip.w + 10)) <= 1, JSON.stringify(rtlTip));
 		await r.page.evaluate(() => { window.__newOpened = 0; window.TWD_AP_OpenNew = () => { window.__newOpened++; }; });
 		await r.page.click('.twd-ap-articles-new-btn');
 		t('toolbar: the New article circle starts a new article', (await r.page.evaluate(() => window.__newOpened)) === 1);
@@ -798,6 +839,15 @@ async function open(browser, name, o) {
 		const pills = await tp.page.evaluate(() => { const a = document.querySelector('.twd-ap-articles-topics li:not(.twd-ap-topics-all):not(.twd-ap-topics-current) a'); const c = getComputedStyle(a); const cur = document.querySelector('.twd-ap-topics-current span'); const all = document.querySelector('.twd-ap-topics-all a'); const gs = (e) => { const s = getComputedStyle(e); return { bg: s.backgroundColor, color: s.color, radius: s.borderTopLeftRadius, border: s.borderTopWidth + ' ' + s.borderTopColor, deco: s.textDecorationLine, h: e.getBoundingClientRect().height }; }; return { link: gs(a), cur: cur ? gs(cur) : null, all: gs(all) }; });
 		t('Browse by topic: each topic is a rounded pill with a soft tint and a border, no underline, the same height as the others', pills.link.radius === '999px' && pills.link.deco === 'none' && pills.link.bg !== 'rgb(255, 255, 255)' && pills.link.bg !== 'rgba(0, 0, 0, 0)' && Math.abs(pills.link.h - pills.all.h) <= 1, JSON.stringify(pills));
 		t('Browse by topic: All articles is an outlined grey pill with no fill', pills.all.radius === '999px' && pills.all.bg === 'rgba(0, 0, 0, 0)' && /rgb\(209, 213, 219\)/.test(pills.all.border), JSON.stringify(pills.all));
+		// whatever the link colour, the writing in a topic pill reads on its tint (4.5:1)
+		await tp.page.evaluate(() => { const st = document.createElement('style'); st.textContent = '.twd-ap-articles-topics a { transition: none !important; }'; document.head.appendChild(st); });
+		const pillRead = await tp.page.evaluate(() => {
+			const toRgb = (css) => { const c = document.createElement('canvas'); c.width = 1; c.height = 1; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 1, 1); g.fillStyle = css; g.fillRect(0, 0, 1, 1); const d = g.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2]]; };
+			const L = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+			const nav = document.querySelector('.twd-ap-articles-topics'); const a = nav.querySelector('li:not(.twd-ap-topics-all):not(.twd-ap-topics-current) a');
+			return ['#a8d5ba', '#ffff00', '#ffffff', '#2563eb', '#cc0000', '#00ffff', '#ffd166', '#000000'].map((hex) => { nav.style.setProperty('--twd-ap-accent-color', hex); const cs = getComputedStyle(a); const fg = toRgb(cs.color), bg = toRgb(cs.backgroundColor); const x = L(fg), y = L(bg); return { hex, ratio: Math.round((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05) * 100) / 100 }; });
+		});
+		t('Browse by topic: whatever the link colour (pastel, yellow, white, deep blue, black), the writing in a topic pill reads on its tint at 4.5:1', pillRead.every((r) => r.ratio >= 4.5), JSON.stringify(pillRead));
 		if (pills.cur) { t('Browse by topic: the topic you are on is the filled pill in the link colour', pills.cur.bg === 'rgb(37, 99, 235)' && pills.cur.color === 'rgb(255, 255, 255)', JSON.stringify(pills.cur)); }
 		await tp.ctx.close();
 	}

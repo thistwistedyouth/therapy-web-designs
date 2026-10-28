@@ -14,6 +14,9 @@ $combos = array(
 	'accent'  => array( '', '#5fa36a' ),
 	'mid'     => array( '#8a9dc0', '#b05e6f' ),
 	'yellow'  => array( '#ffe27a', '#ffd166' ),
+	'grey'    => array( '#777777', '' ),
+	'redacc'  => array( '', '#ff0044' ),
+	'bluegrey' => array( '#4a6fa5', '#a8e6b4' ),
 );
 $out = array();
 foreach ( $combos as $key => $c ) {

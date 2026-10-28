@@ -682,7 +682,7 @@ body {
   margin-top: 4px !important;
 }
 .twd-sb-companion-link:hover {
-  color: var(--twd-sb-gold-soft) !important;
+  color: var(--twd-sb-ctl, var(--twd-sb-gold-soft)) !important;
 }
 
 /* "More Articles" closing slide -- a compact, no-thumbnail list (unlike

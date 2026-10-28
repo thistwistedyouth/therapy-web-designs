@@ -638,11 +638,13 @@
 		var dragActive = false;
 		var dragIsHorizontal = null;
 		var DRAG_THRESHOLD = 50;
+		var dragLastX = 0;
 
 		slidesWrap.addEventListener('pointerdown', function (e) {
 			if (e.pointerType === 'mouse' && e.button !== 0) { return; }
 			dragStartX = e.clientX;
 			dragStartY = e.clientY;
+			dragLastX = e.clientX;
 			dragActive = true;
 			dragIsHorizontal = null;
 			backdrop.classList.add('is-dragging');
@@ -652,7 +654,9 @@
 		});
 
 		slidesWrap.addEventListener('pointermove', function (e) {
-			if (!dragActive || null !== dragIsHorizontal) { return; }
+			if (!dragActive) { return; }
+			dragLastX = e.clientX;
+			if (null !== dragIsHorizontal) { return; }
 			var dx = e.clientX - dragStartX;
 			var dy = e.clientY - dragStartY;
 			if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
@@ -666,16 +670,20 @@
 			if (!dragActive) { return; }
 			dragActive = false;
 			backdrop.classList.remove('is-dragging');
-
-			var dx = e.clientX - dragStartX;
+			// A cancelled gesture (the browser took it over) reports no real position (0, 0 in Chrome), so the last
+			// position seen is used: a cancel part way through a long horizontal swipe still turns the page, a cancel
+			// after a small movement does not.
+			var dx = ( 'pointercancel' === e.type ? dragLastX : e.clientX ) - dragStartX;
 			if (!dragIsHorizontal || Math.abs(dx) < DRAG_THRESHOLD) { return; }
 			if (dx < 0) { goTo(index + 1); } else { goTo(index - 1); }
 		}
 
 		slidesWrap.addEventListener('pointerup', endDrag);
 		slidesWrap.addEventListener('pointercancel', endDrag);
+		// A mouse or a pen that leaves the pages before it is let go (it has no capture until the swipe is under way):
+		// the swipe ends where it left. (A finger keeps its pointer to the page it touched.)
 		slidesWrap.addEventListener('pointerleave', function (e) {
-			if (dragActive && e.pointerType === 'mouse') { endDrag(e); }
+			if (dragActive && e.pointerType !== 'touch') { endDrag(e); }
 		});
 
 		function flashShareLabel() {
