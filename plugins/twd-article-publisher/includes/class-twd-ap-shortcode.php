@@ -330,13 +330,34 @@ class TWD_AP_Shortcode {
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'The grid is wider than the article text, centred, with each box showing the article\'s picture, title and date. Choose 3 or 6 links below for full rows. It uses the card picture shape and the "Show thumbnails" choice from this grid.', 'twd-article-publisher' ); ?></p>
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-related-count"><?php esc_html_e( 'How many links', 'twd-article-publisher' ); ?></label>
 							<input type="number" id="twd-ap-gs-related-count" class="twd-ap-input" min="1" max="8" />
-							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-related-topics" /> <?php esc_html_e( 'Also show the "Browse by topic" links under it (the categories you chose above, and All articles)', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-topics-place"><?php esc_html_e( 'Where the "Browse by topic" row goes at the end of an article', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-topics-place" class="twd-ap-input">
+								<option value="with_related"><?php esc_html_e( 'Under the related articles above (the original)', 'twd-article-publisher' ); ?></option>
+								<option value="auto"><?php esc_html_e( 'Automatically at the end of every article, on its own', 'twd-article-publisher' ); ?></option>
+								<option value="shortcode"><?php esc_html_e( 'Only where I place the shortcode [twd_topics]', 'twd-article-publisher' ); ?></option>
+								<option value="off"><?php esc_html_e( 'Nowhere', 'twd-article-publisher' ); ?></option>
+							</select>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'The row lists the categories you chose above, and All articles. The shortcode [twd_topics] puts just this row anywhere, for example in your own single article template; it works on any page. Choose "Automatically" to show it even when the related articles are switched off.', 'twd-article-publisher' ); ?></p>
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-topics-align"><?php esc_html_e( 'Browse by topic row', 'twd-article-publisher' ); ?></label>
 							<select id="twd-ap-gs-topics-align" class="twd-ap-input">
 								<option value="left"><?php esc_html_e( 'Left aligned', 'twd-article-publisher' ); ?></option>
 								<option value="center"><?php esc_html_e( 'Centred', 'twd-article-publisher' ); ?></option>
 							</select>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Applies wherever the Browse by topic row shows: the grid, category pages and the end of articles.', 'twd-article-publisher' ); ?></p>
+						</details>
+
+						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-page-details">
+							<summary><?php esc_html_e( 'Article page', 'twd-article-publisher' ); ?></summary>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'For a site with no page-builder template for single articles. If your own template already shows one of these, leave it off.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label"><input type="checkbox" id="twd-ap-gs-feature-image" /> <?php esc_html_e( 'Show the featured image under the title', 'twd-article-publisher' ); ?></label>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'It sits in the article column and takes the card picture shape chosen above (wide, 4:3 or square), with the picture\'s own alt text. It is not shown twice if the article already starts with the same picture.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-hide-tags" /> <?php esc_html_e( 'Hide the theme\'s "Tagged ..." line under articles', 'twd-article-publisher' ); ?></label>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Takes the list of tag links some themes print after an article out of the page. The tags themselves are kept and tag pages still work.', 'twd-article-publisher' ); ?></p>
+							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-back-show" /> <?php esc_html_e( 'Add a "Back to all articles" link at the end of an article', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-back-url"><?php esc_html_e( 'Where the Back link goes', 'twd-article-publisher' ); ?></label>
+							<input type="text" id="twd-ap-gs-back-url" class="twd-ap-input" maxlength="300" placeholder="/writing#more-writing" />
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'A page on this site starting with a slash, such as /writing, optionally ending in #section, or a full web address. Leave it empty to go to your Article index page (or the home page if there is none). With the link on, it and the swipe book button at the end are centred, with space below.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Shortcodes for your own single article template: [twd_swipebook_button] (the swipe book buttons), [twd_related count="4"] (more in this category) and [twd_topics] (the Browse by topic row).', 'twd-article-publisher' ); ?></p>
 						</details>
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-cta-details">

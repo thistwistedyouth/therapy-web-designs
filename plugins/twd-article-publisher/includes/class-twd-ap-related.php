@@ -17,6 +17,8 @@ class TWD_AP_Related {
 	private static $appended = false;
 	/** True once a [twd_related] shortcode has printed the block on this page. */
 	private static $placed = false;
+	/** True once a [twd_topics] shortcode has printed the Browse by topic row for the article shown. */
+	private static $topics_placed = false;
 
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -30,6 +32,23 @@ class TWD_AP_Related {
 		// article's narrow column, and before the call to action (25).
 		add_filter( 'the_content', array( $this, 'append_to_article' ), 22 );
 		add_shortcode( 'twd_related', array( $this, 'shortcode' ) );
+		add_shortcode( 'twd_topics', array( $this, 'shortcode_topics' ) );
+	}
+
+	/**
+	 * Where the Browse by topic row goes at the end of an article (1.50.0):
+	 * 'with_related' (under the related list, wherever that goes: the original),
+	 * 'auto' (at the end of every article on its own), 'shortcode' (only where
+	 * [twd_topics] is placed) or 'off'. The older "also show it" tick still switches
+	 * it off, so a site saved before 1.50.0 behaves as it did.
+	 */
+	public static function topics_place() {
+		$s = TWD_AP_Grid_Settings::get();
+		if ( empty( $s['related_topics'] ) ) {
+			return 'off';
+		}
+		$p = isset( $s['topics_place'] ) ? $s['topics_place'] : 'with_related';
+		return in_array( $p, TWD_AP_Grid_Settings::TOPICS_PLACES, true ) ? $p : 'with_related';
 	}
 
 	/** 'auto' (the default), 'shortcode' or 'off': where the block goes (Customise this grid > Related articles). */
@@ -74,11 +93,64 @@ class TWD_AP_Related {
 		return $box;
 	}
 
+	/**
+	 * [twd_topics]: just the Browse by topic row (the categories chosen in Customise
+	 * this grid, and All articles), wherever it is placed. For an article it is that
+	 * article's own category that is shown but not linked; id="123" names another.
+	 * It prints nothing when the owner has chosen "Nowhere". When the owner has left
+	 * it on automatic and the shortcode for THIS article sits in the article's own
+	 * text, the automatic copy steps aside; in a template that prints after the
+	 * text, choose "Only where I place the shortcode".
+	 */
+	public function shortcode_topics( $atts ) {
+		if ( 'off' === self::topics_place() ) {
+			return '';
+		}
+		$atts = shortcode_atts( array( 'id' => 0 ), (array) $atts, 'twd_topics' );
+		$id   = absint( $atts['id'] );
+		if ( ! $id ) {
+			$id = (int) get_the_ID();
+		}
+		if ( ! $id ) {
+			return '';
+		}
+		$box = self::html( $id, 0, 'topics' );
+		if ( '' !== $box ) {
+			if ( $id === (int) get_queried_object_id() ) {
+				self::$topics_placed = true;
+			}
+			TWD_AP_Article_Style::enqueue();
+		}
+		return $box;
+	}
+
+	/**
+	 * The automatic end of an article. The related list and the Browse by topic row
+	 * each have their own place: the list is on 'auto' (or not), and the row is
+	 * either part of the same block (the original), automatic on its own, or left to
+	 * the shortcode. Whatever the owner already placed with a shortcode is not
+	 * printed twice.
+	 */
 	public function append_to_article( $content ) {
-		if ( self::$appended || self::$placed || 'auto' !== self::place() || is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
+		if ( self::$appended || is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
 			return $content;
 		}
-		$box = self::html( (int) get_the_ID() );
+		$topics  = self::topics_place();
+		$list_on = ! self::$placed && 'auto' === self::place();
+		$with    = $list_on && 'with_related' === $topics && ! self::$topics_placed;
+		$nav_on  = 'auto' === $topics && ! self::$topics_placed;
+		if ( $with ) {
+			$only = '';
+		} elseif ( $list_on && $nav_on ) {
+			$only = 'both';
+		} elseif ( $list_on ) {
+			$only = 'list';
+		} elseif ( $nav_on ) {
+			$only = 'topics';
+		} else {
+			return $content;
+		}
+		$box = self::html( (int) get_the_ID(), 0, $only );
 		if ( '' === $box ) {
 			return $content;
 		}
@@ -128,15 +200,20 @@ class TWD_AP_Related {
 	 * and the quiet All articles link, this article's own category shown but
 	 * not linked). Either part can be switched off; '' when neither shows.
 	 */
-	public static function html( $post_id, $count = 0 ) {
+	public static function html( $post_id, $count = 0, $only = '' ) {
 		$s     = TWD_AP_Grid_Settings::get();
 		$topic = self::topic_for( $post_id );
 		$list  = '';
-		if ( ! empty( $s['related_show'] ) && $topic ) {
+		// $only (1.50.0): '' is the original block (the list, and the row when the owner
+		// has it "with the related articles"), 'list' the list alone, 'topics' the row
+		// alone (unless "Nowhere"), 'both' the list and the row.
+		$want_list = '' === $only || 'list' === $only || 'both' === $only;
+		if ( $want_list && ! empty( $s['related_show'] ) && $topic ) {
 			$list = self::list_html( $post_id, $topic, $count ? max( 1, min( 8, (int) $count ) ) : max( 1, min( 8, (int) $s['related_count'] ) ), 'grid' === $s['related_layout'], ! empty( $s['show_thumbnails'] ) );
 		}
 		$nav = '';
-		if ( ! empty( $s['related_topics'] ) ) {
+		$want_nav = ( '' === $only ) ? ( 'with_related' === self::topics_place() ) : ( ( 'topics' === $only || 'both' === $only ) && 'off' !== self::topics_place() );
+		if ( $want_nav ) {
 			$nav = TWD_AP_Cards::topics_html( TWD_AP_Index::index_url(), $topic ? (int) $topic->term_id : 0 );
 		}
 		if ( '' === $list && '' === $nav ) {

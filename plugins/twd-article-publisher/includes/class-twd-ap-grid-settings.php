@@ -57,6 +57,20 @@ class TWD_AP_Grid_Settings {
 			// Also close every article with the Browse by topic links under the
 			// related list.
 			'related_topics'     => true,
+			// 1.50.0: where the Browse by topic row goes at the end of an article:
+			// 'with_related' (under the related list, wherever that goes, the original),
+			// 'auto' (at the end of every article on its own), 'shortcode' (only where
+			// [twd_topics] is placed) or 'off'.
+			'topics_place'       => 'with_related',
+			// 1.50.0: the article page on a plain theme with no page-builder template. All
+			// off, so a site that never touches them is unchanged: the featured image under
+			// the title (in the card image shape), the theme's own "Tagged ..." line hidden,
+			// and a Back link beside the end-of-article button (to back_link_url, or the
+			// article index page when that is empty).
+			'featured_image_show' => false,
+			'hide_theme_tags'    => false,
+			'back_link_show'     => false,
+			'back_link_url'      => '',
 			'cta_heading'        => '',
 			'cta_text'           => '',
 			'cta_button_label'   => '',
@@ -126,6 +140,9 @@ class TWD_AP_Grid_Settings {
 	/** Where the related block goes (1.46.0). */
 	const RELATED_PLACES = array( 'auto', 'shortcode', 'off' );
 
+	/** Where the Browse by topic row goes at the end of an article (1.50.0). */
+	const TOPICS_PLACES = array( 'with_related', 'auto', 'shortcode', 'off' );
+
 	/** The colours of the swipe book (1.47.0). */
 	const SWIPEBOOK_THEMES = array( 'dark', 'light' );
 
@@ -150,6 +167,27 @@ class TWD_AP_Grid_Settings {
 			return 'twd-ap-thumbs-square';
 		}
 		return '';
+	}
+
+	/**
+	 * The Back link's address (1.50.0): '' (the plugin picks one), a path on this
+	 * site that starts with a single slash and may end in a #section ("/writing#more",
+	 * which also survives a move from a test site to the live one), or a full http or
+	 * https address. Anything else, including a bare word, a script address, spaces or
+	 * quotes, becomes '' rather than a link that goes somewhere unexpected.
+	 */
+	public static function clean_back_url( $raw ) {
+		$raw = trim( (string) $raw );
+		if ( '' === $raw || strlen( $raw ) > 300 || preg_match( '/[\x00-\x20\x7f"\'<>\\\\]/', $raw ) ) {
+			return '';
+		}
+		if ( preg_match( '#^/(?!/)#', $raw ) ) {
+			return $raw;
+		}
+		if ( ! preg_match( '#^https?://#i', $raw ) ) {
+			return '';
+		}
+		return (string) esc_url_raw( $raw, array( 'http', 'https' ) );
 	}
 
 	public static function sanitize( $input ) {
@@ -194,6 +232,11 @@ class TWD_AP_Grid_Settings {
 			'swipebook_button_position' => $current['swipebook_button_position'],
 			'swipebook_top_shortcode' => $current['swipebook_top_shortcode'],
 			'related_topics'     => $current['related_topics'],
+			'topics_place'       => $current['topics_place'],
+			'featured_image_show' => $current['featured_image_show'],
+			'hide_theme_tags'    => $current['hide_theme_tags'],
+			'back_link_show'     => $current['back_link_show'],
+			'back_link_url'      => $current['back_link_url'],
 			'swipebook_heading'  => $current['swipebook_heading'],
 			'swipebook_label'    => $current['swipebook_label'],
 			'swipebook_logo_id'  => $current['swipebook_logo_id'],
@@ -266,6 +309,17 @@ class TWD_AP_Grid_Settings {
 		}
 		if ( isset( $input['related_topics'] ) ) {
 			$output['related_topics'] = (bool) $input['related_topics'];
+		}
+		if ( isset( $input['topics_place'] ) && in_array( $input['topics_place'], self::TOPICS_PLACES, true ) ) {
+			$output['topics_place'] = $input['topics_place'];
+		}
+		foreach ( array( 'featured_image_show', 'hide_theme_tags', 'back_link_show' ) as $key ) {
+			if ( isset( $input[ $key ] ) ) {
+				$output[ $key ] = (bool) $input[ $key ];
+			}
+		}
+		if ( isset( $input['back_link_url'] ) ) {
+			$output['back_link_url'] = self::clean_back_url( $input['back_link_url'] );
 		}
 		if ( isset( $input['related_show'] ) ) {
 			$output['related_show'] = (bool) $input['related_show'];

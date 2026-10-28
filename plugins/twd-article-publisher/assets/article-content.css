@@ -209,7 +209,8 @@
    button shipped with `!important` alone and still rendered as a bare
    theme link on a live site, so the selector itself needs the extra
    weight too. */
-a.twd-ap-swipebook-btn.twd-ap-swipebook-btn {
+a.twd-ap-swipebook-btn.twd-ap-swipebook-btn,
+a.twd-ap-back-btn.twd-ap-back-btn {
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
@@ -231,7 +232,18 @@ a.twd-ap-swipebook-btn.twd-ap-swipebook-btn {
 .twd-ap-swipebook-row.twd-ap-swipebook-row-end {
   text-align: right !important;
 }
-a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover {
+/* 1.50.0: with the Back link switched on, the end of the article is one centred
+   row (Share as a swipe book, Back to all articles) with space under it. */
+.twd-ap-swipebook-row.twd-ap-swipebook-row-end.twd-ap-end-centred {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 10px 12px !important;
+  text-align: center !important;
+  margin: 2em 0 3em !important;
+}
+a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover,
+a.twd-ap-back-btn.twd-ap-back-btn:hover {
   background: var(--twd-ap-swipebook-bg-hover, rgba(91, 138, 114, 0.16)) !important;
   text-decoration: none !important;
   transform: translateY(-1px) !important;
@@ -262,4 +274,43 @@ a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover {
 }
 .twd-ap-swipebook-top .twd-ap-swipebook-row {
   margin: 0 !important;
+}
+
+/* 1.50.0: the featured image under the title, inside the article's column, in the
+   card image shape the site chose (wide, 4:3 or square). Off until the owner ticks
+   "Show the featured image" in Customise this grid > Article page. */
+.twd-ap-article-content figure.twd-ap-featured-figure {
+  margin: 0 0 1.4em !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  border-radius: 6px !important;
+  line-height: 0 !important;
+}
+.twd-ap-article-content figure.twd-ap-featured-figure img.twd-ap-featured-img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  object-fit: cover !important;
+}
+@supports (aspect-ratio: 1 / 1) {
+  .twd-ap-article-content .twd-ap-featured-wide img.twd-ap-featured-img {
+    aspect-ratio: 21 / 9 !important;
+  }
+  .twd-ap-article-content .twd-ap-featured-4-3 img.twd-ap-featured-img {
+    aspect-ratio: 4 / 3 !important;
+  }
+  .twd-ap-article-content .twd-ap-featured-square img.twd-ap-featured-img {
+    aspect-ratio: 1 / 1 !important;
+  }
+}
+
+/* 1.50.0: with "Hide the theme's Tagged line" ticked, the plugin takes the tag list
+   out of the page; this also hides the box a theme leaves behind, empty. */
+body.twd-ap-no-theme-tags .post-tags {
+  display: none !important;
 }

@@ -602,16 +602,16 @@ async function open(browser, name, o) {
 		await r.page.click('.twd-ap-articles-settings-btn');
 		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
 		await r.page.click('#twd-ap-gs-related-details > summary');
-		t('related setting: on to start with, showing 4, with the topic links under it', (await r.page.isChecked('#twd-ap-gs-related-show')) && (await r.page.inputValue('#twd-ap-gs-related-count')) === '4' && (await r.page.isChecked('#twd-ap-gs-related-topics')));
+		t('related setting: on to start with, showing 4, with the topic links under it', (await r.page.isChecked('#twd-ap-gs-related-show')) && (await r.page.inputValue('#twd-ap-gs-related-count')) === '4' && (await r.page.inputValue('#twd-ap-gs-topics-place')) === 'with_related');
 		t('swipe button setting: starts as under the title and at the end', (await r.page.inputValue('#twd-ap-gs-sb-position')) === 'both');
 		await r.page.selectOption('#twd-ap-gs-sb-position', 'top');
-		await r.page.uncheck('#twd-ap-gs-related-topics');
+		await r.page.selectOption('#twd-ap-gs-topics-place', 'off');
 		await r.page.fill('#twd-ap-gs-related-count', '6');
 		await r.page.uncheck('#twd-ap-gs-related-show');
 		await r.page.click('#twd-ap-gs-save');
 		await wait(300);
 		const body = saved[saved.length - 1];
-		t('related setting: saving sends the tick, the count, the topic links tick and the button position', body.related_show === false && body.related_count === 6 && body.related_topics === false && body.swipebook_button_position === 'top', JSON.stringify([body.related_show, body.related_count, body.related_topics, body.swipebook_button_position]));
+		t('related setting: saving sends the tick, the count, the topic links tick and the button position', body.related_show === false && body.related_count === 6 && body.related_topics === false && body.topics_place === 'off' && body.swipebook_button_position === 'top', JSON.stringify([body.related_show, body.related_count, body.related_topics, body.topics_place, body.swipebook_button_position]));
 		t('related setting: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
 		await r.ctx.close();
 	}
@@ -644,6 +644,48 @@ async function open(browser, name, o) {
 		await q.page.click('#twd-ap-gs-look-details > summary');
 		t('shortcode settings: saved values load back into the boxes', (await q.page.inputValue('#twd-ap-gs-related-place')) === 'off' && (await q.page.isChecked('#twd-ap-gs-sb-top-shortcode')) && !(await q.page.isChecked('#twd-ap-gs-look-tidy')));
 		await q.ctx.close();
+		window_cta = {};
+	}
+
+	// 19b. The gear popup: where Browse by topic goes, and the Article page options (1.50.0).
+	{
+		const r = await open(browser, 'admin', { delay: 50 });
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.click('#twd-ap-gs-related-details > summary');
+		await r.page.click('#twd-ap-gs-page-details > summary');
+		t('article page: it starts with Browse by topic under the related articles, the picture, the tag hiding and the Back link all off, and no address', (await r.page.inputValue('#twd-ap-gs-topics-place')) === 'with_related' && !(await r.page.isChecked('#twd-ap-gs-feature-image')) && !(await r.page.isChecked('#twd-ap-gs-hide-tags')) && !(await r.page.isChecked('#twd-ap-gs-back-show')) && (await r.page.inputValue('#twd-ap-gs-back-url')) === '');
+		t('article page: Browse by topic offers with the related articles, automatic, shortcode and nowhere', (await r.page.locator('#twd-ap-gs-topics-place option').evaluateAll((o) => o.map((x) => x.value))).join(',') === 'with_related,auto,shortcode,off');
+		t('article page: [twd_topics] is named in the hint under Browse by topic and in its own choice', (await r.page.locator('#twd-ap-gs-topics-place').evaluate((e) => e.nextElementSibling.textContent)).includes('[twd_topics]') && (await r.page.locator('#twd-ap-gs-topics-place option[value="shortcode"]').innerText()).includes('[twd_topics]'));
+		const pageText = await r.page.locator('#twd-ap-gs-page-details').innerText();
+		t('article page: the section names all three shortcodes', pageText.includes('[twd_swipebook_button]') && pageText.includes('[twd_related count="4"]') && pageText.includes('[twd_topics]'));
+		await r.page.selectOption('#twd-ap-gs-topics-place', 'shortcode');
+		await r.page.check('#twd-ap-gs-feature-image');
+		await r.page.check('#twd-ap-gs-hide-tags');
+		await r.page.check('#twd-ap-gs-back-show');
+		await r.page.fill('#twd-ap-gs-back-url', '/writing#twd-sk-more-writing');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		const body = saved[saved.length - 1];
+		t('article page: saving sends the place, the three ticks and the address', body.topics_place === 'shortcode' && body.related_topics === true && body.featured_image_show === true && body.hide_theme_tags === true && body.back_link_show === true && body.back_link_url === '/writing#twd-sk-more-writing', JSON.stringify([body.topics_place, body.related_topics, body.featured_image_show, body.hide_theme_tags, body.back_link_show, body.back_link_url]));
+		t('article page: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+		// saved values load back in, and an older site saved with the topic links tick off shows "Nowhere"
+		window_cta = { topics_place: 'auto', featured_image_show: true, hide_theme_tags: true, back_link_show: true, back_link_url: '/writing' };
+		const q = await open(browser, 'admin', { delay: 50 });
+		await q.page.click('.twd-ap-articles-settings-btn');
+		await q.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await q.page.click('#twd-ap-gs-related-details > summary');
+		await q.page.click('#twd-ap-gs-page-details > summary');
+		t('article page: saved values load back into the boxes', (await q.page.inputValue('#twd-ap-gs-topics-place')) === 'auto' && (await q.page.isChecked('#twd-ap-gs-feature-image')) && (await q.page.isChecked('#twd-ap-gs-hide-tags')) && (await q.page.isChecked('#twd-ap-gs-back-show')) && (await q.page.inputValue('#twd-ap-gs-back-url')) === '/writing');
+		await q.ctx.close();
+		window_cta = { related_topics: false };
+		const o = await open(browser, 'admin', { delay: 50 });
+		await o.page.click('.twd-ap-articles-settings-btn');
+		await o.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await o.page.click('#twd-ap-gs-related-details > summary');
+		t('article page: a site saved before 1.50.0 with the topic links tick off shows Nowhere', (await o.page.inputValue('#twd-ap-gs-topics-place')) === 'off');
+		await o.ctx.close();
 		window_cta = {};
 	}
 

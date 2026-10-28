@@ -64,7 +64,7 @@ function wp_get_attachment_image_url( $id, $size ) { return 'https://example.tes
 function get_categories() { $out = array(); foreach ( $GLOBALS['terms'] as $t ) { foreach ( $GLOBALS['posts'] as $p ) { if ( 'publish' === $p->post_status && in_array( $t->term_id, $p->cats, true ) ) { $out[] = $t; break; } } } return $out; }
 class TWD_AP_Index { static function index_url() { return $GLOBALS['index_url']; } }
 $GLOBALS['index_url'] = '';
-class TWD_AP_Grid_Settings { const RELATED_PLACES = array( 'auto', 'shortcode', 'off' ); static $s = array( 'related_show' => true, 'related_count' => 4, 'related_place' => 'auto', 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb', 'related_layout' => 'list', 'thumb_shape' => 'wide', 'show_thumbnails' => true, 'topics_align' => 'left' ); static function get() { return self::$s; } static function thumb_shape_class( $shape ) { return '4-3' === $shape ? 'twd-ap-thumbs-4-3' : ( 'square' === $shape ? 'twd-ap-thumbs-square' : '' ); } }
+class TWD_AP_Grid_Settings { const RELATED_PLACES = array( 'auto', 'shortcode', 'off' ); const TOPICS_PLACES = array( 'with_related', 'auto', 'shortcode', 'off' ); static $s = array( 'related_show' => true, 'related_count' => 4, 'related_place' => 'auto', 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb', 'related_layout' => 'list', 'thumb_shape' => 'wide', 'show_thumbnails' => true, 'topics_align' => 'left' ); static function get() { return self::$s; } static function thumb_shape_class( $shape ) { return '4-3' === $shape ? 'twd-ap-thumbs-4-3' : ( 'square' === $shape ? 'twd-ap-thumbs-square' : '' ); } }
 require $plugin . 'includes/class-twd-ap-swipebook-colours.php';
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-related.php';
@@ -84,7 +84,7 @@ function reset_site() {
 }
 function add_post( $id, $title, $cats, $date, $status = 'publish', $thumb = 0 ) { $GLOBALS['posts'][ $id ] = (object) array( 'ID' => $id, 'slug' => 'post-' . $id, 'post_title' => $title, 'post_status' => $status, 'post_date' => $date, 'cats' => $cats, 'thumb' => $thumb ); }
 function links( $html ) { preg_match_all( '/<li><a href="([^"]+)">/', $html, $m ); return $m[1]; }
-function inst() { foreach ( array( 'appended', 'placed' ) as $flag ) { $p = new ReflectionProperty( 'TWD_AP_Related', $flag ); $p->setAccessible( true ); $p->setValue( null, false ); } return ( new ReflectionClass( 'TWD_AP_Related' ) )->newInstanceWithoutConstructor(); }
+function inst() { foreach ( array( 'appended', 'placed', 'topics_placed' ) as $flag ) { $p = new ReflectionProperty( 'TWD_AP_Related', $flag ); $p->setAccessible( true ); $p->setValue( null, false ); } return ( new ReflectionClass( 'TWD_AP_Related' ) )->newInstanceWithoutConstructor(); }
 
 // ---------- which topic an article belongs to ----------
 reset_site();
@@ -303,6 +303,105 @@ TWD_AP_Grid_Settings::$s['related_show'] = false;
 TWD_AP_Grid_Settings::$s['related_topics'] = true;
 $only = TWD_AP_Related::html( 1 );
 t( 'grid: with only the topics row showing the block is not marked wide', false !== strpos( $only, 'twd-ap-articles-topics' ) && false === strpos( $only, 'twd-ap-related-wide' ) && false === strpos( $only, 'twd-ap-related-card' ), $only );
+
+// ---------- 1.50.0: the Browse by topic row has its own place and its own shortcode [twd_topics] ----------
+function topics_site() {
+	reset_site();
+	add_post( 1, 'This article', array( 2 ), '2026-03-01' );
+	add_post( 2, 'A sibling', array( 2 ), '2026-03-02' );
+	add_post( 3, 'A sleep piece', array( 3 ), '2026-03-03' );
+	TWD_AP_Grid_Settings::$s['related_topics'] = true;
+}
+$tsc = function ( $atts = array() ) { return call_user_func( $GLOBALS['shortcodes']['twd_topics'], $atts ); };
+$has_list = function ( $h ) { return false !== strpos( $h, 'twd-ap-related-list' ); };
+$has_row  = function ( $h ) { return false !== strpos( $h, 'twd-ap-articles-topics' ); };
+topics_site();
+$i = inst();
+t( 'topics 1.50.0: the shortcode is registered', isset( $GLOBALS['shortcodes']['twd_topics'] ) );
+t( 'topics place: with nothing saved it is "with the related articles", the original', 'with_related' === TWD_AP_Related::topics_place() );
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics place with_related: one block, the list then the row, exactly as before', 1 === substr_count( $end, '<aside' ) && $has_list( $end ) && $has_row( $end ) );
+TWD_AP_Grid_Settings::$s['topics_place'] = 'sideways';
+t( 'topics place: an unknown value is "with the related articles"', 'with_related' === TWD_AP_Related::topics_place() );
+
+// with_related follows the related block wherever it goes
+TWD_AP_Grid_Settings::$s['topics_place'] = 'with_related';
+TWD_AP_Grid_Settings::$s['related_place'] = 'off';
+$i = inst();
+t( 'topics with_related, related nowhere: nothing is added at the end (the original behaviour)', '<p>t</p>' === $i->append_to_article( '<p>t</p>' ) );
+TWD_AP_Grid_Settings::$s['related_place'] = 'shortcode';
+$i = inst();
+t( 'topics with_related, related by shortcode: nothing automatic, and [twd_related] still prints the list and the row', '<p>t</p>' === $i->append_to_article( '<p>t</p>' ) && $has_list( call_user_func( $GLOBALS['shortcodes']['twd_related'], array() ) ) && $has_row( call_user_func( $GLOBALS['shortcodes']['twd_related'], array() ) ) );
+
+// automatic, on its own
+TWD_AP_Grid_Settings::$s['topics_place'] = 'auto';
+TWD_AP_Grid_Settings::$s['related_place'] = 'off';
+$i = inst();
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics auto, related nowhere: the row alone is added at the end, with no list', $has_row( $end ) && ! $has_list( $end ) && 1 === substr_count( $end, '<aside' ), $end );
+TWD_AP_Grid_Settings::$s['related_place'] = 'shortcode';
+$i = inst();
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics auto, related by shortcode: still the row alone at the end', $has_row( $end ) && ! $has_list( $end ) );
+TWD_AP_Grid_Settings::$s['related_place'] = 'auto';
+$i = inst();
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics auto, related automatic: one block with the list and the row', $has_list( $end ) && $has_row( $end ) && 1 === substr_count( $end, '<aside' ) && strpos( $end, 'twd-ap-related-list' ) < strpos( $end, 'twd-ap-articles-topics' ) );
+TWD_AP_Grid_Settings::$s['related_show'] = false;
+$i = inst();
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics auto, "More in" ticked off: the row alone', $has_row( $end ) && ! $has_list( $end ) );
+TWD_AP_Grid_Settings::$s['related_show'] = true;
+$i = inst();
+t( 'topics auto: [twd_related] prints the list only, no row', ! $has_row( call_user_func( $GLOBALS['shortcodes']['twd_related'], array() ) ) && $has_list( call_user_func( $GLOBALS['shortcodes']['twd_related'], array() ) ) );
+
+// shortcode only
+TWD_AP_Grid_Settings::$s['topics_place'] = 'shortcode';
+$i = inst();
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics shortcode: the automatic end has the list and no row', $has_list( $end ) && ! $has_row( $end ) );
+TWD_AP_Grid_Settings::$s['related_place'] = 'off';
+$i = inst();
+t( 'topics shortcode, related nowhere: nothing is added at the end', '<p>t</p>' === $i->append_to_article( '<p>t</p>' ) );
+$row = $tsc();
+t( 'topics shortcode: [twd_topics] prints the row alone, with this article\'s own topic shown but not linked', $has_row( $row ) && ! $has_list( $row ) && false !== strpos( $row, '<li class="twd-ap-topics-current"><span aria-current="page">Anxiety</span></li>' ) && false !== strpos( $row, '/category/sleep/' ), $row );
+t( 'topics shortcode: id="3" shows that article\'s own topic instead', false !== strpos( $tsc( array( 'id' => 3 ) ), '<li class="twd-ap-topics-current"><span aria-current="page">Sleep</span></li>' ) );
+t( 'topics shortcode: it makes the article stylesheet load', $GLOBALS['enqueued'] > 0 );
+
+// automatic copy steps aside for a shortcode in the article's own text
+TWD_AP_Grid_Settings::$s['topics_place'] = 'auto';
+TWD_AP_Grid_Settings::$s['related_place'] = 'auto';
+$i = inst();
+$tsc();
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics auto: a [twd_topics] already printed for this article means the end block has the list only (no second row)', $has_list( $end ) && ! $has_row( $end ) );
+TWD_AP_Grid_Settings::$s['topics_place'] = 'with_related';
+$i = inst();
+$tsc();
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics with_related: a [twd_topics] already printed means the list only, so the row is not printed twice', $has_list( $end ) && ! $has_row( $end ) );
+$i = inst();
+$tsc( array( 'id' => 3 ) );
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics: a [twd_topics] for a DIFFERENT article (id=3) does not stop this article\'s own row', $has_row( $end ) );
+
+// nowhere, and the old tick
+TWD_AP_Grid_Settings::$s['topics_place'] = 'off';
+$i = inst();
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics off: no row at the end and [twd_topics] prints nothing', ! $has_row( $end ) && '' === $tsc() );
+TWD_AP_Grid_Settings::$s['topics_place'] = 'auto';
+TWD_AP_Grid_Settings::$s['related_topics'] = false;
+$i = inst();
+$end = $i->append_to_article( '<p>t</p>' );
+t( 'topics: the older "also show" tick off wins over any place', 'off' === TWD_AP_Related::topics_place() && ! $has_row( $end ) && '' === $tsc() );
+TWD_AP_Grid_Settings::$s['related_topics'] = true;
+TWD_AP_Grid_Settings::$s['topics_place'] = 'auto';
+$GLOBALS['single'] = false;
+$i = inst();
+t( 'topics: nothing is added on a page that is not a single article', '<p>t</p>' === $i->append_to_article( '<p>t</p>' ) );
+$GLOBALS['single'] = true;
+TWD_AP_Grid_Settings::$s['topics_place'] = 'with_related';
 
 if ( getenv( 'TWD_RELATED_DUMP' ) ) {
 	reset_site();

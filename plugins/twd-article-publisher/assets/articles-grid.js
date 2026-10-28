@@ -607,7 +607,11 @@
 		var archiveTakeover = overlay.querySelector('#twd-ap-gs-archive-takeover');
 		var relatedShow = overlay.querySelector('#twd-ap-gs-related-show');
 		var relatedCount = overlay.querySelector('#twd-ap-gs-related-count');
-		var relatedTopics = overlay.querySelector('#twd-ap-gs-related-topics');
+		var topicsPlace = overlay.querySelector('#twd-ap-gs-topics-place');
+		var featuredShow = overlay.querySelector('#twd-ap-gs-feature-image');
+		var hideTags = overlay.querySelector('#twd-ap-gs-hide-tags');
+		var backShow = overlay.querySelector('#twd-ap-gs-back-show');
+		var backUrl = overlay.querySelector('#twd-ap-gs-back-url');
 		var sbPosition = overlay.querySelector('#twd-ap-gs-sb-position');
 		var sbTopShortcode = overlay.querySelector('#twd-ap-gs-sb-top-shortcode');
 		var relatedPlace = overlay.querySelector('#twd-ap-gs-related-place');
@@ -902,8 +906,13 @@
 				if (relatedShow) {
 					relatedShow.checked = false !== data.related_show;
 					relatedCount.value = data.related_count || 4;
-					relatedTopics.checked = false !== data.related_topics;
 				}
+				// The old "also show the topic links" tick is now a place; a site saved with that tick off shows "Nowhere".
+				if (topicsPlace) { topicsPlace.value = false === data.related_topics ? 'off' : (data.topics_place || 'with_related'); }
+				if (featuredShow) { featuredShow.checked = !!data.featured_image_show; }
+				if (hideTags) { hideTags.checked = !!data.hide_theme_tags; }
+				if (backShow) { backShow.checked = !!data.back_link_show; }
+				if (backUrl) { backUrl.value = data.back_link_url || ''; }
 				if (sbPosition) { sbPosition.value = data.swipebook_button_position || 'both'; }
 				if (sbTopShortcode) { sbTopShortcode.checked = !!data.swipebook_top_shortcode; }
 				if (relatedPlace) { relatedPlace.value = data.related_place || 'auto'; }
@@ -970,8 +979,15 @@
 			if (relatedShow) {
 				payload.related_show = !!relatedShow.checked;
 				payload.related_count = parseInt(relatedCount.value, 10) || 4;
-				payload.related_topics = !!relatedTopics.checked;
 			}
+			if (topicsPlace) {
+				payload.topics_place = topicsPlace.value;
+				payload.related_topics = 'off' !== topicsPlace.value;
+			}
+			if (featuredShow) { payload.featured_image_show = !!featuredShow.checked; }
+			if (hideTags) { payload.hide_theme_tags = !!hideTags.checked; }
+			if (backShow) { payload.back_link_show = !!backShow.checked; }
+			if (backUrl) { payload.back_link_url = backUrl.value; }
 			if (sbPosition) { payload.swipebook_button_position = sbPosition.value; }
 			if (sbTopShortcode) { payload.swipebook_top_shortcode = !!sbTopShortcode.checked; }
 			if (sbThemeSelect) { payload.swipebook_theme = sbThemeSelect.value; }

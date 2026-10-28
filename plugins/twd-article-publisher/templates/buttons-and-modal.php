@@ -265,7 +265,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<button type="button" id="twd-ap-copy-shortcode-btn" class="twd-ap-btn-secondary"><?php esc_html_e( 'Copy', 'twd-article-publisher' ); ?></button>
 			</div>
 			<p class="twd-ap-muted"><?php esc_html_e( 'Optional: category="slug", tag="slug", count="6", columns="3" (max 4).', 'twd-article-publisher' ); ?></p>
-			<p class="twd-ap-muted"><?php esc_html_e( 'For your own single article template, two more shortcodes show the "View as a swipe book" button, [twd_swipebook_button], and the related articles, [twd_related count="4"], wherever you place them. In Customise this grid, tick the box for the swipe book button and choose "Only where I place the shortcode" for related articles, so they are not also added automatically.', 'twd-article-publisher' ); ?></p>
+			<p class="twd-ap-muted"><?php esc_html_e( 'For your own single article template, three more shortcodes show the "View as a swipe book" button, [twd_swipebook_button], the related articles, [twd_related count="4"], and the Browse by topic row, [twd_topics], wherever you place them. In Customise this grid, tick the box for the swipe book button and choose "Only where I place the shortcode" for related articles and for Browse by topic, so they are not also added automatically.', 'twd-article-publisher' ); ?></p>
 
 			<p class="twd-ap-section-heading twd-ap-spaced"><?php esc_html_e( 'Writing HTML articles with an AI prompt', 'twd-article-publisher' ); ?></p>
 			<p><?php esc_html_e( 'Copy this prompt into ChatGPT, Claude or similar, fill in the brackets, then paste the HTML it gives you into the HTML tab above:', 'twd-article-publisher' ); ?></p>

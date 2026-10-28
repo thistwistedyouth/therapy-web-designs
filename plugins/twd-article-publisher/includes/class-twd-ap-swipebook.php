@@ -167,6 +167,15 @@ class TWD_AP_Swipebook {
 	 * has the swipe book switched off.
 	 */
 	public static function button_html( $post, $end = false ) {
+		$link = self::button_link( $post, $end );
+		if ( '' === $link ) {
+			return '';
+		}
+		return '<p class="twd-ap-swipebook-row' . ( $end ? ' twd-ap-swipebook-row-end' : '' ) . '">' . $link . '</p>';
+	}
+
+	/** The swipe book button's own link, '' when the article is not published or has the swipe book switched off. */
+	private static function button_link( $post, $end = false ) {
 		if ( ! $post || 'publish' !== $post->post_status || ! self::is_enabled( $post->ID ) ) {
 			return '';
 		}
@@ -176,8 +185,53 @@ class TWD_AP_Swipebook {
 		// Under the title it invites a read ("View as"); at the end of the article
 		// it invites a share, and sits to the right.
 		$label = $end ? __( 'Share as a swipe book', 'twd-article-publisher' ) : __( 'View as a swipe book', 'twd-article-publisher' );
-		return '<p class="twd-ap-swipebook-row' . ( $end ? ' twd-ap-swipebook-row-end' : '' ) . '"><a class="twd-ap-swipebook-btn" ' . $style . ' href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
-			. esc_html( $label ) . ' &#8599;</a></p>';
+		return '<a class="twd-ap-swipebook-btn" ' . $style . ' href="' . $url . '" data-twd-ap-post-id="' . (int) $post->ID . '">'
+			. esc_html( $label ) . ' &#8599;</a>';
+	}
+
+	/**
+	 * Where the Back link goes (1.50.0): the owner's own address (a path on this
+	 * site, optionally with a #section, or a full address) or, when that is empty,
+	 * the Article index page, or the home page when there is none. A path is made
+	 * absolute with this site's address, so it survives a move from a test site to
+	 * the live one.
+	 */
+	public static function back_url() {
+		$u = (string) TWD_AP_Grid_Settings::get()['back_link_url'];
+		if ( '' !== $u ) {
+			return 0 === strpos( $u, '/' ) ? home_url( $u ) : $u;
+		}
+		$index = TWD_AP_Index::index_url();
+		return '' !== $index ? $index : home_url( '/' );
+	}
+
+	/** The Back link's own link: always on a published article, whether or not it has a swipe book. */
+	private static function back_link( $post ) {
+		if ( ! $post || 'publish' !== $post->post_status ) {
+			return '';
+		}
+		$color = TWD_AP_Grid_Settings::get()['swipebook_color'];
+		$style = 'style="' . esc_attr( self::color_custom_properties( $color ) ) . '"';
+		return '<a class="twd-ap-back-btn" ' . $style . ' href="' . esc_url( self::back_url() ) . '">&#8592; '
+			. esc_html__( 'Back to all articles', 'twd-article-publisher' ) . '</a>';
+	}
+
+	/**
+	 * What closes an article (1.50.0): the "Share as a swipe book" button on the
+	 * right, as it always was, or, when the owner has switched the Back link on,
+	 * one centred row holding the Share button (when the article has one at the
+	 * end) and the Back link, with space under it.
+	 */
+	public static function end_row_html( $post ) {
+		$share = 'top' === self::button_position() ? '' : self::button_link( $post, true );
+		if ( empty( TWD_AP_Grid_Settings::get()['back_link_show'] ) ) {
+			return '' === $share ? '' : '<p class="twd-ap-swipebook-row twd-ap-swipebook-row-end">' . $share . '</p>';
+		}
+		$back = self::back_link( $post );
+		if ( '' === $share && '' === $back ) {
+			return '';
+		}
+		return '<p class="twd-ap-swipebook-row twd-ap-swipebook-row-end twd-ap-end-centred">' . $share . $back . '</p>';
 	}
 
 	/**
@@ -209,10 +263,10 @@ class TWD_AP_Swipebook {
 	}
 
 	public function append_button( $content ) {
-		if ( ! self::is_article_view() || 'top' === self::button_position() ) {
+		if ( ! self::is_article_view() ) {
 			return $content;
 		}
-		return $content . self::button_html( get_post(), true );
+		return $content . self::end_row_html( get_post() );
 	}
 
 	/**
