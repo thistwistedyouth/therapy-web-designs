@@ -642,6 +642,45 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	const hostile = await newBtnLook({ TWD_NEW_BTN_STYLE: '--twd-ap-primary:#8a5a00;" onmouseover="alert(1)' });
 	t('S: a style value cannot break out of its attribute (no extra attribute appears)', !/onmouseover/.test(hostile.attrs), hostile.attrs);
 
+
+	// ---------- T. the bio page tick follows the site-wide tick (1.48.0) ----------
+	{
+		const bioOnNew = async (cfg) => {
+			const sx = await open(browser, 'key-on', Object.assign({}, cfgOn, cfg));
+			await sx.page.click('#twd-ap-new-btn');
+			await sx.page.click('#twd-ap-start-skip');
+			const on = await sx.page.isChecked('#twd-ap-include-bio-toggle');
+			await sx.ctx.close();
+			return on;
+		};
+		t('T: a new article starts with the bio tick off when the site tick is off', (await bioOnNew({})) === false && (await bioOnNew({ profileInAllBooks: 0 })) === false);
+		t('T: and ticked when the site puts the bio page in every swipe book', (await bioOnNew({ profileInAllBooks: 1 })) === true);
+		const bioOnEdit = async (cfg, post) => {
+			const sx = await open(browser, 'key-on', Object.assign({}, cfgOn, cfg));
+			sx.replies.post = post;
+			await sx.page.click('#twd-ap-edit-btn');
+			await sx.page.waitForFunction(() => document.getElementById('twd-ap-title').value === 'Existing article');
+			const on = await sx.page.isChecked('#twd-ap-include-bio-toggle');
+			return { sx, on };
+		};
+		let e = await bioOnEdit({ profileInAllBooks: 1 }, { include_bio: true });
+		t('T: editing an article that follows the site tick shows it ticked', e.on === true);
+		await e.sx.ctx.close();
+		e = await bioOnEdit({ profileInAllBooks: 1 }, { include_bio: false });
+		t('T: editing an article that was switched off shows it unticked, whatever the site says', e.on === false);
+		await e.sx.page.check('#twd-ap-include-bio-toggle');
+		await e.sx.page.click('#twd-ap-update-btn, #twd-ap-publish-btn');
+		await new Promise((r) => setTimeout(r, 500));
+		t('T: saving sends the tick as it is on screen (ticked)', e.sx.saves.length >= 1 && e.sx.saves[e.sx.saves.length - 1].body.include_bio === true, JSON.stringify(e.sx.saves.map((x) => x.body.include_bio)));
+		await e.sx.ctx.close();
+		e = await bioOnEdit({ profileInAllBooks: 1 }, { include_bio: true });
+		await e.sx.page.uncheck('#twd-ap-include-bio-toggle');
+		await e.sx.page.click('#twd-ap-update-btn, #twd-ap-publish-btn');
+		await new Promise((r) => setTimeout(r, 500));
+		t('T: unticking it for this one article sends off', e.sx.saves.length >= 1 && e.sx.saves[e.sx.saves.length - 1].body.include_bio === false, JSON.stringify(e.sx.saves.map((x) => x.body.include_bio)));
+		await e.sx.ctx.close();
+	}
+
 	await browser.close();
 	console.log('\nScreenshots: ' + tmp);
 	console.log(pass + ' passed, ' + fail + ' failed');

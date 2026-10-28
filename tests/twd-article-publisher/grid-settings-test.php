@@ -100,5 +100,50 @@ foreach ( array( "#112233\n", "#112233 ", "\n#112233", array( '#112233' ), 5, tr
 TWD_AP_Grid_Settings::save( array( 'look_quote_color' => '' ) );
 t( 'look colour: an empty value still clears it', '' === TWD_AP_Grid_Settings::get()['look_quote_color'] );
 
+// 1.48.0: heading sizes, topics alignment, related layout, bio page in every swipe book.
+$d = TWD_AP_Grid_Settings::get();
+t( 'defaults: no heading sizes set, topics left, related as a list, bio page not in every book', 0 === $d['look_h2_size'] && 0 === $d['look_h3_size'] && 0 === $d['look_h4_size'] && 'left' === $d['topics_align'] && 'list' === $d['related_layout'] && false === $d['profile_in_all_books'] );
+TWD_AP_Grid_Settings::save( array( 'look_h2_size' => '32', 'look_h3_size' => 24, 'look_h4_size' => '19.4' ) );
+$g = TWD_AP_Grid_Settings::get();
+t( 'heading sizes: whole pixels are saved (a decimal is rounded)', 32 === $g['look_h2_size'] && 24 === $g['look_h3_size'] && 19 === $g['look_h4_size'], json_encode( array( $g['look_h2_size'], $g['look_h3_size'], $g['look_h4_size'] ) ) );
+TWD_AP_Grid_Settings::save( array( 'look_h2_size' => '5', 'look_h3_size' => '400' ) );
+$g = TWD_AP_Grid_Settings::get();
+t( 'heading sizes: too small or too large is brought to the limit (14 and 64)', 14 === $g['look_h2_size'] && 64 === $g['look_h3_size'], json_encode( array( $g['look_h2_size'], $g['look_h3_size'] ) ) );
+foreach ( array( 'big', '12px', array( 30 ), true, '--1px' ) as $bad ) {
+	TWD_AP_Grid_Settings::save( array( 'look_h4_size' => $bad ) );
+	t( 'heading sizes: ' . json_encode( $bad ) . ' is ignored, the saved size stays', 19 === TWD_AP_Grid_Settings::get()['look_h4_size'] );
+}
+TWD_AP_Grid_Settings::save( array( 'accent_color' => '#334455' ) );
+t( 'heading sizes: saving something else leaves them alone', 14 === TWD_AP_Grid_Settings::get()['look_h2_size'] && 64 === TWD_AP_Grid_Settings::get()['look_h3_size'] && 19 === TWD_AP_Grid_Settings::get()['look_h4_size'] );
+foreach ( array( '', 0, '0' ) as $clear ) {
+	TWD_AP_Grid_Settings::save( array( 'look_h2_size' => 30 ) );
+	TWD_AP_Grid_Settings::save( array( 'look_h2_size' => $clear ) );
+	t( 'heading sizes: ' . json_encode( $clear ) . ' goes back to the plugin size', 0 === TWD_AP_Grid_Settings::get()['look_h2_size'] );
+}
+foreach ( array( 'center', 'left' ) as $a ) {
+	TWD_AP_Grid_Settings::save( array( 'topics_align' => $a ) );
+	t( 'topics row: ' . $a . ' is saved', $a === TWD_AP_Grid_Settings::get()['topics_align'] );
+}
+TWD_AP_Grid_Settings::save( array( 'topics_align' => 'center' ) );
+foreach ( array( 'Center', 'centre', 'right', '', 0, true, array( 'left' ), '<script>' ) as $bad ) {
+	TWD_AP_Grid_Settings::save( array( 'topics_align' => $bad ) );
+	t( 'topics row: ' . json_encode( $bad ) . ' is ignored, centred stays', 'center' === TWD_AP_Grid_Settings::get()['topics_align'] );
+}
+foreach ( array( 'grid', 'list' ) as $l ) {
+	TWD_AP_Grid_Settings::save( array( 'related_layout' => $l ) );
+	t( 'related layout: ' . $l . ' is saved', $l === TWD_AP_Grid_Settings::get()['related_layout'] );
+}
+TWD_AP_Grid_Settings::save( array( 'related_layout' => 'grid' ) );
+foreach ( array( 'Grid', 'cards', '', 0, true, array( 'list' ), '<script>' ) as $bad ) {
+	TWD_AP_Grid_Settings::save( array( 'related_layout' => $bad ) );
+	t( 'related layout: ' . json_encode( $bad ) . ' is ignored, grid stays', 'grid' === TWD_AP_Grid_Settings::get()['related_layout'] );
+}
+TWD_AP_Grid_Settings::save( array( 'profile_in_all_books' => true ) );
+t( 'bio in every book: can be ticked', true === TWD_AP_Grid_Settings::get()['profile_in_all_books'] );
+TWD_AP_Grid_Settings::save( array( 'accent_color' => '#556677' ) );
+t( 'bio in every book: and, grid layout and centred row, all stay when something else is saved', true === TWD_AP_Grid_Settings::get()['profile_in_all_books'] && 'grid' === TWD_AP_Grid_Settings::get()['related_layout'] && 'center' === TWD_AP_Grid_Settings::get()['topics_align'] );
+TWD_AP_Grid_Settings::save( array( 'profile_in_all_books' => false ) );
+t( 'bio in every book: can be unticked', false === TWD_AP_Grid_Settings::get()['profile_in_all_books'] );
+
 echo "\n$pass passed, $fail failed\n";
 exit( $fail ? 1 : 0 );

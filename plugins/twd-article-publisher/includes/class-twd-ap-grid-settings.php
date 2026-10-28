@@ -75,6 +75,15 @@ class TWD_AP_Grid_Settings {
 			// 1.46.0: keep one and two letter words with the word after them, so a
 			// line never ends on "so" or "we".
 			'look_tidy_lines'    => true,
+			// 1.48.0: the size in pixels of the H2, H3 and H4 headings in an article's
+			// text (0 means the plugin's own size: 26, 21 and 18).
+			'look_h2_size'       => 0,
+			'look_h3_size'       => 0,
+			'look_h4_size'       => 0,
+			// 1.48.0: where the Browse by topic row sits ('left' or 'center') and how
+			// the related articles at the end of an article are drawn ('list' or 'grid').
+			'topics_align'       => 'left',
+			'related_layout'     => 'list',
 			'swipebook_color'    => '#5b8a72',
 			// Where the swipe book button goes on an article (1.41.0): 'top' (under
 			// the title), 'bottom' (after the text) or 'both'.
@@ -96,6 +105,9 @@ class TWD_AP_Grid_Settings {
 			'profile_bio'        => '',
 			'profile_link_url'   => '',
 			'profile_link_label' => '',
+			// 1.48.0: put the profile's bio page at the end of every swipe book unless
+			// an article's own tick says otherwise.
+			'profile_in_all_books' => false,
 		);
 		$saved = get_option( self::OPTION_KEY, array() );
 		if ( ! is_array( $saved ) ) {
@@ -112,6 +124,14 @@ class TWD_AP_Grid_Settings {
 
 	/** The colours of the swipe book (1.47.0). */
 	const SWIPEBOOK_THEMES = array( 'dark', 'light' );
+
+	/** Where the Browse by topic row sits, and how the related articles are drawn (1.48.0). */
+	const TOPICS_ALIGNS    = array( 'left', 'center' );
+	const RELATED_LAYOUTS  = array( 'list', 'grid' );
+
+	/** The smallest and largest heading size the popup accepts, in pixels (1.48.0). */
+	const HEADING_MIN = 14;
+	const HEADING_MAX = 64;
 
 	/**
 	 * The class the grid's root element carries for a card image shape: none for
@@ -161,6 +181,11 @@ class TWD_AP_Grid_Settings {
 			'look_size'          => $current['look_size'],
 			'look_spacing'       => $current['look_spacing'],
 			'look_tidy_lines'    => $current['look_tidy_lines'],
+			'look_h2_size'       => $current['look_h2_size'],
+			'look_h3_size'       => $current['look_h3_size'],
+			'look_h4_size'       => $current['look_h4_size'],
+			'topics_align'       => $current['topics_align'],
+			'related_layout'     => $current['related_layout'],
 			'swipebook_color'    => $current['swipebook_color'],
 			'swipebook_button_position' => $current['swipebook_button_position'],
 			'swipebook_top_shortcode' => $current['swipebook_top_shortcode'],
@@ -176,6 +201,7 @@ class TWD_AP_Grid_Settings {
 			'profile_bio'        => $current['profile_bio'],
 			'profile_link_url'   => $current['profile_link_url'],
 			'profile_link_label' => $current['profile_link_label'],
+			'profile_in_all_books' => $current['profile_in_all_books'],
 		);
 
 		if ( isset( $input['category_order'] ) && is_array( $input['category_order'] ) ) {
@@ -274,6 +300,28 @@ class TWD_AP_Grid_Settings {
 			if ( isset( $input[ $key ] ) && in_array( $input[ $key ], $allowed, true ) ) {
 				$output[ $key ] = $input[ $key ];
 			}
+		}
+		// Heading sizes: a whole number of pixels between the limits (a number outside them
+		// is brought to the nearest limit), or empty or 0 for the plugin's own size.
+		foreach ( array( 'look_h2_size', 'look_h3_size', 'look_h4_size' ) as $key ) {
+			if ( ! isset( $input[ $key ] ) ) {
+				continue;
+			}
+			$raw = $input[ $key ];
+			if ( '' === $raw || null === $raw || ( is_numeric( $raw ) && 0 === (int) $raw ) ) {
+				$output[ $key ] = 0;
+			} elseif ( is_numeric( $raw ) ) {
+				$output[ $key ] = max( self::HEADING_MIN, min( self::HEADING_MAX, (int) round( (float) $raw ) ) );
+			}
+		}
+		if ( isset( $input['topics_align'] ) && in_array( $input['topics_align'], self::TOPICS_ALIGNS, true ) ) {
+			$output['topics_align'] = $input['topics_align'];
+		}
+		if ( isset( $input['related_layout'] ) && in_array( $input['related_layout'], self::RELATED_LAYOUTS, true ) ) {
+			$output['related_layout'] = $input['related_layout'];
+		}
+		if ( isset( $input['profile_in_all_books'] ) ) {
+			$output['profile_in_all_books'] = (bool) $input['profile_in_all_books'];
 		}
 		if ( isset( $input['swipebook_color'] ) ) {
 			$color = sanitize_hex_color( $input['swipebook_color'] );

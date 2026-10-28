@@ -58,10 +58,13 @@ class WP_Query {
 	}
 }
 function esc_attr__( $s ) { return htmlspecialchars( $s, ENT_QUOTES ); }
+function esc_url_raw( $s ) { return (string) $s; }
+function get_post_thumbnail_id( $p ) { return $p->thumb ?? 0; }
+function wp_get_attachment_image_url( $id, $size ) { return 'https://example.test/img-' . $id . '-' . $size . '.jpg'; }
 function get_categories() { $out = array(); foreach ( $GLOBALS['terms'] as $t ) { foreach ( $GLOBALS['posts'] as $p ) { if ( 'publish' === $p->post_status && in_array( $t->term_id, $p->cats, true ) ) { $out[] = $t; break; } } } return $out; }
 class TWD_AP_Index { static function index_url() { return $GLOBALS['index_url']; } }
 $GLOBALS['index_url'] = '';
-class TWD_AP_Grid_Settings { const RELATED_PLACES = array( 'auto', 'shortcode', 'off' ); static $s = array( 'related_show' => true, 'related_count' => 4, 'related_place' => 'auto', 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb' ); static function get() { return self::$s; } }
+class TWD_AP_Grid_Settings { const RELATED_PLACES = array( 'auto', 'shortcode', 'off' ); static $s = array( 'related_show' => true, 'related_count' => 4, 'related_place' => 'auto', 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb', 'related_layout' => 'list', 'thumb_shape' => 'wide', 'show_thumbnails' => true, 'topics_align' => 'left' ); static function get() { return self::$s; } static function thumb_shape_class( $shape ) { return '4-3' === $shape ? 'twd-ap-thumbs-4-3' : ( 'square' === $shape ? 'twd-ap-thumbs-square' : '' ); } }
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-related.php';
 
@@ -69,7 +72,7 @@ $pass = 0; $fail = 0;
 function t( $name, $ok, $extra = '' ) { global $pass, $fail; if ( $ok ) { $pass++; echo "PASS  $name\n"; } else { $fail++; echo "FAIL  $name $extra\n"; } }
 function reset_site() {
 	$GLOBALS['posts'] = array(); $GLOBALS['meta'] = array(); $GLOBALS['single'] = true; $GLOBALS['loop'] = true; $GLOBALS['current_id'] = 1;
-	TWD_AP_Grid_Settings::$s = array( 'related_show' => true, 'related_count' => 4, 'related_place' => 'auto', 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb' );
+	TWD_AP_Grid_Settings::$s = array( 'related_show' => true, 'related_count' => 4, 'related_place' => 'auto', 'related_topics' => false, 'topic_category_ids' => 'all', 'accent_color' => '#2563eb', 'related_layout' => 'list', 'thumb_shape' => 'wide', 'show_thumbnails' => true, 'topics_align' => 'left' );
 	$GLOBALS['index_url'] = '';
 	$GLOBALS['terms'] = array(
 		1 => (object) array( 'term_id' => 1, 'name' => 'Uncategorized', 'slug' => 'uncategorized' ),
@@ -78,7 +81,7 @@ function reset_site() {
 		4 => (object) array( 'term_id' => 4, 'name' => 'Featured Articles', 'slug' => 'featured-articles' ),
 	);
 }
-function add_post( $id, $title, $cats, $date, $status = 'publish' ) { $GLOBALS['posts'][ $id ] = (object) array( 'ID' => $id, 'slug' => 'post-' . $id, 'post_title' => $title, 'post_status' => $status, 'post_date' => $date, 'cats' => $cats ); }
+function add_post( $id, $title, $cats, $date, $status = 'publish', $thumb = 0 ) { $GLOBALS['posts'][ $id ] = (object) array( 'ID' => $id, 'slug' => 'post-' . $id, 'post_title' => $title, 'post_status' => $status, 'post_date' => $date, 'cats' => $cats, 'thumb' => $thumb ); }
 function links( $html ) { preg_match_all( '/<li><a href="([^"]+)">/', $html, $m ); return $m[1]; }
 function inst() { foreach ( array( 'appended', 'placed' ) as $flag ) { $p = new ReflectionProperty( 'TWD_AP_Related', $flag ); $p->setAccessible( true ); $p->setValue( null, false ); } return ( new ReflectionClass( 'TWD_AP_Related' ) )->newInstanceWithoutConstructor(); }
 
@@ -233,6 +236,63 @@ add_post( 1, 'Alone', array( 3 ), '2026-03-01' );
 TWD_AP_Grid_Settings::$s['related_topics'] = false;
 $i = inst();
 t( 'shortcode: an article with nothing related prints nothing', '' === $sc() && '<p>t</p>' === $i->append_to_article( '<p>t</p>' ) );
+
+// ---------- 1.48.0: the related articles as a grid ----------
+reset_site();
+add_post( 1, 'This article', array( 2 ), '2026-03-01' );
+add_post( 2, 'With a picture', array( 2 ), '2026-02-05', 'publish', 77 );
+add_post( 3, 'No picture "quoted" & <b>bold</b>', array( 2 ), '2026-02-04' );
+add_post( 4, "Isn't it so", array( 2 ), '2026-02-03', 'publish', 78 );
+add_post( 5, 'Fourth', array( 2 ), '2026-02-02' );
+$list_html = TWD_AP_Related::html( 1 );
+t( 'grid: off by default, the plain list is what is printed and has no cards', false === strpos( $list_html, 'twd-ap-related-cards' ) && false === strpos( $list_html, 'twd-ap-related-wide' ) && 4 === count( links( $list_html ) ) );
+TWD_AP_Grid_Settings::$s['related_layout'] = 'grid';
+$g = TWD_AP_Related::html( 1 );
+t( 'grid: the block is marked wide and the list is marked as cards', false !== strpos( $g, '<aside class="twd-ap-related twd-ap-related-wide"' ) && false !== strpos( $g, '<ul class="twd-ap-related-list twd-ap-related-cards">' ), $g );
+preg_match_all( '/<li class="twd-ap-related-card"><a href="([^"]+)">(.*?)<\/a><\/li>/s', $g, $cards, PREG_SET_ORDER );
+t( 'grid: one box per article, the article itself left out, newest first', 4 === count( $cards ) && array( 'https://example.test/post-2/', 'https://example.test/post-3/', 'https://example.test/post-4/', 'https://example.test/post-5/' ) === array_column( $cards, 1 ), json_encode( array_column( $cards, 1 ) ) );
+t( 'grid: a box with a picture uses the medium_large picture as a background', false !== strpos( html_entity_decode( $cards[0][2], ENT_QUOTES ), "background-image:url('https://example.test/img-77-medium_large.jpg')" ), $cards[0][2] );
+t( 'grid: a box without a picture gets the plain placeholder block, not an empty gap', false !== strpos( $cards[1][2], 'twd-ap-related-thumb-placeholder' ) && false !== strpos( $cards[1][2], '<svg' ), $cards[1][2] );
+t( 'grid: each box shows the title and the date', false !== strpos( $cards[0][2], 'With a picture' ) && false !== strpos( $cards[0][2], '5 February 2026' ), $cards[0][2] );
+t( 'grid: a title is escaped (tags and quotes cannot get out) and an apostrophe is not double encoded', false !== strpos( $cards[1][2], '&lt;b&gt;bold&lt;/b&gt;' ) && false === strpos( $cards[1][2], '<b>' ) && false !== strpos( $cards[2][2], "Isn\u{2019}t it so" ) && false === strpos( $cards[2][2], '&amp;#8217;' ), $cards[1][2] . ' | ' . $cards[2][2] );
+t( 'grid: the heading and the link to the category are still there', false !== strpos( $g, 'More in' ) && false !== strpos( $g, 'href="https://example.test/category/anxiety/"' ) );
+TWD_AP_Grid_Settings::$s['show_thumbnails'] = false;
+$np = TWD_AP_Related::html( 1 );
+t( 'grid: with the grid\'s pictures switched off no box has a picture or a placeholder', false === strpos( $np, 'twd-ap-related-thumb' ) && 4 === substr_count( $np, 'twd-ap-related-card"' ), $np );
+TWD_AP_Grid_Settings::$s['show_thumbnails'] = true;
+TWD_AP_Grid_Settings::$s['thumb_shape'] = '4-3';
+t( 'grid: the card picture shape follows the grid (4:3)', false !== strpos( TWD_AP_Related::html( 1 ), '<aside class="twd-ap-related twd-ap-related-wide twd-ap-thumbs-4-3"' ) );
+TWD_AP_Grid_Settings::$s['thumb_shape'] = 'square';
+t( 'grid: and square', false !== strpos( TWD_AP_Related::html( 1 ), 'twd-ap-related-wide twd-ap-thumbs-square"' ) );
+TWD_AP_Grid_Settings::$s['thumb_shape'] = 'wide';
+TWD_AP_Grid_Settings::$s['related_count'] = 3;
+t( 'grid: the count still decides how many boxes (3 gives one full row)', 3 === substr_count( TWD_AP_Related::html( 1 ), 'twd-ap-related-card"' ) );
+t( 'grid: the shortcode count wins for that place', 2 === substr_count( TWD_AP_Related::html( 1, 2 ), 'twd-ap-related-card"' ) );
+TWD_AP_Grid_Settings::$s['related_count'] = 4;
+TWD_AP_Grid_Settings::$s['related_show'] = false;
+t( 'grid: with the list switched off nothing is printed for the grid either', '' === TWD_AP_Related::html( 1 ) );
+TWD_AP_Grid_Settings::$s['related_show'] = true;
+TWD_AP_Grid_Settings::$s['related_layout'] = 'bogus';
+t( 'grid: an unknown layout value is the plain list', false === strpos( TWD_AP_Related::html( 1 ), 'twd-ap-related-wide' ) );
+TWD_AP_Grid_Settings::$s['related_layout'] = 'list';
+
+// ---------- 1.48.0: the Browse by topic row can be centred ----------
+reset_site();
+add_post( 1, 'Self', array( 2 ), '2026-03-01' );
+add_post( 2, 'Other', array( 3 ), '2026-03-02' );
+$left = TWD_AP_Cards::topics_html( 'https://example.test/article-index/', 0 );
+t( 'topics row: left aligned is what is printed by default, with no extra class', false !== strpos( $left, '<nav class="twd-ap-articles-topics" ' ) && false === strpos( $left, 'twd-ap-topics-center' ), $left );
+TWD_AP_Grid_Settings::$s['topics_align'] = 'center';
+$mid = TWD_AP_Cards::topics_html( 'https://example.test/article-index/', 0 );
+t( 'topics row: centred adds the class and changes nothing else', false !== strpos( $mid, '<nav class="twd-ap-articles-topics twd-ap-topics-center" ' ) && str_replace( ' twd-ap-topics-center', '', $mid ) === $left );
+TWD_AP_Grid_Settings::$s['topics_align'] = 'sideways';
+t( 'topics row: an unknown value is left aligned', false === strpos( TWD_AP_Cards::topics_html( '', 0 ), 'twd-ap-topics-center' ) );
+TWD_AP_Grid_Settings::$s['topics_align'] = 'center';
+TWD_AP_Grid_Settings::$s['related_topics'] = true;
+add_post( 5, 'Third', array( 2 ), '2026-02-01' );
+t( 'topics row: it is centred at the end of an article too', false !== strpos( TWD_AP_Related::html( 1 ), 'twd-ap-articles-topics twd-ap-topics-center' ) );
+TWD_AP_Grid_Settings::$s['topics_align'] = 'left';
+
 if ( getenv( 'TWD_RELATED_DUMP' ) ) {
 	reset_site();
 	TWD_AP_Grid_Settings::$s['related_topics'] = true;
@@ -240,6 +300,31 @@ if ( getenv( 'TWD_RELATED_DUMP' ) ) {
 	add_post( 1, 'This article', array( 2 ), '2026-03-01' );
 	add_post( 30, 'A sleep piece', array( 3 ), '2026-03-02' );
 	for ( $i = 2; $i <= 6; $i++ ) { add_post( $i, 'Understanding anxiety, part ' . $i, array( 2 ), sprintf( '2026-02-%02d', $i ) ); }
+	if ( getenv( 'TWD_RELATED_DUMP_GRID' ) ) {
+		// the grid version (with and without pictures, centred and left topics), for the browser test
+		$out = array();
+		foreach ( array( 'wide' => 'wide', '4-3' => '4-3', 'square' => 'square' ) as $shape => $label ) {
+			TWD_AP_Grid_Settings::$s['related_layout'] = 'grid';
+			TWD_AP_Grid_Settings::$s['thumb_shape'] = $shape;
+			TWD_AP_Grid_Settings::$s['topics_align'] = 'center';
+			add_post( 6, 'Understanding anxiety, part 6 with a longer title that runs to two lines', array( 2 ), '2026-02-06', 'publish', 11 );
+			$out[ $label ] = '<div class="twd-ap-article-content"><h2>A heading</h2><p>Article body text here.</p></div>' . TWD_AP_Related::html( 1 );
+		}
+		TWD_AP_Grid_Settings::$s['thumb_shape'] = 'wide';
+		TWD_AP_Grid_Settings::$s['topics_align'] = 'left';
+		$out['left'] = TWD_AP_Related::html( 1 );
+		TWD_AP_Grid_Settings::$s['related_count'] = 2;
+		$out['two'] = TWD_AP_Related::html( 1 );
+		TWD_AP_Grid_Settings::$s['related_count'] = 1;
+		$out['one'] = TWD_AP_Related::html( 1 );
+		TWD_AP_Grid_Settings::$s['related_count'] = 4;
+		TWD_AP_Grid_Settings::$s['show_thumbnails'] = false;
+		$out['nopics'] = TWD_AP_Related::html( 1 );
+		TWD_AP_Grid_Settings::$s['show_thumbnails'] = true;
+		TWD_AP_Grid_Settings::$s['related_layout'] = 'list';
+		$out['list'] = TWD_AP_Related::html( 1 );
+		file_put_contents( getenv( 'TWD_RELATED_DUMP_GRID' ), json_encode( $out ) );
+	}
 	file_put_contents( getenv( 'TWD_RELATED_DUMP' ), json_encode( array( 'html' => '<div class="twd-ap-article-content"><h2>A heading</h2><p>Article body text here.</p></div>' . TWD_AP_Related::html( 1 ) ) ) );
 }
 echo "\n$pass passed, $fail failed\n";

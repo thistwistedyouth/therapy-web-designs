@@ -452,8 +452,52 @@ class TWD_AP_Swipebook {
 		);
 	}
 
+	/** The per-article meta: '1' bio page on, '0' off, absent follows the site-wide tick (1.48.0). */
+	const META_BIO = '_twd_ap_include_bio';
+
+	/**
+	 * Whether an article's swipe book ends with the bio page. An article's own
+	 * choice wins; an article with none follows the site-wide tick "Put the bio
+	 * page at the end of every swipe book" (Customise this grid > Profile).
+	 */
+	public static function bio_included( $post_id ) {
+		$meta = (string) get_post_meta( $post_id, self::META_BIO, true );
+		if ( '0' === $meta ) {
+			return false;
+		}
+		if ( '' !== $meta ) {
+			return true;
+		}
+		return ! empty( TWD_AP_Grid_Settings::get()['profile_in_all_books'] );
+	}
+
+	/**
+	 * Saves the article's tick. Only a choice that differs from the site-wide
+	 * default is stored, so an article left as it is keeps following the default
+	 * when the owner changes it later; an explicit "on" is never turned into
+	 * "follow" by a later save.
+	 */
+	public static function set_bio_choice( $post_id, $want ) {
+		$default = ! empty( TWD_AP_Grid_Settings::get()['profile_in_all_books'] );
+		$current = (string) get_post_meta( $post_id, self::META_BIO, true );
+		if ( $want ) {
+			if ( '1' === $current ) {
+				return;
+			}
+			if ( $default ) {
+				delete_post_meta( $post_id, self::META_BIO );
+			} else {
+				update_post_meta( $post_id, self::META_BIO, 1 );
+			}
+		} elseif ( $default ) {
+			update_post_meta( $post_id, self::META_BIO, 0 );
+		} else {
+			delete_post_meta( $post_id, self::META_BIO );
+		}
+	}
+
 	private function maybe_bio_slide( $post ) {
-		if ( ! get_post_meta( $post->ID, '_twd_ap_include_bio', true ) ) {
+		if ( ! self::bio_included( $post->ID ) ) {
 			return null;
 		}
 

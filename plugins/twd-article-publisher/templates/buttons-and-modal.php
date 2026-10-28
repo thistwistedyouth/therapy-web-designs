@@ -147,7 +147,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 					<label class="twd-ap-checkbox-label twd-ap-feature-toggle">
 						<input type="checkbox" id="twd-ap-include-bio-toggle" />
-						<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup)', 'twd-article-publisher' ); ?>
+						<?php esc_html_e( 'Include bio page at end (swipe book closing slide, from Profile page setup). Your site can tick this for every swipe book in Customise this grid; untick it here to leave it out of this one.', 'twd-article-publisher' ); ?>
 					</label>
 
 					<label class="twd-ap-checkbox-label twd-ap-feature-toggle">

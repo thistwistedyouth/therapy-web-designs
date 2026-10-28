@@ -71,6 +71,28 @@ t( 'style: the theme font is inherit, compact spacing, medium size prints nothin
 $html = wrap();
 t( 'wrapper: the style attribute is on the article wrapper and the body is unchanged', 1 === preg_match( '/^<div class="twd-ap-article-content" style="[^"]+"><p>Body<\/p><\/div>$/', $html ) );
 $dump['custom'] = $html;
+// ---------- 1.48.0: heading sizes ----------
+$base_style = TWD_AP_Article_Style::look_style();
+t( 'headings: no size set prints no size variable (the plugin sizes stay)', false === strpos( $base_style, 'h2-size' ) && false === strpos( $base_style, 'h3-size' ) && false === strpos( $base_style, 'h4-size' ) );
+TWD_AP_Grid_Settings::save( array( 'look_h2_size' => 40, 'look_h3_size' => 30, 'look_h4_size' => 20 ) );
+$hs = TWD_AP_Article_Style::look_style();
+t( 'headings: each size becomes its variable in pixels', false !== strpos( $hs, '--twd-ap-content-h2-size:40px;' ) && false !== strpos( $hs, '--twd-ap-content-h3-size:30px;' ) && false !== strpos( $hs, '--twd-ap-content-h4-size:20px;' ), $hs );
+t( 'headings: and a phone size 85% of it (34, 26 and 17)', false !== strpos( $hs, '--twd-ap-content-h2-size-m:34px;' ) && false !== strpos( $hs, '--twd-ap-content-h3-size-m:26px;' ) && false !== strpos( $hs, '--twd-ap-content-h4-size-m:17px;' ), $hs );
+TWD_AP_Grid_Settings::save( array( 'look_h2_size' => 14, 'look_h3_size' => 0 ) );
+$hs = TWD_AP_Article_Style::look_style();
+t( 'headings: the phone size never goes under the 14px limit, and a cleared size prints nothing', false !== strpos( $hs, '--twd-ap-content-h2-size-m:14px;' ) && false === strpos( $hs, 'h3-size' ), $hs );
+$GLOBALS['opt']['twd_ap_grid_settings']['look_h2_size'] = '40px; background:red';
+$GLOBALS['opt']['twd_ap_grid_settings']['look_h4_size'] = 9999;
+$hs = TWD_AP_Article_Style::look_style();
+t( 'headings: a bad stored size can never print anything but a whole number of pixels (text after the number is cut off, a size beyond the limits is dropped)', false === strpos( $hs, 'background' ) && 1 === preg_match( '/--twd-ap-content-h2-size:40px;/', $hs ) && false === strpos( $hs, 'h4-size' ), $hs );
+unset( $GLOBALS['opt']['twd_ap_grid_settings']['look_h2_size'], $GLOBALS['opt']['twd_ap_grid_settings']['look_h4_size'] );
+TWD_AP_Grid_Settings::save( array( 'look_h2_size' => 40, 'look_h3_size' => 30, 'look_h4_size' => 20 ) );
+$dump['headings'] = wrap();
+t( 'headings: the sizes are on the article wrapper', false !== strpos( $dump['headings'], '--twd-ap-content-h2-size:40px' ) );
+TWD_AP_Grid_Settings::save( array( 'look_h2_size' => 0, 'look_h3_size' => 0, 'look_h4_size' => 0 ) );
+$cs = file_get_contents( $plugin . 'assets/article-content.css' );
+t( 'css: each heading reads its size variable and falls back to the plugin size (26, 21, 18 and on a phone 22, 19, 18)', false !== strpos( $cs, 'font-size: var(--twd-ap-content-h2-size, 26px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h3-size, 21px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h4-size, 18px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h2-size-m, 22px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h3-size-m, 19px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h4-size-m, 18px) !important;' ) );
+
 // A value that somehow got into the option directly still cannot break out of the attribute.
 $GLOBALS['opt']['twd_ap_grid_settings']['look_text_color'] = '#fff"><script>alert(1)</script>';
 t( 'wrapper: a bad stored colour is dropped, never printed', false === strpos( wrap(), 'script' ) && false === strpos( TWD_AP_Article_Style::look_style(), 'alert' ) );

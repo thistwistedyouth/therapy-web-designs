@@ -600,13 +600,10 @@ class TWD_AP_REST {
 			}
 		}
 
-		// Include bio page at end (swipe book's closing slide).
+		// Include bio page at end (swipe book's closing slide). Only a choice that
+		// differs from the site-wide default is stored (see TWD_AP_Swipebook::set_bio_choice()).
 		if ( isset( $request['include_bio'] ) ) {
-			if ( $request['include_bio'] ) {
-				update_post_meta( $post_id, '_twd_ap_include_bio', 1 );
-			} else {
-				delete_post_meta( $post_id, '_twd_ap_include_bio' );
-			}
+			TWD_AP_Swipebook::set_bio_choice( $post_id, (bool) $request['include_bio'] );
 		}
 
 		// Per-article swipe book switch. Absent means "this save did not
@@ -735,7 +732,7 @@ class TWD_AP_REST {
 			$data['tags']         = implode( ', ', $post_tags );
 			$data['featured']     = (bool) get_post_meta( $post_id, '_twd_ap_featured', true );
 			$data['grid_order']   = TWD_AP_Cards::grid_order( $post_id );
-			$data['include_bio']  = (bool) get_post_meta( $post_id, '_twd_ap_include_bio', true );
+			$data['include_bio']  = TWD_AP_Swipebook::bio_included( $post_id );
 			$data['swipebook_enabled'] = TWD_AP_Swipebook::is_enabled( $post_id );
 			$related_ids          = get_post_meta( $post_id, '_twd_ap_related_ids', true );
 			$data['related_ids']  = is_array( $related_ids ) ? array_map( 'intval', $related_ids ) : array();
@@ -870,6 +867,12 @@ class TWD_AP_REST {
 				'look_size'           => $settings['look_size'],
 				'look_spacing'        => $settings['look_spacing'],
 				'look_tidy_lines'     => (bool) $settings['look_tidy_lines'],
+				'look_h2_size'        => (int) $settings['look_h2_size'],
+				'look_h3_size'        => (int) $settings['look_h3_size'],
+				'look_h4_size'        => (int) $settings['look_h4_size'],
+				'topics_align'        => in_array( $settings['topics_align'], TWD_AP_Grid_Settings::TOPICS_ALIGNS, true ) ? $settings['topics_align'] : 'left',
+				'related_layout'      => in_array( $settings['related_layout'], TWD_AP_Grid_Settings::RELATED_LAYOUTS, true ) ? $settings['related_layout'] : 'list',
+				'profile_in_all_books' => (bool) $settings['profile_in_all_books'],
 				'swipebook_color'     => $settings['swipebook_color'],
 				'swipebook_heading'   => $settings['swipebook_heading'],
 				'swipebook_label'     => $settings['swipebook_label'],

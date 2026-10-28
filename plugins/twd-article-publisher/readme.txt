@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.47.0
+Stable tag: 1.48.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,17 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.48.0): (1) Related articles can be a grid. In Customise this grid >
+Related articles, "Layout" can now be a grid of picture boxes (picture, title
+and date), 3 across in a block 900px wide and centred, 2 across on a tablet and
+1 on a phone; the plain list is still the default. (2) The Browse by topic row
+can be centred (same section) and is a little larger everywhere. (3) Heading
+sizes: in Article look you can set the size of the H2, H3 and H4 headings in an
+article's text, in pixels. (4) "Put the bio page at the end of every swipe
+book", in the Profile section: it applies to articles you have already
+published, and any article can still leave it out with its own "Include bio
+page at end" tick.
 
 NEW (1.47.0): (1) A light swipe book. In Customise this grid > Related
 articles, "Colours" now offers Dark (the original) or Light, with dark writing

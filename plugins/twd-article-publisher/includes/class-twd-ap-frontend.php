@@ -105,6 +105,8 @@ class TWD_AP_Frontend {
 				'aiLimit'         => class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::RATE_LIMIT : 0,
 				'aiRemaining'     => ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) ? TWD_AP_AI_Generate::remaining() : 0,
 				'aiMaxChars'      => class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::MAX_INPUT_CHARS : 0,
+				// 1.48.0: a new article's "Include bio page" tick starts as the site-wide tick says.
+				'profileInAllBooks' => ! empty( TWD_AP_Grid_Settings::get()['profile_in_all_books'] ) ? 1 : 0,
 				'i18n'          => array(
 					'saving'       => __( 'Saving…', 'twd-article-publisher' ),
 					'error'        => __( 'Something went wrong. Please try again.', 'twd-article-publisher' ),

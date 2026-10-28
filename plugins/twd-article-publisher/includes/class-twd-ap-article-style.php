@@ -207,6 +207,15 @@ class TWD_AP_Article_Style {
 			$vars[] = '--twd-ap-content-size:19px';
 			$vars[] = '--twd-ap-content-size-m:17px';
 		}
+		// 1.48.0: heading sizes for the text of an article. The phone size is the same
+		// choice scaled down, as the plugin's own sizes are (26 to 22, 21 to 19).
+		foreach ( array( 2, 3, 4 ) as $level ) {
+			$px = (int) ( $s[ 'look_h' . $level . '_size' ] ?? 0 );
+			if ( $px >= TWD_AP_Grid_Settings::HEADING_MIN && $px <= TWD_AP_Grid_Settings::HEADING_MAX ) {
+				$vars[] = '--twd-ap-content-h' . $level . '-size:' . $px . 'px';
+				$vars[] = '--twd-ap-content-h' . $level . '-size-m:' . max( TWD_AP_Grid_Settings::HEADING_MIN, (int) round( $px * 0.85 ) ) . 'px';
+			}
+		}
 		$leading = array( 'compact' => '1.55', 'relaxed' => '1.95' );
 		if ( isset( $leading[ $s['look_spacing'] ] ) ) {
 			$vars[] = '--twd-ap-content-leading:' . $leading[ $s['look_spacing'] ];
