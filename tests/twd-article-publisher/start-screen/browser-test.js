@@ -12,9 +12,9 @@ const plugin = path.join(root, 'plugins/twd-article-publisher');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'twd-start-'));
 const REST = 'https://example.test/wp-json/twd-publisher/v1';
 
-function render(mode) {
-	const out = path.join(tmp, mode + '.html');
-	execFileSync('php', [path.join(__dirname, 'render.php'), mode, out]);
+function render(mode, env) {
+	const out = path.join(tmp, mode + (env ? '-' + Buffer.from(JSON.stringify(env)).toString('hex').slice(0, 24) : '') + '.html');
+	execFileSync('php', [path.join(__dirname, 'render.php'), mode, out], env ? { env: Object.assign({}, process.env, env) } : undefined);
 	return out;
 }
 
@@ -611,6 +611,36 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 	await pageRM.evaluate(() => { document.getElementById('twd-ap-working').hidden = false; });
 	t('R: people who ask for reduced motion get no animation', (await pageRM.locator('.twd-ap-working-line-1').evaluate((e) => getComputedStyle(e).animationName)) === 'none');
 	await ctxRM.close();
+
+
+	// ---------- S. the New Article button wears the colour of the quote bar (1.47.0) ----------
+	async function newBtnLook(env) {
+		const ctx = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+		const pg = await ctx.newPage();
+		await pg.goto('file://' + render('key-on', env));
+		const look = await pg.evaluate(() => {
+			const b = document.getElementById('twd-ap-new-btn');
+			const s = getComputedStyle(b);
+			const e = document.getElementById('twd-ap-edit-btn');
+			return { bg: s.backgroundColor, color: s.color, style: b.getAttribute('style') || '', attrs: b.getAttributeNames().join(','), editStyle: e ? (e.getAttribute('style') || '') : null, editBg: e ? getComputedStyle(e).backgroundColor : null };
+		});
+		await pg.hover('#twd-ap-new-btn');
+		await new Promise((r) => setTimeout(r, 400));
+		look.hover = await pg.evaluate(() => getComputedStyle(document.getElementById('twd-ap-new-btn')).backgroundColor);
+		await ctx.close();
+		return look;
+	}
+	const sageLook = await newBtnLook(null);
+	t('S: with no article colours set the button is still the original sage with white writing', sageLook.bg === 'rgb(91, 138, 114)' && sageLook.color === 'rgb(255, 255, 255)' && sageLook.style === '', JSON.stringify(sageLook));
+	t('S: and its hover is the original darker sage', sageLook.hover === 'rgb(70, 112, 90)', sageLook.hover);
+	const brown = await newBtnLook({ TWD_NEW_BTN_STYLE: '--twd-ap-primary:#8a5a00;--twd-ap-primary-dark:#714a00;--twd-ap-primary-ink:#ffffff;' });
+	t('S: with a quote colour set the button takes it', brown.bg === 'rgb(138, 90, 0)' && brown.color === 'rgb(255, 255, 255)', JSON.stringify(brown));
+	t('S: and its hover is the darker version of it', brown.hover === 'rgb(113, 74, 0)', brown.hover);
+	t('S: the colour belongs to the New Article button alone, not the edit pencil', brown.editStyle === '' && brown.editBg === sageLook.editBg, JSON.stringify([brown.editStyle, brown.editBg, sageLook.editBg]));
+	const pale = await newBtnLook({ TWD_NEW_BTN_STYLE: '--twd-ap-primary:#ffcc00;--twd-ap-primary-dark:#d1a700;--twd-ap-primary-ink:#1f1d2b;' });
+	t('S: a pale quote colour gets dark writing so the label still reads', pale.bg === 'rgb(255, 204, 0)' && pale.color === 'rgb(31, 29, 43)', JSON.stringify(pale));
+	const hostile = await newBtnLook({ TWD_NEW_BTN_STYLE: '--twd-ap-primary:#8a5a00;" onmouseover="alert(1)' });
+	t('S: a style value cannot break out of its attribute (no extra attribute appears)', !/onmouseover/.test(hostile.attrs), hostile.attrs);
 
 	await browser.close();
 	console.log('\nScreenshots: ' + tmp);

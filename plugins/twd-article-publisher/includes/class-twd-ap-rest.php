@@ -876,6 +876,7 @@ class TWD_AP_REST {
 				'swipebook_logo_id'   => (int) $settings['swipebook_logo_id'],
 				'swipebook_logo_url'  => $swipebook_logo_url ? $swipebook_logo_url : '',
 				'swipebook_logo_bg'   => $settings['swipebook_logo_bg'],
+				'swipebook_theme'     => in_array( $settings['swipebook_theme'], TWD_AP_Grid_Settings::SWIPEBOOK_THEMES, true ) ? $settings['swipebook_theme'] : 'dark',
 				'swipebook_export_branding' => (bool) $settings['swipebook_export_branding'],
 				'categories'          => $order,
 				'profile_photo_id'    => (int) $settings['profile_photo_id'],

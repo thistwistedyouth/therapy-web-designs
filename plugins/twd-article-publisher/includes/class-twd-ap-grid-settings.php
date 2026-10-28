@@ -86,6 +86,10 @@ class TWD_AP_Grid_Settings {
 			'swipebook_label'    => 'Swipe Book',
 			'swipebook_logo_id'  => 0,
 			'swipebook_logo_bg'  => 'light',
+			// 1.47.0: the colours of the swipe book and the Summary Book: 'dark' (the
+			// original, and the default so nothing changes) or 'light' (ivory pages,
+			// dark writing).
+			'swipebook_theme'    => 'dark',
 			'swipebook_export_branding' => true,
 			'profile_photo_id'   => 0,
 			'profile_name'       => '',
@@ -105,6 +109,9 @@ class TWD_AP_Grid_Settings {
 
 	/** Where the related block goes (1.46.0). */
 	const RELATED_PLACES = array( 'auto', 'shortcode', 'off' );
+
+	/** The colours of the swipe book (1.47.0). */
+	const SWIPEBOOK_THEMES = array( 'dark', 'light' );
 
 	/**
 	 * The class the grid's root element carries for a card image shape: none for
@@ -162,6 +169,7 @@ class TWD_AP_Grid_Settings {
 			'swipebook_label'    => $current['swipebook_label'],
 			'swipebook_logo_id'  => $current['swipebook_logo_id'],
 			'swipebook_logo_bg'  => $current['swipebook_logo_bg'],
+			'swipebook_theme'    => $current['swipebook_theme'],
 			'swipebook_export_branding' => $current['swipebook_export_branding'],
 			'profile_photo_id'   => $current['profile_photo_id'],
 			'profile_name'       => $current['profile_name'],
@@ -281,6 +289,9 @@ class TWD_AP_Grid_Settings {
 		}
 		if ( isset( $input['swipebook_logo_id'] ) ) {
 			$output['swipebook_logo_id'] = absint( $input['swipebook_logo_id'] );
+		}
+		if ( isset( $input['swipebook_theme'] ) && in_array( $input['swipebook_theme'], self::SWIPEBOOK_THEMES, true ) ) {
+			$output['swipebook_theme'] = $input['swipebook_theme'];
 		}
 		if ( isset( $input['swipebook_logo_bg'] ) && in_array( $input['swipebook_logo_bg'], array( 'none', 'light', 'dark' ), true ) ) {
 			$output['swipebook_logo_bg'] = $input['swipebook_logo_bg'];

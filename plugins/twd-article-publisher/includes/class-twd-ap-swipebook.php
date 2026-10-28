@@ -512,6 +512,7 @@ class TWD_AP_Swipebook {
 			'label'           => $label,
 			'logoUrl'         => $logo_url ? $logo_url : '',
 			'logoBg'          => $settings['swipebook_logo_bg'],
+			'theme'           => 'light' === $settings['swipebook_theme'] ? 'light' : 'dark',
 			'includeBranding' => (bool) $settings['swipebook_export_branding'],
 		);
 	}

@@ -25,6 +25,7 @@ class TWD_AP_AI_Generate { public static $on = false; public static function is_
 TWD_AP_AI_Generate::$on = $on;
 $show_new  = true;
 $show_edit = true;
+$new_btn_style = (string) getenv( 'TWD_NEW_BTN_STYLE' ); // the colour the New Article button takes from the article look settings
 
 ob_start();
 include dirname( __DIR__, 3 ) . '/plugins/twd-article-publisher/templates/buttons-and-modal.php';

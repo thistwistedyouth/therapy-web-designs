@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div id="twd-ap-buttons" class="twd-ap-buttons">
 	<?php if ( $show_new ) : ?>
-		<button type="button" id="twd-ap-new-btn" class="twd-ap-float-btn twd-ap-new-btn">
+		<button type="button" id="twd-ap-new-btn" class="twd-ap-float-btn twd-ap-new-btn"<?php echo ( isset( $new_btn_style ) && '' !== $new_btn_style ) ? ' style="' . esc_attr( $new_btn_style ) . '"' : ''; ?>>
 			<span class="twd-ap-plus">+</span> <?php esc_html_e( 'New Article', 'twd-article-publisher' ); ?>
 		</button>
 	<?php endif; ?>

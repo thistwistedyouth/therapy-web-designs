@@ -76,5 +76,19 @@ t( 'tidy line endings: saving something else leaves it off', false === TWD_AP_Gr
 TWD_AP_Grid_Settings::save( array( 'look_tidy_lines' => true ) );
 t( 'tidy line endings: can be switched on again', true === TWD_AP_Grid_Settings::get()['look_tidy_lines'] );
 
+// Swipe book colours (1.47.0).
+t( 'swipe book colours: the default is dark, the original look', 'dark' === TWD_AP_Grid_Settings::get()['swipebook_theme'] );
+TWD_AP_Grid_Settings::save( array( 'swipebook_theme' => 'light' ) );
+t( 'swipe book colours: light is saved', 'light' === TWD_AP_Grid_Settings::get()['swipebook_theme'] );
+foreach ( array( 'Light', 'LIGHT', ' light', 'blue', '', 0, true, null, array( 'dark' ), '<script>' ) as $bad ) {
+	TWD_AP_Grid_Settings::save( array( 'swipebook_theme' => $bad ) );
+	t( 'swipe book colours: ' . json_encode( $bad ) . ' is ignored, light stays', 'light' === TWD_AP_Grid_Settings::get()['swipebook_theme'] );
+}
+TWD_AP_Grid_Settings::save( array( 'accent_color' => '#223344' ) );
+t( 'swipe book colours: saving something else leaves it on light', 'light' === TWD_AP_Grid_Settings::get()['swipebook_theme'] );
+TWD_AP_Grid_Settings::save( array( 'swipebook_theme' => 'dark' ) );
+t( 'swipe book colours: dark can be chosen again', 'dark' === TWD_AP_Grid_Settings::get()['swipebook_theme'] );
+t( 'swipe book colours: only dark and light exist', array( 'dark', 'light' ) === TWD_AP_Grid_Settings::SWIPEBOOK_THEMES );
+
 echo "\n$pass passed, $fail failed\n";
 exit( $fail ? 1 : 0 );

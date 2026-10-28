@@ -1,9 +1,113 @@
 :root {
+  /* The colours of the book. These are the dark book, exactly as it has always
+     looked. A light book (the "Colours" setting in Customise this grid) is the
+     same variables with other values, set on .twd-sb-theme-light further down,
+     so no rule below needs to know which book it is in. "gold" is the accent
+     and "cream" is the writing, whatever their actual colour in a light book. */
   --twd-sb-gold: #ffd166;
   --twd-sb-gold-soft: rgba(255, 209, 102, 0.55);
   --twd-sb-gold-faint: rgba(255, 209, 102, 0.24);
   --twd-sb-cream: rgba(255, 248, 236, 0.92);
   --twd-sb-cream-muted: rgba(255, 248, 236, 0.62);
+  --twd-sb-veil: rgba(10, 9, 18, 0.72);
+  --twd-sb-frame-bg:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.06) 0%, rgba(255, 209, 102, 0) 42%),
+    linear-gradient(180deg, #1b1836 0%, #100e20 60%, #0a0912 100%);
+  --twd-sb-frame-shadow:
+    0 0 0 1px rgba(255, 209, 102, 0.14),
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    inset 0 0 40px rgba(255, 209, 102, 0.03);
+  --twd-sb-card-bg:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.05) 0%, rgba(255, 209, 102, 0) 40%),
+    rgba(19, 17, 36, 0.55);
+  /* The 7px/13px offset shadows either side read as thinner, dimmer pages
+     sitting behind the front one, the way a real bound book's block shows
+     past its cover -- the same idea as TRD's own reader card. */
+  --twd-sb-card-shadow:
+    0 0 0 1px rgba(255, 209, 102, 0.18),
+    7px 0 0 -3px rgba(255, 209, 102, 0.08),
+    -7px 0 0 -3px rgba(255, 209, 102, 0.08),
+    13px 0 0 -6px rgba(255, 209, 102, 0.05),
+    -13px 0 0 -6px rgba(255, 209, 102, 0.05),
+    0 22px 60px rgba(0, 0, 0, 0.55),
+    inset 0 0 30px rgba(255, 209, 102, 0.03);
+  --twd-sb-glow: 0 0 22px rgba(255, 209, 102, 0.2);
+  --twd-sb-mast-glow: 0 0 16px rgba(255, 209, 102, 0.18);
+  --twd-sb-img-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  --twd-sb-photo-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  --twd-sb-chip: rgba(255, 209, 102, 0.08);
+  --twd-sb-chip-hover: rgba(255, 209, 102, 0.18);
+  --twd-sb-chip-soft: rgba(255, 209, 102, 0.06);
+  --twd-sb-btn-hover: rgba(255, 209, 102, 0.14);
+  --twd-sb-primary: #ffd166;
+  --twd-sb-primary-hover: #ffdb85;
+  --twd-sb-primary-ink: #171432;
+  --twd-sb-primary-shadow: 0 4px 16px rgba(255, 209, 102, 0.25);
+  --twd-sb-primary-shadow-hover: 0 6px 20px rgba(255, 209, 102, 0.35);
+  --twd-sb-read: rgba(255, 255, 255, 0.55);
+  --twd-sb-read-line: rgba(255, 255, 255, 0.25);
+  --twd-sb-read-hover: rgba(255, 255, 255, 0.85);
+  --twd-sb-amber: rgba(255, 199, 138, 0.95);
+  --twd-sb-amber-line: rgba(255, 176, 84, 0.35);
+  --twd-sb-close-bg: #ffd166;
+  --twd-sb-close-hover: #ffdb85;
+  --twd-sb-close-ink: #171432;
+  --twd-sb-close-ring: rgba(255, 255, 255, 0.5);
+  --twd-sb-close-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --twd-sb-export-bg: #13112e;
+}
+
+/* The light book: the same pages in warm ivory with dark ink, the gold deepened
+   to an amber that reads on a light page, and softer, warmer shading. */
+.twd-sb-theme-light {
+  --twd-sb-gold: #8a5a00;
+  --twd-sb-gold-soft: rgba(138, 90, 0, 0.94);
+  --twd-sb-gold-faint: rgba(138, 90, 0, 0.26);
+  --twd-sb-cream: #2b2540;
+  --twd-sb-cream-muted: rgba(43, 37, 64, 0.68);
+  --twd-sb-veil: rgba(243, 236, 221, 0.8);
+  --twd-sb-frame-bg:
+    radial-gradient(ellipse at 50% 0%, rgba(214, 158, 46, 0.18) 0%, rgba(214, 158, 46, 0) 46%),
+    linear-gradient(180deg, #fffdf8 0%, #f8f1e3 58%, #efe5d1 100%);
+  --twd-sb-frame-shadow:
+    0 0 0 1px rgba(138, 90, 0, 0.18),
+    0 30px 70px rgba(70, 50, 20, 0.32),
+    inset 0 0 44px rgba(214, 158, 46, 0.1);
+  --twd-sb-card-bg:
+    radial-gradient(ellipse at 50% 0%, rgba(214, 158, 46, 0.13) 0%, rgba(214, 158, 46, 0) 44%),
+    rgba(255, 255, 255, 0.74);
+  --twd-sb-card-shadow:
+    0 0 0 1px rgba(138, 90, 0, 0.2),
+    7px 0 0 -3px rgba(138, 90, 0, 0.09),
+    -7px 0 0 -3px rgba(138, 90, 0, 0.09),
+    13px 0 0 -6px rgba(138, 90, 0, 0.055),
+    -13px 0 0 -6px rgba(138, 90, 0, 0.055),
+    0 22px 46px rgba(70, 50, 20, 0.22),
+    inset 0 0 30px rgba(214, 158, 46, 0.08);
+  --twd-sb-glow: none;
+  --twd-sb-mast-glow: none;
+  --twd-sb-img-shadow: 0 8px 22px rgba(60, 44, 20, 0.22);
+  --twd-sb-photo-shadow: 0 10px 24px rgba(60, 44, 20, 0.28);
+  --twd-sb-chip: rgba(138, 90, 0, 0.07);
+  --twd-sb-chip-hover: rgba(138, 90, 0, 0.15);
+  --twd-sb-chip-soft: rgba(138, 90, 0, 0.07);
+  --twd-sb-btn-hover: rgba(138, 90, 0, 0.12);
+  --twd-sb-primary: #8a5a00;
+  --twd-sb-primary-hover: #744a00;
+  --twd-sb-primary-ink: #fffaf0;
+  --twd-sb-primary-shadow: 0 4px 14px rgba(138, 90, 0, 0.3);
+  --twd-sb-primary-shadow-hover: 0 6px 18px rgba(138, 90, 0, 0.38);
+  --twd-sb-read: rgba(43, 37, 64, 0.76);
+  --twd-sb-read-line: rgba(43, 37, 64, 0.3);
+  --twd-sb-read-hover: rgba(43, 37, 64, 0.95);
+  --twd-sb-amber: #9b4a0b;
+  --twd-sb-amber-line: rgba(155, 74, 11, 0.4);
+  --twd-sb-close-bg: #2b2540;
+  --twd-sb-close-hover: #3a3258;
+  --twd-sb-close-ink: #fffaf0;
+  --twd-sb-close-ring: rgba(255, 255, 255, 0.85);
+  --twd-sb-close-shadow: 0 4px 14px rgba(60, 44, 20, 0.35);
+  --twd-sb-export-bg: #fbf6ea;
 }
 
 * {
@@ -48,7 +152,7 @@ body {
   align-items: center !important;
   justify-content: center !important;
   padding: 26px 18px !important;
-  background: rgba(10, 9, 18, 0.72) !important;
+  background: var(--twd-sb-veil) !important;
   -webkit-backdrop-filter: blur(14px) !important;
   backdrop-filter: blur(14px) !important;
   animation: twd-sb-backdrop-in 0.35s ease both !important;
@@ -69,13 +173,8 @@ body {
   padding: 22px 18px 20px !important;
   border: 1px solid var(--twd-sb-gold-faint) !important;
   border-radius: 22px !important;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.06) 0%, rgba(255, 209, 102, 0) 42%),
-    linear-gradient(180deg, #1b1836 0%, #100e20 60%, #0a0912 100%) !important;
-  box-shadow:
-    0 0 0 1px rgba(255, 209, 102, 0.14),
-    0 30px 80px rgba(0, 0, 0, 0.6),
-    inset 0 0 40px rgba(255, 209, 102, 0.03) !important;
+  background: var(--twd-sb-frame-bg) !important;
+  box-shadow: var(--twd-sb-frame-shadow) !important;
   animation: twd-sb-frame-in 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both !important;
 }
 
@@ -84,31 +183,48 @@ body {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* A solid, clearly visible button on the corner of the frame, well above the
+   pages in the stacking order (the active page is z-index 2, and at the same
+   level it used to paint over the button, which is why only the part that
+   stuck out reacted to the mouse). Always on, not just on hover. It sits in
+   the card's top padding, so it covers none of the card's writing. */
 .twd-sb-close {
   position: absolute !important;
-  top: 12px !important;
-  right: 12px !important;
-  z-index: 2 !important;
-  width: 32px !important;
-  height: 32px !important;
+  top: 6px !important;
+  right: 8px !important;
+  z-index: 10 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
   margin: 0 !important;
+  padding: 0 !important;
   border-radius: 50% !important;
-  border: 1px solid var(--twd-sb-gold-faint) !important;
-  background: rgba(10, 9, 18, 0.55) !important;
-  color: var(--twd-sb-gold-soft) !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
+  border: 2px solid var(--twd-sb-close-ring) !important;
+  background: var(--twd-sb-close-bg) !important;
+  color: var(--twd-sb-close-ink) !important;
   line-height: 1 !important;
   text-decoration: none !important;
-  box-shadow: none !important;
+  box-shadow: var(--twd-sb-close-shadow) !important;
   cursor: pointer !important;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
+  transition: background 0.2s ease, transform 0.2s ease !important;
 }
-.twd-sb-close:hover {
-  color: var(--twd-sb-gold) !important;
-  background: rgba(255, 209, 102, 0.14) !important;
-  border-color: var(--twd-sb-gold-soft) !important;
+.twd-sb-close svg {
+  display: block !important;
+  width: 16px !important;
+  height: 16px !important;
+  pointer-events: none !important;
+}
+.twd-sb-close:hover,
+.twd-sb-close:focus-visible {
+  background: var(--twd-sb-close-hover) !important;
+  transform: scale(1.08) !important;
+}
+.twd-sb-close:focus-visible {
+  outline: 2px solid var(--twd-sb-gold) !important;
+  outline-offset: 2px !important;
 }
 
 /* The header is the first child inside each .twd-sb-card now, not a
@@ -199,7 +315,7 @@ body {
   font-weight: 500 !important;
   letter-spacing: 0.03em !important;
   color: var(--twd-sb-gold-soft) !important;
-  text-shadow: 0 0 16px rgba(255, 209, 102, 0.18) !important;
+  text-shadow: var(--twd-sb-mast-glow) !important;
 }
 
 /* Compact, sitting directly under the page-number counter now rather than
@@ -296,20 +412,8 @@ body {
   border: 1px solid var(--twd-sb-gold-faint) !important;
   border-radius: 18px !important;
   text-align: center !important;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 209, 102, 0.05) 0%, rgba(255, 209, 102, 0) 40%),
-    rgba(19, 17, 36, 0.55) !important;
-  /* The 7px/13px offset shadows either side read as thinner, dimmer pages
-     sitting behind the front one, the way a real bound book's block shows
-     past its cover -- the same idea as TRD's own reader card. */
-  box-shadow:
-    0 0 0 1px rgba(255, 209, 102, 0.18),
-    7px 0 0 -3px rgba(255, 209, 102, 0.08),
-    -7px 0 0 -3px rgba(255, 209, 102, 0.08),
-    13px 0 0 -6px rgba(255, 209, 102, 0.05),
-    -13px 0 0 -6px rgba(255, 209, 102, 0.05),
-    0 22px 60px rgba(0, 0, 0, 0.55),
-    inset 0 0 30px rgba(255, 209, 102, 0.03) !important;
+  background: var(--twd-sb-card-bg) !important;
+  box-shadow: var(--twd-sb-card-shadow) !important;
 }
 
 /* The hidden copy of a card the fit step measures in (see computePlan() in
@@ -348,7 +452,7 @@ body {
   font-size: calc(clamp(20px, 4.6vw, 28px) * var(--twd-sb-s, 1)) !important;
   line-height: 1.25 !important;
   color: var(--twd-sb-gold) !important;
-  text-shadow: 0 0 22px rgba(255, 209, 102, 0.2) !important;
+  text-shadow: var(--twd-sb-glow) !important;
   /* Distributes a wrapped heading's words evenly across its lines instead
      of however the default greedy wrap happens to break it (often a
      short, orphaned last line) -- a browser that doesn't support it just
@@ -402,7 +506,7 @@ body {
   border-radius: 10px !important;
   display: block !important;
   margin: 14px 0 !important;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: var(--twd-sb-img-shadow) !important;
 }
 .twd-sb-body-text a {
   color: var(--twd-sb-gold) !important;
@@ -425,7 +529,7 @@ body {
   object-fit: cover !important;
   margin-bottom: 16px !important;
   border: 1px solid var(--twd-sb-gold-faint) !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: var(--twd-sb-photo-shadow) !important;
 }
 .twd-sb-bio .twd-sb-heading {
   margin-bottom: 10px !important;
@@ -440,7 +544,7 @@ body {
 .twd-sb-bio-link {
   display: inline-block !important;
   border: 1px solid var(--twd-sb-gold-faint) !important;
-  background: rgba(255, 209, 102, 0.08) !important;
+  background: var(--twd-sb-chip) !important;
   color: var(--twd-sb-gold) !important;
   padding: 9px 22px !important;
   border-radius: 999px !important;
@@ -453,7 +557,7 @@ body {
   transition: background 0.2s ease, border-color 0.2s ease !important;
 }
 .twd-sb-bio-link:hover {
-  background: rgba(255, 209, 102, 0.18) !important;
+  background: var(--twd-sb-chip-hover) !important;
   border-color: var(--twd-sb-gold-soft) !important;
   color: var(--twd-sb-gold) !important;
 }
@@ -501,13 +605,13 @@ body {
   margin: 14px 0 !important;
   padding: 16px 0 !important;
   max-width: 13em !important;
-  border-top: 1px solid rgba(255, 176, 84, 0.35) !important;
-  border-bottom: 1px solid rgba(255, 176, 84, 0.35) !important;
+  border-top: 1px solid var(--twd-sb-amber-line) !important;
+  border-bottom: 1px solid var(--twd-sb-amber-line) !important;
   font-family: "Cormorant Garamond", Garamond, Georgia, serif !important;
   font-style: italic !important;
   font-size: calc(clamp(18px, 4vw, 22px) * var(--twd-sb-s, 1)) !important;
   line-height: 1.6 !important;
-  color: rgba(255, 199, 138, 0.95) !important;
+  color: var(--twd-sb-amber) !important;
 }
 .twd-sb-question-text p {
   margin: 0 !important;
@@ -534,7 +638,7 @@ body {
   height: auto !important;
   object-fit: contain !important;
   border-radius: 10px !important;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: var(--twd-sb-img-shadow) !important;
 }
 .twd-sb-image-caption {
   flex: 0 0 auto !important;
@@ -591,7 +695,7 @@ body {
 }
 .twd-sb-related-item:hover,
 .twd-sb-related-item-loading {
-  background: rgba(255, 209, 102, 0.06) !important;
+  background: var(--twd-sb-chip-soft) !important;
   padding-left: 10px !important;
 }
 .twd-sb-related-title {
@@ -647,7 +751,7 @@ body {
 }
 .twd-sb-btn:hover {
   color: var(--twd-sb-gold) !important;
-  background: rgba(255, 209, 102, 0.14) !important;
+  background: var(--twd-sb-btn-hover) !important;
   border-color: var(--twd-sb-gold-faint) !important;
 }
 .twd-sb-btn:disabled {
@@ -677,7 +781,7 @@ body {
 .twd-sb-save-btn {
   margin: 0 !important;
   border: 1px solid var(--twd-sb-gold-faint) !important;
-  background: rgba(255, 209, 102, 0.08) !important;
+  background: var(--twd-sb-chip) !important;
   color: var(--twd-sb-gold) !important;
   padding: 8px 20px !important;
   border-radius: 999px !important;
@@ -692,7 +796,7 @@ body {
 }
 .twd-sb-share-btn:hover,
 .twd-sb-save-btn:hover {
-  background: rgba(255, 209, 102, 0.18) !important;
+  background: var(--twd-sb-chip-hover) !important;
   border-color: var(--twd-sb-gold-soft) !important;
   color: var(--twd-sb-gold) !important;
 }
@@ -706,9 +810,9 @@ body {
    action meant to stand out most in the footer. */
 .twd-sb-pdf-btn {
   margin: 0 !important;
-  border: 1px solid var(--twd-sb-gold) !important;
-  background: var(--twd-sb-gold) !important;
-  color: #171432 !important;
+  border: 1px solid var(--twd-sb-primary) !important;
+  background: var(--twd-sb-primary) !important;
+  color: var(--twd-sb-primary-ink) !important;
   padding: 8px 20px !important;
   border-radius: 999px !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
@@ -716,24 +820,24 @@ body {
   font-weight: 700 !important;
   letter-spacing: 0.03em !important;
   text-decoration: none !important;
-  box-shadow: 0 4px 16px rgba(255, 209, 102, 0.25) !important;
+  box-shadow: var(--twd-sb-primary-shadow) !important;
   cursor: pointer !important;
   transition: background 0.2s ease, box-shadow 0.2s ease !important;
 }
 .twd-sb-pdf-btn:hover {
-  background: #ffdb85 !important;
-  box-shadow: 0 6px 20px rgba(255, 209, 102, 0.35) !important;
+  background: var(--twd-sb-primary-hover) !important;
+  box-shadow: var(--twd-sb-primary-shadow-hover) !important;
 }
 .twd-sb-read-link {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-  color: rgba(255, 255, 255, 0.55) !important;
+  color: var(--twd-sb-read) !important;
   font-size: 12px !important;
   font-weight: 400 !important;
   text-decoration: underline !important;
-  text-decoration-color: rgba(255, 255, 255, 0.25) !important;
+  text-decoration-color: var(--twd-sb-read-line) !important;
 }
 .twd-sb-read-link:hover {
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: var(--twd-sb-read-hover) !important;
 }
 
 @media (max-width: 600px) {

@@ -387,6 +387,13 @@ class TWD_AP_Shortcode {
 								<button type="button" id="twd-ap-gs-sb-logo-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
 							</div>
 
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-theme"><?php esc_html_e( 'Colours', 'twd-article-publisher' ); ?></label>
+							<select id="twd-ap-gs-sb-theme" class="twd-ap-input">
+								<option value="dark"><?php esc_html_e( 'Dark (the original)', 'twd-article-publisher' ); ?></option>
+								<option value="light"><?php esc_html_e( 'Light, with dark writing', 'twd-article-publisher' ); ?></option>
+							</select>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'For the swipe book and the Summary Book. The saved image and PDF follow it.', 'twd-article-publisher' ); ?></p>
+
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-logo-bg"><?php esc_html_e( 'Logo background', 'twd-article-publisher' ); ?></label>
 							<select id="twd-ap-gs-sb-logo-bg" class="twd-ap-input">
 								<option value="light"><?php esc_html_e( 'Light', 'twd-article-publisher' ); ?></option>

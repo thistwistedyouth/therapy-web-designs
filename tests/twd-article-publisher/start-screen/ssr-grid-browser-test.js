@@ -645,6 +645,34 @@ async function open(browser, name, o) {
 		window_cta = {};
 	}
 
+	// 20. The gear popup: the swipe book colours (1.47.0).
+	{
+		const r = await open(browser, 'admin', { delay: 50 });
+		await r.page.click('.twd-ap-articles-settings-btn');
+		await r.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+		await r.page.click('#twd-ap-gs-related-details > summary');
+		t('swipe book colours: dark to start with, offering dark and light', (await r.page.inputValue('#twd-ap-gs-sb-theme')) === 'dark' && (await r.page.locator('#twd-ap-gs-sb-theme option').evaluateAll((o) => o.map((x) => x.value))).join(',') === 'dark,light');
+		t('swipe book colours: the label says Colours and the light option says dark writing', (await r.page.locator('label[for="twd-ap-gs-sb-theme"]').innerText()).trim() === 'Colours' && (await r.page.locator('#twd-ap-gs-sb-theme option[value="light"]').innerText()).includes('dark writing'));
+		await r.page.selectOption('#twd-ap-gs-sb-theme', 'light');
+		await r.page.click('#twd-ap-gs-save');
+		await wait(300);
+		const body = saved[saved.length - 1];
+		t('swipe book colours: saving sends the choice', body.swipebook_theme === 'light', JSON.stringify(body.swipebook_theme));
+		t('swipe book colours: no JavaScript errors', r.errors.length === 0, r.errors.join(' | '));
+		await r.ctx.close();
+		// saved values load back in, and a value we do not know shows as dark
+		for (const [stored, shown] of [['light', 'light'], ['sepia', 'dark'], [undefined, 'dark']]) {
+			window_cta = stored === undefined ? {} : { swipebook_theme: stored };
+			const q = await open(browser, 'admin', { delay: 50 });
+			await q.page.click('.twd-ap-articles-settings-btn');
+			await q.page.waitForSelector('#twd-ap-gs-save:not([disabled])');
+			await q.page.click('#twd-ap-gs-related-details > summary');
+			t('swipe book colours: a saved ' + JSON.stringify(stored) + ' loads back as ' + shown, (await q.page.inputValue('#twd-ap-gs-sb-theme')) === shown);
+			await q.ctx.close();
+		}
+		window_cta = {};
+	}
+
 	await browser.close();
 	console.log('\n' + pass + ' passed, ' + fail + ' failed');
 	process.exit(fail ? 1 : 0);

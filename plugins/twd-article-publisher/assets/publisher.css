@@ -31,7 +31,7 @@
   border: none !important;
   border-radius: 30px !important;
   background: var(--twd-ap-primary) !important;
-  color: #fff !important;
+  color: var(--twd-ap-primary-ink, #fff) !important;
   font-size: 14px !important;
   font-weight: 600 !important;
   line-height: normal !important;
