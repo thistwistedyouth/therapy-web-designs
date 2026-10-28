@@ -72,8 +72,19 @@ class TWD_AP_Article_Style {
 		if ( empty( TWD_AP_Grid_Settings::get()['look_tidy_lines'] ) ) {
 			return $content;
 		}
+		// The rule is about English: short words that should not end a line. In
+		// another language the same rule would glue most of a sentence together
+		// (Hebrew, Arabic, Dutch), so it only runs on an English site unless a
+		// site says otherwise with the twd_ap_tidy_lines filter.
+		$english = 0 === strpos( strtolower( (string) get_locale() ), 'en' );
+		if ( ! apply_filters( 'twd_ap_tidy_lines', $english, $content ) ) {
+			return $content;
+		}
 		return self::tidy_lines( $content );
 	}
+
+	/** The most one or two letter words glued in a row (see tidy_lines()). */
+	const TIDY_CHAIN = 5;
 
 	/**
 	 * The text of an HTML string with a non-breaking space after every word
@@ -81,7 +92,11 @@ class TWD_AP_Article_Style {
 	 * attributes are left exactly as they are, and so is everything inside
 	 * pre, code, kbd, samp, script, style and textarea. A word counts only if
 	 * it stands alone (not the end of a longer word, not after an apostrophe
-	 * or hyphen). If the text is not valid UTF-8 it is returned unchanged.
+	 * or hyphen, apostrophe entities included). Shortcode syntax in square
+	 * brackets ([button text="Go to top"]) is left alone, since shortcodes are
+	 * read after this runs. At most TIDY_CHAIN short words in a row are glued
+	 * (a longer run of them would be one unbreakable block too wide for a
+	 * narrow screen). If the text is not valid UTF-8 it is returned unchanged.
 	 */
 	public static function tidy_lines( $html ) {
 		$parts = preg_split( '/(<[^>]*>)/', (string) $html, -1, PREG_SPLIT_DELIM_CAPTURE );
@@ -102,15 +117,52 @@ class TWD_AP_Article_Style {
 			if ( $skip > 0 ) {
 				continue;
 			}
-			// The apostrophe entities too: wptexturize has already turned "it's" into
-			// "it&#8217;s" by the time this runs, and the "s" is not a word of its own.
-			$done = preg_replace( '/(?<![\p{L}\p{N}\'\x{2019}\-])(?<!&#8217;)(?<!&#8216;)(?<!&#039;)(?<!&#x2019;)(?<!&rsquo;)(?<!&lsquo;)(?<!&apos;)(\p{L}{1,2}) (?=\S|$)/u', '$1&nbsp;', $part );
-			if ( null === $done ) {
-				return $html; // not valid UTF-8: leave the whole article as it is
+			// Text outside shortcode syntax only: the odd pieces are shortcodes.
+			$bits = preg_split( '/(\[\/?[A-Za-z_][\w-]*(?:\s[^\[\]]*)?\])/', $part, -1, PREG_SPLIT_DELIM_CAPTURE );
+			if ( ! is_array( $bits ) ) {
+				return $html;
 			}
-			$parts[ $i ] = $done;
+			foreach ( $bits as $k => $bit ) {
+				if ( 1 === $k % 2 || '' === $bit ) {
+					continue;
+				}
+				$done = self::glue_short_words( $bit );
+				if ( null === $done ) {
+					return $html; // not valid UTF-8: leave the whole article as it is
+				}
+				$bits[ $k ] = $done;
+			}
+			$parts[ $i ] = implode( '', $bits );
 		}
 		return implode( '', $parts );
+	}
+
+	/**
+	 * One piece of text: the glue itself. Returns null if the text is not valid
+	 * UTF-8. The apostrophe entities are checked too: wptexturize has already
+	 * turned "it's" into "it&#8217;s" by the time this runs, and the "s" is not
+	 * a word of its own.
+	 */
+	private static function glue_short_words( $text ) {
+		$end = -1;   // where the previous glued word ended: a match starting there is in the same run
+		$run = 0;
+		return preg_replace_callback(
+			'/(?<![\p{L}\p{N}\'\x{2019}\-])(?<!&#8217;)(?<!&#8216;)(?<!&#039;)(?<!&#39;)(?<!&#x2019;)(?<!&rsquo;)(?<!&lsquo;)(?<!&apos;)(\p{L}{1,2}) (?=\S|$)/u',
+			function ( $m ) use ( &$end, &$run ) {
+				$start = $m[0][1];
+				$run   = $start === $end ? $run + 1 : 1;
+				$end   = $start + strlen( $m[0][0] );
+				if ( $run > self::TIDY_CHAIN ) {
+					$run = 0; // leave this space as it is; the next short word starts a new run
+					return $m[0][0];
+				}
+				return $m[1][0] . '&nbsp;';
+			},
+			$text,
+			-1,
+			$count,
+			PREG_OFFSET_CAPTURE
+		);
 	}
 
 	public function wrap_content( $content ) {

@@ -23,6 +23,7 @@ function is_singular() { return $GLOBALS['single']; }
 function in_the_loop() { return $GLOBALS['loop']; }
 function is_main_query() { return true; }
 function get_the_ID() { return $GLOBALS['current_id']; }
+function get_queried_object_id() { return $GLOBALS['current_id']; }
 function get_post_meta( $id, $k ) { return $GLOBALS['meta'][ $id ][ $k ] ?? ''; }
 function get_the_category( $id ) { return array_map( function ( $c ) { return $GLOBALS['terms'][ $c ]; }, $GLOBALS['posts'][ $id ]->cats ); }
 function get_the_title( $p ) { return str_replace( "'", '&#8217;', $p->post_title ); }
@@ -210,6 +211,10 @@ t( 'place auto: the block is added after the article text', 0 === strpos( $i->ap
 $i = inst();
 $sc();
 t( 'place auto with the shortcode in the article text: the automatic copy steps aside, so it shows once', '<p>text</p>' === $i->append_to_article( '<p>text</p>' ) );
+// a block for a DIFFERENT article (a sidebar widget) does not make this article lose its own
+$i = inst();
+$sc( array( 'id' => '20' ) );
+t( 'place auto: a [twd_related id=...] for another article printed first does not suppress this article\'s own block', 0 === strpos( $i->append_to_article( '<p>text</p>' ), '<p>text</p><aside' ) );
 // shortcode only
 TWD_AP_Grid_Settings::$s['related_place'] = 'shortcode';
 $i = inst();

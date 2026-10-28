@@ -6,7 +6,9 @@
 define( 'ABSPATH', '/' );
 $plugin = dirname( __DIR__, 2 ) . '/plugins/twd-article-publisher/';
 
-$GLOBALS['admin'] = false; $GLOBALS['single'] = true; $GLOBALS['loop'] = true; $GLOBALS['tidy'] = true;
+$GLOBALS['admin'] = false; $GLOBALS['single'] = true; $GLOBALS['loop'] = true; $GLOBALS['tidy'] = true; $GLOBALS['locale'] = 'en_GB'; $GLOBALS['force'] = null;
+function get_locale() { return $GLOBALS['locale']; }
+function apply_filters( $tag, $value ) { return ( 'twd_ap_tidy_lines' === $tag && null !== $GLOBALS['force'] ) ? $GLOBALS['force'] : $value; }
 function add_action() {}
 function add_filter( $tag, $cb, $prio = 10 ) { $GLOBALS['registered'][] = array( $tag, is_array( $cb ) ? $cb[1] : $cb, $prio ); }
 function is_admin() { return $GLOBALS['admin']; }
@@ -26,7 +28,7 @@ t( 'a two letter word before another word: kept with it', 'relationships we' . $
 t( 'the heading case from a real article: "so" stays with "hard?"', 'Why are family relationships so' . $N . 'hard?' === tidy( 'Why are family relationships so hard?' ) );
 t( 'a one letter word: kept with the next', 'There is' . $N . 'a' . $N . 'quiet way' === tidy( 'There is a quiet way' ) );
 t( 'a short word at the start of the text', 'So' . $N . 'we' . $N . 'begin' === tidy( 'So we begin' ) );
-t( 'every short word in a sentence', 'It' . $N . 'is' . $N . 'an' . $N . 'ox' . $N . 'of' . $N . 'us' . $N . 'all' === tidy( 'It is an ox of us all' ) );
+t( 'a run of short words is glued only five deep, then starts again', 'It' . $N . 'is' . $N . 'an' . $N . 'ox' . $N . 'of' . $N . 'us all' === tidy( 'It is an ox of us all' ), tidy( 'It is an ox of us all' ) );
 t( 'three letter words are left alone', 'the first one was not' === tidy( 'the first one was not' ) );
 t( 'a short word at the end of a sentence (followed by a full stop) is left alone', 'Come with us. Then go.' === tidy( 'Come with us. Then go.' ) );
 t( 'a capital abbreviation counts like any short word', 'in' . $N . 'the UK' . $N . 'and the EU' . $N . 'too' === tidy( 'in the UK and the EU too' ) );
@@ -63,6 +65,16 @@ t( 'entities are not broken: &amp; &lt; &quot;', '&amp; we' . $N . 'go' . $N . '
 t( 'text that is not valid UTF-8 is returned exactly as it was', "so we \xFF go on" === tidy( "so we \xFF go on" ) );
 t( 'accented short words count as words', 'à' . $N . 'la' . $N . 'carte, ça' . $N . 'va' === tidy( 'à la carte, ça va' ), tidy( 'à la carte, ça va' ) );
 
+// ---------- review fixes (1.46.1) ----------
+$longest = 0; foreach ( preg_split( '/ /', str_replace( $N, "\x01", tidy( 'so we go on as if it is ok to do so as we do it, and so we go on as if it is so' ) ) ) as $unit ) { $longest = max( $longest, substr_count( $unit, "\x01" ) ); }
+t( 'no unbreakable unit holds more than five glued spaces (six words)', $longest <= TWD_AP_Article_Style::TIDY_CHAIN && 5 === TWD_AP_Article_Style::TIDY_CHAIN, 'longest ' . $longest );
+t( 'real contractions as WordPress leaves them: it&#8217;s a day when we don&#8217;t do it, I&#8217;m so tired', 'it&#8217;s a' . $N . 'day when we' . $N . 'don&#8217;t do' . $N . 'it, I&#8217;m so' . $N . 'tired' === tidy( 'it&#8217;s a day when we don&#8217;t do it, I&#8217;m so tired' ), tidy( 'it&#8217;s a day when we don&#8217;t do it, I&#8217;m so tired' ) );
+t( 'the numeric apostrophe entity &#39; counts as an apostrophe too', 'it&#39;s a' . $N . 'day' === tidy( 'it&#39;s a day' ), tidy( 'it&#39;s a day' ) );
+t( 'shortcode syntax is left exactly alone, the text around it is tidied', 'so' . $N . 'we' . $N . '[button class="my box" text="Go to top"] go' . $N . 'on' . $N . '[/button] to' . $N . 'it' === tidy( 'so we [button class="my box" text="Go to top"] go on [/button] to it' ), tidy( 'so we [button class="my box" text="Go to top"] go on [/button] to it' ) );
+t( 'a closing shortcode tag and a self-closing one are left alone', '[a b] [/a b] [x y /] ok' === tidy( '[a b] [/a b] [x y /] ok' ), tidy( '[a b] [/a b] [x y /] ok' ) );
+t( 'square brackets that are not shortcodes (a citation) do not stop the tidy', 'see [1] we' . $N . 'go' . $N . 'on' === tidy( 'see [1] we go on' ), tidy( 'see [1] we go on' ) );
+t( 'a short word right before a shortcode is still kept with it, nothing inside it changes', 'go' . $N . '[x y="a b"]' === tidy( 'go [x y="a b"]' ) );
+
 // ---------- when it runs ----------
 $st = ( new ReflectionClass( 'TWD_AP_Article_Style' ) )->newInstanceWithoutConstructor();
 t( 'article page, setting on: the article text is tidied', 'so' . $N . 'we' . $N . 'go' === $st->tidy_content( 'so we go' ) );
@@ -75,6 +87,21 @@ t( 'outside the main loop (a widget, an excerpt): nothing changes', 'so we go' =
 $GLOBALS['loop'] = true; $GLOBALS['admin'] = true;
 t( 'in the admin: nothing changes', 'so we go' === $st->tidy_content( 'so we go' ) );
 $GLOBALS['admin'] = false;
+
+// English sites only (the rule is English), unless the site says otherwise
+$GLOBALS['locale'] = 'en_US';
+t( 'an English site (en_US): tidied', 'so' . $N . 'we' . $N . 'go' === $st->tidy_content( 'so we go' ) );
+$GLOBALS['locale'] = 'en_GB';
+t( 'an English site (en_GB): tidied', 'so' . $N . 'we' . $N . 'go' === $st->tidy_content( 'so we go' ) );
+foreach ( array( 'nl_NL', 'he_IL', 'ar', 'fr_FR', '' ) as $loc ) {
+	$GLOBALS['locale'] = $loc;
+	t( 'a site in ' . json_encode( $loc ) . ': left alone', 'so we go' === $st->tidy_content( 'so we go' ) );
+}
+$GLOBALS['force'] = true;
+t( 'the twd_ap_tidy_lines filter can switch it on for another language', 'so' . $N . 'we' . $N . 'go' === $st->tidy_content( 'so we go' ) );
+$GLOBALS['locale'] = 'en_GB'; $GLOBALS['force'] = false;
+t( 'the twd_ap_tidy_lines filter can switch it off for English', 'so we go' === $st->tidy_content( 'so we go' ) );
+$GLOBALS['force'] = null;
 
 // registration order: tidy runs at priority 10, before the swipe book buttons (11 and 15) and the wrapper (20)
 $ref = new ReflectionMethod( 'TWD_AP_Article_Style', '__construct' ); $ref->setAccessible( true );

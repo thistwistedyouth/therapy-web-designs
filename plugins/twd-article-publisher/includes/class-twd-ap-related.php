@@ -44,10 +44,10 @@ class TWD_AP_Related {
 	 * the article being shown; id="123" names another, count="3" changes how
 	 * many links for this one place. Prints nothing when the owner has chosen
 	 * "Nowhere", or when the article has nothing to show. When the owner has
-	 * left it on "automatically at the end" and the shortcode sits in the
-	 * article's own text, the automatic copy steps aside, so it never shows
-	 * twice there; in a template that prints after the text, choose "Only
-	 * where I place the shortcode".
+	 * left it on "automatically at the end" and the shortcode for THIS article
+	 * sits in the article's own text, the automatic copy steps aside, so it
+	 * never shows twice there; in a template that prints after the text, choose
+	 * "Only where I place the shortcode".
 	 */
 	public function shortcode( $atts ) {
 		if ( 'off' === self::place() ) {
@@ -64,7 +64,11 @@ class TWD_AP_Related {
 		$count = absint( $atts['count'] );
 		$box   = self::html( $id, $count ? max( 1, min( 8, $count ) ) : 0 );
 		if ( '' !== $box ) {
-			self::$placed = true;
+			// Only a block for the article being shown makes the automatic one step
+			// aside; one for a different article (id="5" in a sidebar) does not.
+			if ( $id === (int) get_queried_object_id() ) {
+				self::$placed = true;
+			}
 			TWD_AP_Article_Style::enqueue();
 		}
 		return $box;

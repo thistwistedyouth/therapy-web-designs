@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.46.0
+Stable tag: 1.46.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,13 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.46.1): fixes to the line endings and [twd_related] from an independent
+review of 1.46.0. A run of short words is no longer glued together without
+limit (at most five in a row), shortcodes written in an article's text are left
+exactly as they are, the line endings step only runs on an English site (it can
+be overridden with the twd_ap_tidy_lines filter), and a [twd_related id="5"] for
+a different article no longer stops the article's own related block appearing.
 
 NEW (1.46.0): (1) A shortcode for the swipe book button. In Customise this
 grid, tick "Place the button under the title with a shortcode instead of

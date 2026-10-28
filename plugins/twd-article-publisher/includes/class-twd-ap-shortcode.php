@@ -285,7 +285,7 @@ class TWD_AP_Shortcode {
 
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-related-details">
 							<summary><?php esc_html_e( 'Related articles', 'twd-article-publisher' ); ?></summary>
-							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'At the end of every article, a short list of links to more articles from the same category, with a link to the category page. It helps readers keep reading and helps search engines find your articles. Leave it off if your theme or another plugin already shows related posts.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'At the end of every article, a short list of links to more articles from the same category, with a link to the category page. It helps readers keep reading and helps search engines find your articles. Choose \'Nowhere\' below if your theme or another plugin already shows related posts.', 'twd-article-publisher' ); ?></p>
 							<label class="twd-ap-label" for="twd-ap-gs-related-place"><?php esc_html_e( 'Where it goes', 'twd-article-publisher' ); ?></label>
 							<select id="twd-ap-gs-related-place" class="twd-ap-input">
 								<option value="auto"><?php esc_html_e( 'Automatically at the end of every article', 'twd-article-publisher' ); ?></option>
@@ -349,7 +349,7 @@ class TWD_AP_Shortcode {
 								<option value="relaxed"><?php esc_html_e( 'Relaxed', 'twd-article-publisher' ); ?></option>
 							</select>
 							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-look-tidy" /> <?php esc_html_e( 'Tidy line endings: keep a short word (a, so, we, an) with the word after it', 'twd-article-publisher' ); ?></label>
-							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Stops a line ending on a one or two letter word. Headings are also balanced and paragraphs avoid a lonely last word in browsers that support it.', 'twd-article-publisher' ); ?></p>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Stops a line ending on a one or two letter word, in English text. Headings are also balanced and paragraphs avoid a lonely last word in browsers that support it.', 'twd-article-publisher' ); ?></p>
 							<div class="twd-ap-gs-look-preview" id="twd-ap-gs-look-preview" aria-hidden="true">
 								<h4><?php esc_html_e( 'A sample heading', 'twd-article-publisher' ); ?></h4>
 								<p><?php esc_html_e( 'This is how the text of an article will read, with a', 'twd-article-publisher' ); ?> <a href="#" tabindex="-1"><?php esc_html_e( 'link inside it', 'twd-article-publisher' ); ?></a>.</p>
