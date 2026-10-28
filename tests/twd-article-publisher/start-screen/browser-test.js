@@ -696,6 +696,32 @@ const GEN = (over) => ({ status: 200, json: Object.assign({ title: 'Generated ti
 		await e.sx.ctx.close();
 	}
 
+
+	// ---------- U. the floating New Article button is a round icon (1.49.0) ----------
+	{
+		const sx = await open(browser, 'key-on', cfgOn);
+		const pg = sx.page;
+		const nb = await pg.locator('#twd-ap-new-btn').boundingBox();
+		t('U: the floating New Article button is a 54px circle, bottom right', Math.abs(nb.width - 54) <= 1 && Math.abs(nb.height - 54) <= 1 && Math.round(nb.x + nb.width) === 1100 - 20 && Math.round(nb.y + nb.height) > 900 - 60, JSON.stringify(nb));
+		const u = await pg.locator('#twd-ap-new-btn').evaluate((e) => ({ r: getComputedStyle(e).borderTopLeftRadius, text: e.innerText.trim(), label: e.getAttribute('aria-label'), svg: !!e.querySelector('svg'), tipBefore: getComputedStyle(e, '::after').opacity }));
+		t('U: it holds an icon (a plus and a pen), no words, and is named New article for screen readers', u.r === '50%' && u.text === '' && u.label === 'New article' && u.svg, JSON.stringify(u));
+		await pg.hover('#twd-ap-new-btn');
+		await new Promise((r) => setTimeout(r, 350));
+		const tip = await pg.locator('#twd-ap-new-btn').evaluate((e) => { const c = getComputedStyle(e, '::after'); return { o: c.opacity, content: c.content, right: parseFloat(c.right) }; });
+		t('U: hovering it says New article, to its left', u.tipBefore === '0' && tip.o === '1' && tip.content === '"New article"' && tip.right > 0, JSON.stringify(tip));
+		await pg.click('#twd-ap-new-btn');
+		t('U: clicking it opens the popup on the start screen', await vis(pg, '#twd-ap-start'));
+		await sx.ctx.close();
+		// the grid's own New article circle starts an article through this one function
+		const sy = await open(browser, 'key-on', cfgOn);
+		t('U: window.TWD_AP_OpenNew exists and opens the popup on the start screen (what the grid circle calls)', (await sy.page.evaluate(() => typeof window.TWD_AP_OpenNew)) === 'function' && (await sy.page.evaluate(() => { window.TWD_AP_OpenNew(); return true; })) && await vis(sy.page, '#twd-ap-start'));
+		await sy.ctx.close();
+		const px = await open(browser, 'key-on', cfgOn, { width: 390, height: 800 });
+		const nb2 = await px.page.locator('#twd-ap-new-btn').boundingBox();
+		t('U: on a phone it stays a circle inside the screen', Math.abs(nb2.width - 54) <= 1 && nb2.x + nb2.width <= 390 && nb2.y + nb2.height <= 800, JSON.stringify(nb2));
+		await px.ctx.close();
+	}
+
 	await browser.close();
 	console.log('\nScreenshots: ' + tmp);
 	console.log(pass + ' passed, ' + fail + ' failed');

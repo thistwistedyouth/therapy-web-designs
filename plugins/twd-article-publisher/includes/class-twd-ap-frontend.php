@@ -170,6 +170,18 @@ class TWD_AP_Frontend {
 		return 0.2126 * $lin( $r ) + 0.7152 * $lin( $g ) + 0.0722 * $lin( $b );
 	}
 
+	/**
+	 * Whether this person may start a new article here at all: an allowed publisher, and the site has not
+	 * chosen "nowhere" for the New Article button. The grid's own New article circle is shown on this test.
+	 */
+	public static function new_article_allowed() {
+		if ( ! self::current_user_allowed() ) {
+			return false;
+		}
+		$settings = TWD_AP_Settings::get_settings();
+		return 'nowhere' !== $settings['show_everywhere'];
+	}
+
 	public function render_buttons_and_modal() {
 		if ( is_admin() ) {
 			return;
@@ -178,13 +190,16 @@ class TWD_AP_Frontend {
 			return;
 		}
 
-		$show_new  = $this->should_show_new_button();
+		// A grid on this page that printed its own New article circle takes the place of the floating button
+		// (the popup itself is still needed, for the circle).
+		$grid_new  = TWD_AP_Shortcode::new_circle_rendered();
+		$show_new  = $this->should_show_new_button() && ! $grid_new;
 		$show_edit = $this->should_show_edit_button();
 		$look      = TWD_AP_Grid_Settings::get();
 		// The New Article button wears the colour of the article's quote bar.
 		$new_btn_style = self::new_button_style( $look['look_quote_color'], $look['look_link_color'] );
 
-		if ( ! $show_new && ! $show_edit ) {
+		if ( ! $show_new && ! $show_edit && ! $grid_new ) {
 			return;
 		}
 

@@ -48,6 +48,13 @@
 	// Lets the articles grid open the edit popup for any article card.
 	// Permission is still checked by the server when the article loads and
 	// when it is saved; this only opens the popup.
+	// Lets the grid's New article circle start a new article.
+	window.TWD_AP_OpenNew = function () {
+		if (els.overlay) {
+			openModal('new');
+		}
+	};
+
 	window.TWD_AP_OpenEditor = function (id) {
 		var postId = parseInt(id, 10);
 		if (postId && els.overlay) {

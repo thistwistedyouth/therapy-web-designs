@@ -147,7 +147,7 @@ class TWD_AP_Related {
 		// Only when there is a grid to show: a block with just the topics row stays as it was.
 		$grid  = 'grid' === $s['related_layout'] && '' !== $list;
 		$class = 'twd-ap-related' . ( $grid ? ' twd-ap-related-wide ' . TWD_AP_Grid_Settings::thumb_shape_class( $s['thumb_shape'] ) : '' );
-		return '<aside class="' . esc_attr( trim( $class ) ) . '" style="' . esc_attr( '--twd-ap-accent-color:' . $s['accent_color'] . ';' ) . '">' . $list . $nav . '</aside>';
+		return '<aside class="' . esc_attr( trim( $class ) ) . '" style="' . esc_attr( '--twd-ap-accent-color:' . $s['accent_color'] . ';--twd-ap-accent-ink:' . TWD_AP_Swipebook_Colours::best_ink( '' !== TWD_AP_Swipebook_Colours::clean_hex( $s['accent_color'] ) ? TWD_AP_Swipebook_Colours::clean_hex( $s['accent_color'] ) : '#2563eb' ) . ';' ) . '">' . $list . $nav . '</aside>';
 	}
 
 	/**

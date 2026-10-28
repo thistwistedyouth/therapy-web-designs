@@ -50,8 +50,8 @@ function delete_post_meta( $id, $k ) { unset( $GLOBALS['meta'][ $id ][ $k ] ); r
 function get_option( $k, $d = false ) { return $GLOBALS['opt'][ $k ] ?? $d; }
 function get_posts( $args ) { $GLOBALS['q'] = $args; return array_values( array_filter( $GLOBALS['posts'], function ( $p ) use ( $args ) { return 'publish' === $p->post_status && ! in_array( $p->ID, $args['post__not_in'], true ) && ! ( isset( $GLOBALS['meta'][ $p->ID ]['_twd_ap_swipebook_off'] ) ); } ) ); }
 function rest_ensure_response( $x ) { return $x; }
-class TWD_AP_Grid_Settings { static $pos = 'both'; static $top = false; static $bio_all = false; static $pname = 'Jane Smith'; static function get() { return array( 'swipebook_color' => '#5b8a72', 'swipebook_button_position' => self::$pos, 'swipebook_top_shortcode' => self::$top, 'profile_in_all_books' => self::$bio_all, 'profile_name' => self::$pname, 'profile_photo_id' => 0, 'profile_bio' => 'About me', 'profile_link_url' => '', 'profile_link_label' => '' ); } }
-class TWD_AP_Shortcode { static $on = false; static function rendered_on_this_page() { return self::$on; } }
+class TWD_AP_Grid_Settings { static $pos = 'both'; static $top = false; static $bio_all = false; static $pname = 'Jane Smith'; static function get() { return array( 'look_quote_color' => '', 'look_link_color' => '', 'swipebook_color' => '#5b8a72', 'swipebook_button_position' => self::$pos, 'swipebook_top_shortcode' => self::$top, 'profile_in_all_books' => self::$bio_all, 'profile_name' => self::$pname, 'profile_photo_id' => 0, 'profile_bio' => 'About me', 'profile_link_url' => '', 'profile_link_label' => '' ); } }
+class TWD_AP_Shortcode { static $on = false; static $circle = false; static function rendered_on_this_page() { return self::$on; } static function new_circle_rendered() { return self::$circle; } }
 class TWD_AP_Sanitizer { static function strip_dashes( $s ) { return $s; } }
 require $plugin . 'includes/class-twd-ap-settings.php';
 require $plugin . 'includes/class-twd-ap-article-style.php';
@@ -305,6 +305,35 @@ t( 'bio: with no name in the profile there is no slide, whatever the ticks say',
 TWD_AP_Grid_Settings::$pname = 'Jane Smith';
 t( 'bio: the slide carries the profile name, bio text and link', 'Jane Smith' === $slide->invoke( $sbk, $GLOBALS['posts'][22] )['heading'] && 'About me' === $slide->invoke( $sbk, $GLOBALS['posts'][22] )['bio'] );
 TWD_AP_Grid_Settings::$bio_all = false;
+
+
+// ---------- 1.49.0: the floating New Article button is a round icon, and gives way to the grid's own circle ----------
+if ( ! function_exists( 'esc_html_e' ) ) { function esc_html_e( $s ) { echo htmlspecialchars( $s ); } }
+if ( ! function_exists( 'esc_attr_e' ) ) { function esc_attr_e( $s ) { echo htmlspecialchars( $s ); } }
+if ( ! function_exists( 'sanitize_hex_color' ) ) { function sanitize_hex_color( $c ) { return preg_match( '/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', (string) $c ) ? $c : ''; } }
+if ( ! function_exists( 'get_theme_mod' ) ) { function get_theme_mod() { return ''; } }
+if ( ! function_exists( 'admin_url' ) ) { function admin_url( $p = '' ) { return 'https://example.test/wp-admin/' . $p; } }
+if ( ! function_exists( 'site_url' ) ) { function site_url( $p = '' ) { return 'https://example.test' . $p; } }
+if ( ! function_exists( 'wp_kses_post' ) ) { function wp_kses_post( $s ) { return $s; } }
+if ( ! class_exists( 'TWD_AP_AI_Generate' ) ) { class TWD_AP_AI_Generate { const RATE_LIMIT = 30; const MAX_INPUT_CHARS = 25000; static function is_configured() { return false; } static function remaining() { return 30; } } }
+if ( ! defined( 'TWD_AP_PATH' ) ) { define( 'TWD_AP_PATH', dirname( __DIR__, 2 ) . '/plugins/twd-article-publisher/' ); }
+if ( ! defined( 'TWD_AP_ARTICLE_ASSIST_URL' ) ) { define( 'TWD_AP_ARTICLE_ASSIST_URL', 'https://example.test/article-assist/' ); }
+$render = function () use ( $ft ) { $o = ( new ReflectionClass( 'TWD_AP_Frontend' ) )->newInstanceWithoutConstructor(); ob_start(); $o->render_buttons_and_modal(); return ob_get_clean(); };
+$GLOBALS['can_edit'] = array(); $GLOBALS['current'] = 0;
+$GLOBALS['opt']['twd_ap_settings'] = array( 'show_everywhere' => 'everywhere' ); TWD_AP_Shortcode::$on = false; TWD_AP_Shortcode::$circle = false;
+$out = $render();
+t( 'floating button: on a page with no grid it is printed, as a round icon that says New article (not the old wide button with text)', false !== strpos( $out, 'id="twd-ap-new-btn"' ) && false !== strpos( $out, 'aria-label="New article" data-tip="New article"' ) && false !== strpos( $out, '<svg' ) && false === strpos( $out, 'twd-ap-plus' ) && false === strpos( $out, '</svg>' . "\n" . ' New Article' ), substr( $out, 0, 500 ) );
+t( 'floating button: the popup is printed with it', false !== strpos( $out, 'id="twd-ap-overlay"' ) );
+TWD_AP_Shortcode::$circle = true;
+$out = $render();
+t( 'floating button: when the grid printed its own New article circle the floating one gives way', false === strpos( $out, 'id="twd-ap-new-btn"' ) );
+t( 'floating button: but the popup is still printed, because the circle opens it', false !== strpos( $out, 'id="twd-ap-overlay"' ) );
+TWD_AP_Shortcode::$circle = false;
+$GLOBALS['opt']['twd_ap_settings'] = array( 'show_everywhere' => 'nowhere' );
+t( 'floating button: with New Article switched off nothing is printed on a page with no grid', '' === $render() );
+t( 'new_article_allowed: true for an allowed person unless the site chose nowhere', false === TWD_AP_Frontend::new_article_allowed() && ( function () { $GLOBALS['opt']['twd_ap_settings'] = array( 'show_everywhere' => 'shortcode_page' ); return TWD_AP_Frontend::new_article_allowed(); } )() );
+$GLOBALS['opt']['twd_ap_settings'] = array( 'show_everywhere' => 'everywhere' );
+t( 'new_article_allowed: and the circle follows the same rule as the button (everywhere is allowed)', true === TWD_AP_Frontend::new_article_allowed() );
 
 // The popup is told the site-wide tick, so a new article's bio tick starts right.
 $me = new ReflectionMethod( 'TWD_AP_Frontend', 'maybe_enqueue' );

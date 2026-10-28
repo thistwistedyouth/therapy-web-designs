@@ -39,6 +39,32 @@ class TWD_AP_Shortcode {
 		return self::$rendered_on_this_page;
 	}
 
+	/** True once a grid on this page has printed its own New article circle (the floating one is then left out). */
+	private static $new_circle_rendered = false;
+
+	public static function new_circle_rendered() {
+		return self::$new_circle_rendered;
+	}
+
+	/**
+	 * The two round buttons at the left of the grid's toolbar, one above the other: the gear (Customise this
+	 * grid) and, when this person may write articles and the site has not switched New Article off, a circle
+	 * with a plus and a pen that starts a new article. Each says what it is on hover or keyboard focus.
+	 */
+	private static function tools_html( $with_new ) {
+		$gear = '<button type="button" class="twd-ap-articles-settings-btn twd-ap-articles-tool" aria-label="' . esc_attr__( 'Customise this grid', 'twd-article-publisher' ) . '" data-tip="' . esc_attr__( 'Customise this grid', 'twd-article-publisher' ) . '">' .
+			'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" /></svg></button>';
+		$new  = '';
+		if ( $with_new && TWD_AP_Frontend::new_article_allowed() ) {
+			self::$new_circle_rendered = true;
+			$new = '<button type="button" class="twd-ap-articles-new-btn twd-ap-articles-tool" aria-label="' . esc_attr__( 'New article', 'twd-article-publisher' ) . '" data-tip="' . esc_attr__( 'New article', 'twd-article-publisher' ) . '">' . self::NEW_ARTICLE_ICON . '</button>';
+		}
+		return $gear . $new;
+	}
+
+	/** A plus and a pen: the New article icon, used by the grid's circle and the floating button. */
+	const NEW_ARTICLE_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4.5 3v6M1.5 6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /><g transform="translate(6.2 6.2) scale(.74)"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></g></svg>';
+
 	private function __construct() {
 		add_shortcode( 'twd_articles', array( $this, 'render' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
@@ -192,7 +218,8 @@ class TWD_AP_Shortcode {
 		$root_classes = 'twd-ap-articles' . ( $show_thumbs ? '' : ' twd-ap-no-thumbnails' ) . ( '' !== $shape_class ? ' ' . $shape_class : '' );
 		// Same custom properties the JS sets once /grid-settings replies, set
 		// here so the colours are right from the first paint.
-		$root_style = '--twd-ap-readmore-color:' . $grid_settings['read_more_color'] . ';--twd-ap-accent-color:' . $grid_settings['accent_color'] . ';';
+		$accent_hex = TWD_AP_Swipebook_Colours::clean_hex( $grid_settings['accent_color'] );
+		$root_style = '--twd-ap-readmore-color:' . $grid_settings['read_more_color'] . ';--twd-ap-accent-color:' . $grid_settings['accent_color'] . ';--twd-ap-accent-ink:' . TWD_AP_Swipebook_Colours::best_ink( '' !== $accent_hex ? $accent_hex : '#2563eb' ) . ';';
 
 		// The category's own Description above the grid, on a category or tag
 		// archive (switch off with intro="no" or in Customise this grid).
@@ -208,18 +235,19 @@ class TWD_AP_Shortcode {
 			<?php if ( ! $show_filters && $on_archive && $is_admin_user ) : ?>
 				<?php // The plugin's own category page has no filters, but the owner still needs the gear to reach Customise this grid (including the switch for this page). ?>
 				<div class="twd-ap-articles-toolbar twd-ap-articles-toolbar-gear">
-					<button type="button" class="twd-ap-articles-settings-btn" aria-label="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>">&#9881;</button>
+					<div class="twd-ap-articles-tools"><?php echo self::tools_html( false ); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup, escaped inside. ?></div>
 				</div>
 			<?php endif; ?>
 			<?php if ( $show_filters ) : ?>
 				<div class="twd-ap-articles-toolbar">
+					<?php if ( $is_admin_user ) : ?>
+						<?php // The gear and, for anyone who may write an article, a New article circle, stacked, to the left of the category list. ?>
+						<div class="twd-ap-articles-tools"><?php echo self::tools_html( true ); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup, escaped inside. ?></div>
+					<?php endif; ?>
 					<select class="twd-ap-articles-category-select" aria-label="<?php esc_attr_e( 'Jump to a category', 'twd-article-publisher' ); ?>">
-						<option value=""><?php esc_html_e( 'All', 'twd-article-publisher' ); ?></option>
+						<option value=""><?php esc_html_e( 'Select a category', 'twd-article-publisher' ); ?></option>
 					</select>
 					<input type="search" class="twd-ap-articles-search" placeholder="<?php esc_attr_e( 'Search articles…', 'twd-article-publisher' ); ?>" aria-label="<?php esc_attr_e( 'Search articles', 'twd-article-publisher' ); ?>" />
-					<?php if ( $is_admin_user ) : ?>
-						<button type="button" class="twd-ap-articles-settings-btn" aria-label="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>" title="<?php esc_attr_e( 'Customise this grid', 'twd-article-publisher' ); ?>">&#9881;</button>
-					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 			<?php echo $intro_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in TWD_AP_Intro. ?>
@@ -417,6 +445,20 @@ class TWD_AP_Shortcode {
 								<option value="light"><?php esc_html_e( 'Light, with dark writing', 'twd-article-publisher' ); ?></option>
 							</select>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'For the swipe book and the Summary Book. The saved image and PDF follow it.', 'twd-article-publisher' ); ?></p>
+
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-frame"><?php esc_html_e( 'Frame colour', 'twd-article-publisher' ); ?></label>
+							<div class="twd-ap-gs-colour-row">
+								<input type="color" id="twd-ap-gs-sb-frame" class="twd-ap-gs-color-input" data-default="#f6eedb" />
+								<span id="twd-ap-gs-sb-frame-note" class="twd-ap-muted"><?php esc_html_e( 'The book\'s own colour', 'twd-article-publisher' ); ?></span>
+								<button type="button" id="twd-ap-gs-sb-frame-reset" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Use the book\'s own', 'twd-article-publisher' ); ?></button>
+							</div>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-accent"><?php esc_html_e( 'Accent colour', 'twd-article-publisher' ); ?></label>
+							<div class="twd-ap-gs-colour-row">
+								<input type="color" id="twd-ap-gs-sb-accent" class="twd-ap-gs-color-input" data-default="#8a5a00" />
+								<span id="twd-ap-gs-sb-accent-note" class="twd-ap-muted"><?php esc_html_e( 'The book\'s own colour', 'twd-article-publisher' ); ?></span>
+								<button type="button" id="twd-ap-gs-sb-accent-reset" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Use the book\'s own', 'twd-article-publisher' ); ?></button>
+							</div>
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'The frame is the colour around the pages. The accent is the colour of the buttons, headings and links. They work with both the Light and the Dark book. The writing always stays easy to read: if a colour is too pale or too dark for its job, it is adjusted a little.', 'twd-article-publisher' ); ?></p>
 
 							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-sb-logo-bg"><?php esc_html_e( 'Logo background', 'twd-article-publisher' ); ?></label>
 							<select id="twd-ap-gs-sb-logo-bg" class="twd-ap-input">

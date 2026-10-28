@@ -57,7 +57,7 @@
 				'<h2 class="twd-sb-heading">' + escapeHtml(slide.heading) + '</h2>' +
 				(slide.bio ? '<p class="twd-sb-bio-text">' + escapeHtml(slide.bio) + '</p>' : '') +
 				(slide.link_url && slide.link_label
-				? '<a class="twd-sb-bio-link" href="' + escapeAttr(slide.link_url) + '" target="_blank" rel="noopener">' + escapeHtml(slide.link_label) + '</a>'
+				? '<a class="twd-sb-bio-link" draggable="false" href="' + escapeAttr(slide.link_url) + '">' + escapeHtml(slide.link_label) + '</a>'
 				: '') +
 				'</div>';
 		} else if ('related' === slide.type) {
@@ -135,7 +135,9 @@
 			: '';
 
 		var themeClass = 'light' === data.theme ? ' twd-sb-theme-light' : '';
-		return '<div class="twd-sb-backdrop' + themeClass + '" data-article-url="' + escapeAttr(data.articleUrl) + '" data-share-url="' + escapeAttr(data.shareUrl) + '" data-title="' + escapeAttr(data.title) + '" data-include-branding="' + (false === data.includeBranding ? '0' : '1') + '">' +
+		// The owner's own frame and accent colours: custom properties made on the server from validated hex colours.
+		var styleAttr = data.style ? ' style="' + escapeAttr(data.style) + '"' : '';
+		return '<div class="twd-sb-backdrop' + themeClass + '"' + styleAttr + ' data-article-url="' + escapeAttr(data.articleUrl) + '" data-share-url="' + escapeAttr(data.shareUrl) + '" data-title="' + escapeAttr(data.title) + '" data-include-branding="' + (false === data.includeBranding ? '0' : '1') + '">' +
 			'<div class="twd-sb-frame">' +
 				'<button type="button" class="twd-sb-close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>' +
 				'<div class="twd-sb-slides">' + slidesHtml + '</div>' +
@@ -644,7 +646,9 @@
 			dragActive = true;
 			dragIsHorizontal = null;
 			backdrop.classList.add('is-dragging');
-			try { slidesWrap.setPointerCapture(e.pointerId); } catch (err) {}
+			// No pointer capture yet: capturing at the first touch sends the click that follows to the page
+			// instead of the link under the finger, so no link inside a page (the bio page's button, a link in
+			// the text) could be pressed. It is taken once the movement is a swipe (below).
 		});
 
 		slidesWrap.addEventListener('pointermove', function (e) {
@@ -653,6 +657,8 @@
 			var dy = e.clientY - dragStartY;
 			if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
 				dragIsHorizontal = Math.abs(dx) > Math.abs(dy);
+				// A swipe: from here the pages own the pointer, so letting go over a link does not press it.
+				if (dragIsHorizontal) { try { slidesWrap.setPointerCapture(e.pointerId); } catch (err) {} }
 			}
 		});
 
@@ -720,11 +726,21 @@
 		function captureNode(cardEl, onCanvas) {
 			var headerEl = includeBranding ? null : cardEl.querySelector('.twd-sb-card-header');
 			if (headerEl) { headerEl.style.display = 'none'; }
-			// The solid colour behind the card in a saved image: the book's own, light or dark.
-			var exportBg = (window.getComputedStyle(backdrop).getPropertyValue('--twd-sb-export-bg') || '').trim() || '#13112e';
-			window.html2canvas(cardEl, { backgroundColor: exportBg, scale: 2, useCORS: true }).then(function (canvas) {
+			// The one solid colour of a saved image: the card and the ground behind its rounded corners are the
+			// same colour, light or dark. html2canvas draws a layered gradient background, soft glows and inset
+			// shadows unevenly (a visible split down the middle, an inner rectangle), so for the moment of capture
+			// twd-sb-capture swaps the card for that one flat colour and takes the shadows off.
+			var exportBg = (window.getComputedStyle(backdrop).getPropertyValue('--twd-sb-export-bg') || '').trim() || (backdrop.classList.contains('twd-sb-theme-light') ? '#fcf8ee' : '#16132f');
+			backdrop.classList.add('twd-sb-capture');
+			function done() {
+				backdrop.classList.remove('twd-sb-capture');
 				if (headerEl) { headerEl.style.display = ''; }
+			}
+			window.html2canvas(cardEl, { backgroundColor: exportBg, scale: 2, useCORS: true }).then(function (canvas) {
+				done();
 				onCanvas(canvas);
+			}, function () {
+				done();
 			});
 		}
 
@@ -856,13 +872,16 @@
 		}
 		backdrop.addEventListener('click', onClick);
 
-		function close() {
-			if (closed) { return; }
+		function teardown() {
 			closed = true;
 			document.removeEventListener('keydown', onKeydown);
 			window.removeEventListener('resize', onResize);
 			clearTimeout(resizeTimer);
 			clearTimeout(picTimer);
+		}
+		function close() {
+			if (closed) { return; }
+			teardown();
 			if (opts.onClose) {
 				opts.onClose();
 			} else {
@@ -870,6 +889,21 @@
 			}
 		}
 		closeBtn.addEventListener('click', close);
+		// The bio page's button (e.g. "Book a Session"): the book closes and the browser goes to the link, in
+		// this tab. A modified click (new tab, new window) and mailto: or tel: links are left to the browser.
+		function leaveTo(url) {
+			if (closed) { return; }
+			teardown();
+			if (opts.onClose) { opts.onClose(); }
+			window.location.assign(url);
+		}
+		backdrop.addEventListener('click', function (e) {
+			var a = e.target && e.target.closest ? e.target.closest('.twd-sb-bio-link') : null;
+			if (!a || e.defaultPrevented || 0 !== e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { return; }
+			if ('http:' !== a.protocol && 'https:' !== a.protocol) { return; }
+			e.preventDefault();
+			leaveTo(a.href);
+		});
 
 		// Replaces the pages with the fitted ones. slides, segs and total are
 		// the same variables the buttons, the swipe and the exports read, so

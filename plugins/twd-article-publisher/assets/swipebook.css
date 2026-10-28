@@ -38,7 +38,8 @@
   --twd-sb-chip: rgba(255, 209, 102, 0.08);
   --twd-sb-chip-hover: rgba(255, 209, 102, 0.18);
   --twd-sb-chip-soft: rgba(255, 209, 102, 0.06);
-  --twd-sb-btn-hover: rgba(255, 209, 102, 0.14);
+  --twd-sb-btn-rest: rgba(255, 209, 102, 0.14);
+  --twd-sb-btn-hover: rgba(255, 209, 102, 0.28);
   --twd-sb-primary: #ffd166;
   --twd-sb-primary-hover: #ffdb85;
   --twd-sb-primary-ink: #171432;
@@ -54,7 +55,7 @@
   --twd-sb-close-ink: #171432;
   --twd-sb-close-ring: rgba(255, 255, 255, 0.5);
   --twd-sb-close-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-  --twd-sb-export-bg: #13112e;
+  --twd-sb-export-bg: #16132f;
 }
 
 /* The light book: the same pages in warm ivory with dark ink, the gold deepened
@@ -91,7 +92,8 @@
   --twd-sb-chip: rgba(138, 90, 0, 0.07);
   --twd-sb-chip-hover: rgba(138, 90, 0, 0.1);
   --twd-sb-chip-soft: rgba(138, 90, 0, 0.07);
-  --twd-sb-btn-hover: rgba(138, 90, 0, 0.12);
+  --twd-sb-btn-rest: rgba(138, 90, 0, 0.12);
+  --twd-sb-btn-hover: rgba(138, 90, 0, 0.24);
   --twd-sb-primary: #8a5a00;
   --twd-sb-primary-hover: #744a00;
   --twd-sb-primary-ink: #fffaf0;
@@ -107,7 +109,7 @@
   --twd-sb-close-ink: #fffaf0;
   --twd-sb-close-ring: rgba(255, 255, 255, 0.85);
   --twd-sb-close-shadow: 0 4px 14px rgba(60, 44, 20, 0.35);
-  --twd-sb-export-bg: #fbf6ea;
+  --twd-sb-export-bg: #fcf8ee;
 }
 
 * {
@@ -305,10 +307,12 @@ body {
   display: inline-flex !important;
 }
 .twd-sb-mast-logo {
-  max-height: 40px !important;
+  max-height: 64px !important;
+  max-width: 170px !important;
   width: auto !important;
-  padding: 5px 10px !important;
-  border-radius: 8px !important;
+  height: auto !important;
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
 }
 /* Three fixed background styles for the logo pill, picked in grid settings
    -- not a colour picker, so there's nothing to keep in sync with a
@@ -347,7 +351,7 @@ body {
   height: 2px !important;
   margin: 0 !important;
   border-radius: 999px !important;
-  background: var(--twd-sb-gold-faint) !important;
+  background: var(--twd-sb-ctl-line, var(--twd-sb-gold-faint)) !important;
   overflow: hidden !important;
   position: relative !important;
 }
@@ -355,7 +359,7 @@ body {
   content: "" !important;
   position: absolute !important;
   inset: 0 !important;
-  background: var(--twd-sb-gold) !important;
+  background: var(--twd-sb-ctl, var(--twd-sb-gold)) !important;
   transform: scaleX(0) !important;
   transform-origin: left !important;
   transition: transform 0.3s ease !important;
@@ -568,6 +572,7 @@ body {
   letter-spacing: 0.03em !important;
   text-decoration: none !important;
   box-shadow: none !important;
+  -webkit-user-drag: none !important;
   transition: background 0.2s ease, border-color 0.2s ease !important;
 }
 .twd-sb-bio-link:hover {
@@ -671,9 +676,9 @@ body {
   font-size: 13px !important;
   font-weight: 600 !important;
   letter-spacing: 0.02em !important;
-  color: var(--twd-sb-gold) !important;
+  color: var(--twd-sb-ctl, var(--twd-sb-gold)) !important;
   text-decoration: none !important;
-  border-bottom: 1px solid var(--twd-sb-gold-faint) !important;
+  border-bottom: 1px solid var(--twd-sb-ctl-line, var(--twd-sb-gold-faint)) !important;
   margin-top: 4px !important;
 }
 .twd-sb-companion-link:hover {
@@ -751,12 +756,12 @@ body {
   height: 36px !important;
   margin: 0 !important;
   border-radius: 50% !important;
-  border: 1px solid transparent !important;
-  background: transparent !important;
-  color: var(--twd-sb-gold-soft) !important;
+  border: 1px solid var(--twd-sb-ctl-line, var(--twd-sb-gold-faint)) !important;
+  background: var(--twd-sb-ctl-rest, var(--twd-sb-btn-rest)) !important;
+  color: var(--twd-sb-ctl, var(--twd-sb-gold)) !important;
   font-family: "DM Mono", "Courier New", monospace !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
   line-height: 1 !important;
   text-decoration: none !important;
   box-shadow: none !important;
@@ -764,9 +769,9 @@ body {
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 .twd-sb-btn:hover {
-  color: var(--twd-sb-gold) !important;
-  background: var(--twd-sb-btn-hover) !important;
-  border-color: var(--twd-sb-gold-faint) !important;
+  color: var(--twd-sb-ctl, var(--twd-sb-gold)) !important;
+  background: var(--twd-sb-ctl-hover, var(--twd-sb-btn-hover)) !important;
+  border-color: var(--twd-sb-ctl, var(--twd-sb-gold-soft)) !important;
 }
 .twd-sb-btn:disabled {
   opacity: 0.35 !important;
@@ -775,12 +780,13 @@ body {
   border-color: transparent !important;
 }
 .twd-sb-counter {
-  min-width: 60px !important;
+  min-width: 64px !important;
   font-family: "DM Mono", "Courier New", monospace !important;
-  font-size: 11px !important;
-  letter-spacing: 0.16em !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
   text-align: center !important;
-  color: var(--twd-sb-gold-soft) !important;
+  color: var(--twd-sb-ctl, var(--twd-sb-gold)) !important;
 }
 
 .twd-sb-footer {
@@ -794,9 +800,9 @@ body {
 .twd-sb-share-btn,
 .twd-sb-save-btn {
   margin: 0 !important;
-  border: 1px solid var(--twd-sb-gold-faint) !important;
-  background: var(--twd-sb-chip) !important;
-  color: var(--twd-sb-gold) !important;
+  border: 1px solid var(--twd-sb-ctl-line, var(--twd-sb-gold-faint)) !important;
+  background: var(--twd-sb-ctl-chip, var(--twd-sb-chip)) !important;
+  color: var(--twd-sb-ctl, var(--twd-sb-gold)) !important;
   padding: 8px 20px !important;
   border-radius: 999px !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
@@ -810,9 +816,9 @@ body {
 }
 .twd-sb-share-btn:hover,
 .twd-sb-save-btn:hover {
-  background: var(--twd-sb-chip-hover) !important;
-  border-color: var(--twd-sb-gold-soft) !important;
-  color: var(--twd-sb-gold) !important;
+  background: var(--twd-sb-ctl-chip-hover, var(--twd-sb-chip-hover)) !important;
+  border-color: var(--twd-sb-ctl, var(--twd-sb-gold-soft)) !important;
+  color: var(--twd-sb-ctl, var(--twd-sb-gold)) !important;
 }
 .twd-sb-save-btn:disabled,
 .twd-sb-pdf-btn:disabled {
@@ -843,15 +849,33 @@ body {
   box-shadow: var(--twd-sb-primary-shadow-hover) !important;
 }
 .twd-sb-read-link {
+  display: inline-block !important;
+  padding: 5px 14px !important;
+  border: 1px solid var(--twd-sb-read-line) !important;
+  border-radius: 999px !important;
+  background: var(--twd-sb-ctl-chip, var(--twd-sb-chip-soft)) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   color: var(--twd-sb-read) !important;
   font-size: 12px !important;
-  font-weight: 400 !important;
-  text-decoration: underline !important;
-  text-decoration-color: var(--twd-sb-read-line) !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  text-decoration: none !important;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 .twd-sb-read-link:hover {
   color: var(--twd-sb-read-hover) !important;
+  background: var(--twd-sb-ctl-chip-hover, var(--twd-sb-chip-hover)) !important;
+  text-decoration: none !important;
+}
+
+/* While a picture of the card is being taken (Save as image, Download as PDF): one flat colour, no shadows
+   and no glow, because html2canvas paints layered gradients and inset shadows unevenly. */
+.twd-sb-backdrop.twd-sb-capture .twd-sb-card {
+  background: var(--twd-sb-export-bg) !important;
+  box-shadow: none !important;
+}
+.twd-sb-backdrop.twd-sb-capture .twd-sb-mast-text {
+  text-shadow: none !important;
 }
 
 @media (max-width: 600px) {

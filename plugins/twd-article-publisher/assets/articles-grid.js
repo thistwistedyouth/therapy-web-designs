@@ -145,6 +145,7 @@
 		var searchEl    = root.querySelector('.twd-ap-articles-search');
 		var selectEl    = root.querySelector('.twd-ap-articles-category-select');
 		var settingsBtn = root.querySelector('.twd-ap-articles-settings-btn');
+		var newArticleBtn = root.querySelector('.twd-ap-articles-new-btn');
 		// A page cached before this version has no such element; the stub
 		// keeps the code below from failing on it.
 		var noneEl      = root.querySelector('.twd-ap-articles-none') || { hidden: true };
@@ -281,7 +282,8 @@
 
 		if (selectEl) {
 			selectEl.addEventListener('change', function () {
-				state.category = selectEl.value;
+				// The last option, "All", and the first, "Select a category", both mean the default landing view.
+				state.category = '__all__' === selectEl.value ? '' : selectEl.value;
 				state.offset = 0;
 				// The empty-value "Show all" option means a full return to
 				// the default landing view, not just clearing the category
@@ -299,6 +301,11 @@
 			fetchArticles(false);
 		});
 
+		if (newArticleBtn) {
+			newArticleBtn.addEventListener('click', function () {
+				if (window.TWD_AP_OpenNew) { window.TWD_AP_OpenNew(); }
+			});
+		}
 		if (settingsBtn) {
 			settingsBtn.addEventListener('click', function () {
 				openGridSettings(root, config, function () {
@@ -365,12 +372,13 @@
 		}
 
 		function renderCategorySelect(categories) {
-			// "All" first, then the categories, so the default view and the way
-			// back to it are the first thing in the list.
-			var html = '<option value="">All</option>';
+			// "Select a category" first (the default view), then the categories,
+			// and "All" at the bottom of the list as the way back to the default view.
+			var html = '<option value="">Select a category</option>';
 			categories.forEach(function (cat) {
 				html += '<option value="' + escapeHtml(cat.slug) + '">' + escapeHtml(cat.name) + '</option>';
 			});
+			html += '<option value="__all__">All</option>';
 			selectEl.innerHTML = html;
 			selectEl.value = state.category;
 		}
@@ -567,6 +575,23 @@
 		var sbLabelInput = overlay.querySelector('#twd-ap-gs-sb-label');
 		var sbLogoBgSelect = overlay.querySelector('#twd-ap-gs-sb-logo-bg');
 		var sbThemeSelect = overlay.querySelector('#twd-ap-gs-sb-theme');
+		// The owner's own frame and accent colours for the book: '' means the book's own colour.
+		var sbColours = {};
+		['frame', 'accent'].forEach(function (name) {
+			var input = overlay.querySelector('#twd-ap-gs-sb-' + name);
+			if (!input) { return; }
+			var note = overlay.querySelector('#twd-ap-gs-sb-' + name + '-note');
+			var reset = overlay.querySelector('#twd-ap-gs-sb-' + name + '-reset');
+			var c = { input: input, value: '', set: function (v) {
+				c.value = /^#[0-9a-f]{6}$/i.test(v || '') ? v.toLowerCase() : '';
+				input.value = c.value || input.getAttribute('data-default');
+				if (note) { note.textContent = c.value ? c.value : "The book's own colour"; }
+				if (reset) { reset.hidden = !c.value; }
+			} };
+			input.addEventListener('input', function () { c.set(input.value); });
+			if (reset) { reset.addEventListener('click', function () { c.set(''); }); }
+			sbColours[name] = c;
+		});
 		var sbExportBrandingBox = overlay.querySelector('#twd-ap-gs-sb-export-branding');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var topicsBox  = overlay.querySelector('#twd-ap-gs-topics');
@@ -844,6 +869,8 @@
 				sbLabelInput.value = data.swipebook_label || '';
 				sbLogoBgSelect.value = data.swipebook_logo_bg || 'light';
 				if (sbThemeSelect) { sbThemeSelect.value = 'light' === data.swipebook_theme ? 'light' : 'dark'; }
+				if (sbColours.frame) { sbColours.frame.set(data.swipebook_frame_color || ''); }
+				if (sbColours.accent) { sbColours.accent.set(data.swipebook_accent_color || ''); }
 				sbExportBrandingBox.checked = false !== data.swipebook_export_branding;
 				sbLogoId = data.swipebook_logo_id || 0;
 				renderSbLogoPreview(data.swipebook_logo_url || '');
@@ -940,6 +967,8 @@
 			if (sbPosition) { payload.swipebook_button_position = sbPosition.value; }
 			if (sbTopShortcode) { payload.swipebook_top_shortcode = !!sbTopShortcode.checked; }
 			if (sbThemeSelect) { payload.swipebook_theme = sbThemeSelect.value; }
+			if (sbColours.frame) { payload.swipebook_frame_color = sbColours.frame.value; }
+			if (sbColours.accent) { payload.swipebook_accent_color = sbColours.accent.value; }
 			if (relatedPlace) { payload.related_place = relatedPlace.value; }
 			if (relatedLayout) { payload.related_layout = relatedLayout.value; }
 			if (topicsAlign) { payload.topics_align = topicsAlign.value; }

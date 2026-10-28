@@ -542,6 +542,8 @@ class TWD_AP_Swipebook {
 			'logoUrl'         => $logo_url ? $logo_url : '',
 			'logoBg'          => $settings['swipebook_logo_bg'],
 			'theme'           => 'light' === $settings['swipebook_theme'] ? 'light' : 'dark',
+			// 1.49.0: the owner's own frame and accent colours, as CSS custom properties (or '').
+			'style'           => TWD_AP_Swipebook_Colours::style( 'light' === $settings['swipebook_theme'] ? 'light' : 'dark', $settings['swipebook_frame_color'], $settings['swipebook_accent_color'] ),
 			'includeBranding' => (bool) $settings['swipebook_export_branding'],
 		);
 	}

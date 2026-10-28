@@ -122,8 +122,9 @@ class TWD_AP_Grid_Settings {
 	// Same mapping as the real class (tested against the real one in grid-settings-test.php).
 	static function thumb_shape_class( $shape ) { return '4-3' === $shape ? 'twd-ap-thumbs-4-3' : ( 'square' === $shape ? 'twd-ap-thumbs-square' : '' ); }
 }
-class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } }
+class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } static function new_article_allowed() { return ! empty( $GLOBALS['allowed'] ) && empty( $GLOBALS['new_off'] ); } }
 
+require $plugin . 'includes/class-twd-ap-swipebook-colours.php';
 require $plugin . 'includes/class-twd-ap-cards.php';
 require $plugin . 'includes/class-twd-ap-cta.php';
 require $plugin . 'includes/class-twd-ap-intro.php';
@@ -593,7 +594,32 @@ $GLOBALS['allowed'] = true; snap( 'admin' ); $GLOBALS['allowed'] = false;
 reset_site();
 add_post( 1, 'Some piece', array( 2 ), '2026-02-01' ); add_post( 2, 'Another', array( 3 ), '2026-02-02' );
 $html = grid();
-t( 'filter: the dropdown starts with All (no Loading text, no Show all at the end)', 1 === preg_match( '/<select class="twd-ap-articles-category-select"[^>]*>\s*<option value="">All<\/option>/', $html ) && false === strpos( $html, 'Show all' ) );
+t( 'filter: the dropdown starts with "Select a category" (no Loading text, no Show all; "All" is added at the bottom of the list by the script, with the categories)', 1 === preg_match( '/<select class="twd-ap-articles-category-select"[^>]*>\s*<option value="">Select a category<\/option>\s*<\/select>/', $html ) && false === strpos( $html, 'Show all' ) );
+// ---------- 1.49.0: the gear and the New article circle sit to the left of the category list ----------
+$flag = new ReflectionProperty( 'TWD_AP_Shortcode', 'new_circle_rendered' ); $flag->setAccessible( true ); $flag->setValue( null, false );
+$anon = grid();
+t( 'toolbar: a visitor sees no gear and no New article circle', false === strpos( $anon, 'twd-ap-articles-settings-btn' ) && false === strpos( $anon, 'twd-ap-articles-new-btn' ) && false === strpos( $anon, 'twd-ap-articles-tools' ) );
+t( 'toolbar: a visitor does not make the floating New Article button give way', false === TWD_AP_Shortcode::new_circle_rendered() );
+$GLOBALS['allowed'] = true;
+$owner = grid();
+$gear_at = strpos( $owner, 'twd-ap-articles-settings-btn' ); $new_at = strpos( $owner, 'twd-ap-articles-new-btn' ); $select_at = strpos( $owner, '<select class="twd-ap-articles-category-select"' ); $search_at = strpos( $owner, 'twd-ap-articles-search"' );
+t( 'toolbar: an allowed person gets the gear and the New article circle, in that order, both before the category list and the search box', false !== $gear_at && false !== $new_at && $gear_at < $new_at && $new_at < $select_at && $select_at < $search_at, json_encode( array( $gear_at, $new_at, $select_at, $search_at ) ) );
+t( 'toolbar: they sit together in one stacked box (twd-ap-articles-tools)', 1 === preg_match( '/<div class="twd-ap-articles-tools">\s*<button[^>]*twd-ap-articles-settings-btn[^>]*>.*?<\/button><button[^>]*twd-ap-articles-new-btn[^>]*>.*?<\/button><\/div>/s', $owner ) );
+t( 'toolbar: each says what it is for screen readers and on hover (aria-label and data-tip)', false !== strpos( $owner, 'aria-label="Customise this grid" data-tip="Customise this grid"' ) && false !== strpos( $owner, 'aria-label="New article" data-tip="New article"' ) );
+t( 'toolbar: they are icons (an SVG), not text, and the old gear character is gone', substr_count( $owner, '<svg' ) >= 2 && false === strpos( $owner, '&#9881;' ) );
+t( 'toolbar: the grid remembers it printed the circle, so the floating New Article button gives way', true === TWD_AP_Shortcode::new_circle_rendered() );
+t( 'toolbar: the grid carries the writing colour for its link colour (white on the default blue)', false !== strpos( $owner, '--twd-ap-accent-ink:#ffffff;' ), substr( $owner, 0, 400 ) );
+$was_accent = TWD_AP_Grid_Settings::$s['accent_color'] ?? null;
+TWD_AP_Grid_Settings::$s['accent_color'] = '#a8d5ba';
+t( 'toolbar: on a pastel link colour the circles carry dark writing, not white', false !== strpos( grid(), '--twd-ap-accent-ink:#1f1d2b;' ) );
+TWD_AP_Grid_Settings::$s['accent_color'] = '#1d4ed8';
+t( 'toolbar: on a deep link colour they carry white writing', false !== strpos( grid(), '--twd-ap-accent-ink:#ffffff;' ) );
+if ( null === $was_accent ) { unset( TWD_AP_Grid_Settings::$s['accent_color'] ); } else { TWD_AP_Grid_Settings::$s['accent_color'] = $was_accent; }
+$GLOBALS['new_off'] = true;
+$no_new = grid();
+t( 'toolbar: when the site has switched New Article off there is still the gear, no circle', false !== strpos( $no_new, 'twd-ap-articles-settings-btn' ) && false === strpos( $no_new, 'twd-ap-articles-new-btn' ) );
+unset( $GLOBALS['new_off'] );
+$GLOBALS['allowed'] = false;
 t( 'topics: every real category is listed by default', false !== strpos( $html, '/category/anxiety/' ) && false !== strpos( $html, '/category/sleep/' ) );
 TWD_AP_Grid_Settings::$s['topic_category_ids'] = array( 3 );
 $html = grid();

@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.48.1
+Stable tag: 1.49.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,19 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.49.0): swipe book polish and a tidier resources page. Save as image
+now gives one even background colour. The logo is bigger. The Book a Session
+button now works and takes the reader to that page, closing the book first (other
+links in a swipe book page also work with a mouse click now). The arrows keep their circle and darken when you point
+at them, page numbers are bolder, and Read the full article is a small pill.
+Customise this grid > Related articles > Colours has a frame colour and an
+accent colour for the swipe book, shared by Light and Dark; the writing is
+adjusted automatically so it always stays readable. On the resources page the
+edit gear and a new round New article button sit to the left of the category
+drop down (hover for the name), the drop down says Select a category with All
+at the bottom, and Browse by topic is a row of soft pills in your link colour.
+The floating New article button on other pages is now the same round icon.
 
 NEW (1.48.1): fixes from the independent review of 1.48.0. The related
 articles grid now breaks out to 900px only when your article column is centred

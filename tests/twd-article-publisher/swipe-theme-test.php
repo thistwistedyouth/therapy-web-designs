@@ -22,6 +22,7 @@ function add_action() {}
 function add_filter() {}
 function add_shortcode() {}
 require $plugin . 'includes/class-twd-ap-grid-settings.php';
+require $plugin . 'includes/class-twd-ap-swipebook-colours.php';
 require $plugin . 'includes/class-twd-ap-swipebook.php';
 function nocache_headers() {}
 function wp_count_posts() { return (object) array( 'publish' => 3 ); }
