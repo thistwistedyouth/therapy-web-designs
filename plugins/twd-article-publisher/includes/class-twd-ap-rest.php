@@ -908,6 +908,7 @@ class TWD_AP_REST {
 				'read_more_color'     => $settings['read_more_color'],
 				'accent_color'        => $settings['accent_color'],
 				'topic_category_ids'  => $settings['topic_category_ids'],
+				'grid_exclude_category_ids' => array_values( array_map( 'intval', (array) $settings['grid_exclude_category_ids'] ) ),
 				'intro_show'          => (bool) $settings['intro_show'],
 				'archive_takeover'    => (bool) $settings['archive_takeover'],
 				'related_show'        => (bool) $settings['related_show'],
@@ -979,11 +980,12 @@ class TWD_AP_REST {
 	public function list_facets() {
 		nocache_headers();
 		$uncat_id = $this->uncategorized_id();
+		$hidden   = TWD_AP_Cards::excluded_category_ids(); // 1.52.0: no pill for a category kept out of the main grid.
 		$cats     = array_values(
 			array_filter(
 				get_categories( array( 'hide_empty' => true ) ),
-				function ( $c ) use ( $uncat_id ) {
-					return (int) $c->term_id !== $uncat_id;
+				function ( $c ) use ( $uncat_id, $hidden ) {
+					return (int) $c->term_id !== $uncat_id && ! in_array( (int) $c->term_id, $hidden, true );
 				}
 			)
 		);

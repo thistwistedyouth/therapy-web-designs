@@ -303,6 +303,10 @@ class TWD_AP_Shortcode {
 						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Tick the categories to list as links under the grid. Leave them all ticked to list every category, including new ones. Untick them all to hide the row.', 'twd-article-publisher' ); ?></p>
 						<div id="twd-ap-gs-topics" class="twd-ap-gs-topics"></div>
 
+						<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Hide these categories from the main grid', 'twd-article-publisher' ); ?></label>
+						<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Tick a category to keep its articles out of the main grid, its search and its category buttons (for example essays you link by hand). The articles stay published, and a page for that one category still shows them. An article in a ticked category is hidden even if it is also in another.', 'twd-article-publisher' ); ?></p>
+						<div id="twd-ap-gs-exclude" class="twd-ap-gs-topics"></div>
+
 						<details class="twd-ap-gs-details twd-ap-spaced" id="twd-ap-gs-intro-details">
 							<summary><?php esc_html_e( 'Category pages', 'twd-article-publisher' ); ?></summary>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'A category page shows the category\'s own description above its articles. Open a category page while logged in and use "Edit intro" to write or change it, or edit it under Posts, Categories.', 'twd-article-publisher' ); ?></p>

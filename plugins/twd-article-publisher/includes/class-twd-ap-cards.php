@@ -71,6 +71,34 @@ class TWD_AP_Cards {
 	}
 
 	/**
+	 * 1.52.0: the categories kept out of the main grid (setting grid_exclude_category_ids), with the
+	 * children of each, as plain integers. An article is kept out when it is in ANY of them. Only the
+	 * main grid uses this: a list for one category or tag (the shortcode's category="" or tag="", a
+	 * category or tag page) is explicit and shows everything it asks for.
+	 */
+	public static function excluded_category_ids() {
+		$ids = TWD_AP_Grid_Settings::get()['grid_exclude_category_ids'] ?? array();
+		if ( ! is_array( $ids ) || ! $ids ) {
+			return array();
+		}
+		$all = array();
+		foreach ( $ids as $id ) {
+			$id = absint( $id );
+			if ( ! $id ) {
+				continue;
+			}
+			$all[] = $id;
+			$kids  = get_term_children( $id, 'category' );
+			if ( is_array( $kids ) ) {
+				foreach ( $kids as $kid ) {
+					$all[] = (int) $kid;
+				}
+			}
+		}
+		return array_values( array_unique( $all ) );
+	}
+
+	/**
 	 * WP_Query args for a list of published articles, newest first, narrowed by
 	 * search, category or tag. $limit is exactly how many to return.
 	 */
@@ -98,6 +126,13 @@ class TWD_AP_Cards {
 		}
 		if ( '' !== $tag ) {
 			$query_args['tag'] = $tag;
+		}
+		// The main grid (no category, no tag asked for) leaves out the hidden categories.
+		if ( '' === $category && '' === $tag ) {
+			$hidden = self::excluded_category_ids();
+			if ( $hidden ) {
+				$query_args['category__not_in'] = $hidden;
+			}
 		}
 		return $query_args;
 	}
@@ -269,7 +304,7 @@ class TWD_AP_Cards {
 				'orderby'        => 'date',
 				'order'          => 'DESC',
 				'fields'         => 'ids',
-			)
+			) + ( self::excluded_category_ids() ? array( 'category__not_in' => self::excluded_category_ids() ) : array() )
 		);
 
 		$by_category = array();

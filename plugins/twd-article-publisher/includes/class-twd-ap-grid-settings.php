@@ -30,6 +30,9 @@ class TWD_AP_Grid_Settings {
 			// 'all' (every real, non-empty category, the default, so new
 			// categories appear on their own) or an array of category IDs.
 			'topic_category_ids' => 'all',
+			// 1.52.0: categories whose articles stay out of the main (unfiltered) grid, its search and its
+			// category pills. An array of category IDs; empty = nothing hidden, as before.
+			'grid_exclude_category_ids' => array(),
 			// Article look (1.38.0): how a published article reads. Empty
 			// colours and the 'system' / 'medium' / 'normal' choices mean "the
 			// plugin's own typography", and then nothing is printed at all,
@@ -166,6 +169,7 @@ class TWD_AP_Grid_Settings {
 			'read_more_color'    => $current['read_more_color'],
 			'accent_color'       => $current['accent_color'],
 			'topic_category_ids' => $current['topic_category_ids'],
+			'grid_exclude_category_ids' => $current['grid_exclude_category_ids'],
 			'intro_show'         => $current['intro_show'],
 			'archive_takeover'   => $current['archive_takeover'],
 			'related_show'       => $current['related_show'],
@@ -240,6 +244,9 @@ class TWD_AP_Grid_Settings {
 			if ( $color ) {
 				$output['accent_color'] = $color;
 			}
+		}
+		if ( isset( $input['grid_exclude_category_ids'] ) && is_array( $input['grid_exclude_category_ids'] ) ) {
+			$output['grid_exclude_category_ids'] = array_values( array_unique( array_filter( array_map( 'absint', $input['grid_exclude_category_ids'] ) ) ) );
 		}
 		if ( isset( $input['topic_category_ids'] ) ) {
 			if ( 'all' === $input['topic_category_ids'] ) {

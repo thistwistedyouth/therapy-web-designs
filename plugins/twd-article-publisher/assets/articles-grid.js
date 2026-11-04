@@ -642,6 +642,7 @@
 		var sbExportBrandingBox = overlay.querySelector('#twd-ap-gs-sb-export-branding');
 		var orderList  = overlay.querySelector('#twd-ap-gs-cat-order');
 		var topicsBox  = overlay.querySelector('#twd-ap-gs-topics');
+		var excludeBox = overlay.querySelector('#twd-ap-gs-exclude');
 		var introShow = overlay.querySelector('#twd-ap-gs-intro-show');
 		var archiveTakeover = overlay.querySelector('#twd-ap-gs-archive-takeover');
 		var relatedShow = overlay.querySelector('#twd-ap-gs-related-show');
@@ -841,6 +842,24 @@
 				topicsBox.appendChild(label);
 			});
 		}
+		// 1.52.0: categories kept out of the main grid. Unlike the topics row, ticking means "hide".
+		function renderExclude(categories, chosen) {
+			excludeBox.innerHTML = '';
+			categories.forEach(function (cat) {
+				var on = chosen.indexOf(parseInt(cat.id, 10)) !== -1;
+				var label = document.createElement('label');
+				label.className = 'twd-ap-checkbox-label';
+				label.innerHTML = '<input type="checkbox" value="' + parseInt(cat.id, 10) + '"' + (on ? ' checked' : '') + ' /> ' + escapeHtml(cat.name);
+				excludeBox.appendChild(label);
+			});
+		}
+		function excludeValue() {
+			var ids = [];
+			Array.prototype.forEach.call(excludeBox.querySelectorAll('input[type="checkbox"]'), function (b) {
+				if (b.checked) { ids.push(parseInt(b.value, 10)); }
+			});
+			return ids;
+		}
 		function topicsValue() {
 			var boxes = topicsBox.querySelectorAll('input[type="checkbox"]');
 			var ids = [];
@@ -925,6 +944,7 @@
 				renderSbLogoPreview(data.swipebook_logo_url || '');
 				renderOrderList(data.categories || []);
 				if (topicsBox) { renderTopics(data.categories || [], data.topic_category_ids); }
+				if (excludeBox) { renderExclude(data.categories || [], data.grid_exclude_category_ids || []); }
 				lookState = {
 					look_text_color: data.look_text_color || '',
 					look_heading_color: data.look_heading_color || '',
@@ -1008,6 +1028,7 @@
 			// popup can never clear a setting it does not show.
 			if (thumbShape) { payload.thumb_shape = thumbShape.value; }
 			if (topicsBox) { payload.topic_category_ids = topicsValue(); }
+			if (excludeBox) { payload.grid_exclude_category_ids = excludeValue(); }
 			if (introShow) { payload.intro_show = !!introShow.checked; }
 			if (archiveTakeover) { payload.archive_takeover = !!archiveTakeover.checked; }
 			if (relatedShow) {
