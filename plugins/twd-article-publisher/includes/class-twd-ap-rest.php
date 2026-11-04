@@ -912,6 +912,8 @@ class TWD_AP_REST {
 				'look_spacing'        => $settings['look_spacing'],
 				'look_tidy_lines'     => (bool) $settings['look_tidy_lines'],
 				'article_hero'        => (bool) $settings['article_hero'],
+				'site_context'        => $settings['site_context'],
+				'site_context_default' => TWD_AP_Seo::site_context_default(),
 				'look_h2_size'        => (int) $settings['look_h2_size'],
 				'look_h3_size'        => (int) $settings['look_h3_size'],
 				'look_h4_size'        => (int) $settings['look_h4_size'],

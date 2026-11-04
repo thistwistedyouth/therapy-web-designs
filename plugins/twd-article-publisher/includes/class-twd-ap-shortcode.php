@@ -400,6 +400,9 @@ class TWD_AP_Shortcode {
 							</select>
 							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-look-tidy" /> <?php esc_html_e( 'Tidy line endings: keep a short word (a, so, we, an) with the word after it', 'twd-article-publisher' ); ?></label>
 							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-article-hero" /> <?php esc_html_e( 'Show the featured picture at the top of every article', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-label twd-ap-spaced" for="twd-ap-gs-site-context"><?php esc_html_e( 'Site context for search suggestions (who you are and where)', 'twd-article-publisher' ); ?></label>
+							<input type="text" id="twd-ap-gs-site-context" class="twd-ap-input" maxlength="160" />
+							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Used only by "Generate from article" in the SEO box, and only where it fits the article. Leave empty to use the site tagline.', 'twd-article-publisher' ); ?></p>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Stops a line ending on a one or two letter word, in English text. Headings are also balanced and paragraphs avoid a lonely last word in browsers that support it.', 'twd-article-publisher' ); ?></p>
 							<div class="twd-ap-gs-look-preview" id="twd-ap-gs-look-preview" aria-hidden="true">
 								<h2><?php esc_html_e( 'A main heading', 'twd-article-publisher' ); ?></h2>

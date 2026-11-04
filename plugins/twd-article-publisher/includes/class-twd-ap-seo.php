@@ -42,6 +42,17 @@ class TWD_AP_Seo {
 		return ( is_array( $keys ) && 2 === count( $keys ) ) ? array_values( $keys ) : null;
 	}
 
+	/** The site tagline, used when no site context has been typed. */
+	public static function site_context_default() {
+		return trim( wp_strip_all_tags( (string) get_bloginfo( 'description' ) ) );
+	}
+
+	/** What the owner typed, else the tagline. */
+	public static function site_context() {
+		$typed = trim( (string) ( TWD_AP_Grid_Settings::get()['site_context'] ?? '' ) );
+		return '' !== $typed ? $typed : self::site_context_default();
+	}
+
 	public static function init() {
 		add_filter( 'pre_get_document_title', array( __CLASS__, 'filter_title' ), 20 );
 		add_action( 'wp_head', array( __CLASS__, 'print_head' ), 1 );
@@ -128,6 +139,11 @@ class TWD_AP_Seo {
 			"seo_title: " . self::MAX_TITLE . " characters or fewer, says what the article is about, does not add the site name.\n" .
 			"meta_description: " . self::MAX_DESC . " characters or fewer, one or two plain sentences that tell a reader what they will learn.\n" .
 			'Reply with strict JSON only, no code fences: {"seo_title":"...","meta_description":"..."}';
+		$context = self::site_context();
+		if ( '' !== $context ) {
+			$system .= "
+About the site (from its owner): " . $context . ". Use these words, such as the profession or the place, only where they genuinely fit what this article is about and read naturally. Never force them in, never repeat them, and never add anything about the site that is not in this line or in the article.";
+		}
 		$message = "Article title: " . trim( (string) $title ) . "\n\nArticle text:\n" . $text;
 		$reply   = TWD_AP_AI_Generate::complete( $system, $message, 600 );
 		if ( null === $reply ) {

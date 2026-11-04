@@ -616,6 +616,7 @@
 		var profileAll = overlay.querySelector('#twd-ap-gs-profile-all');
 		var lookTidy = overlay.querySelector('#twd-ap-gs-look-tidy');
 		var articleHero = overlay.querySelector('#twd-ap-gs-article-hero');
+		var siteContext = overlay.querySelector('#twd-ap-gs-site-context');
 		var ctaHeading = overlay.querySelector('#twd-ap-gs-cta-heading');
 		var ctaText = overlay.querySelector('#twd-ap-gs-cta-text');
 		var ctaLabel = overlay.querySelector('#twd-ap-gs-cta-label');
@@ -913,6 +914,7 @@
 				if (profileAll) { profileAll.checked = !!data.profile_in_all_books; }
 				if (lookTidy) { lookTidy.checked = false !== data.look_tidy_lines; }
 				if (articleHero) { articleHero.checked = false !== data.article_hero; }
+				if (siteContext) { siteContext.value = data.site_context || ''; siteContext.placeholder = data.site_context_default || ''; }
 				// A page cached before an update can carry an older popup without
 				// some of these fields; they are skipped here and on save.
 				if (ctaHeading) {
@@ -985,6 +987,7 @@
 			if (profileAll) { payload.profile_in_all_books = !!profileAll.checked; }
 			if (lookTidy) { payload.look_tidy_lines = !!lookTidy.checked; }
 			if (articleHero) { payload.article_hero = !!articleHero.checked; }
+			if (siteContext) { payload.site_context = siteContext.value; }
 			if (ctaHeading) {
 				payload.cta_heading = ctaHeading.value;
 				payload.cta_text = ctaText.value;
