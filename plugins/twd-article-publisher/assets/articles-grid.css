@@ -1249,3 +1249,16 @@ body.rtl .twd-ap-articles-tool::after {
     flex-basis: 100% !important;
   }
 }
+
+/* ---- 1.50.6: on a phone the default wide strip was a fixed 170px, about 2:1 on a 325px card, which cropped
+   the usual 3:2 photo hard (heads and subjects cut off). The default shape is now 3:2 at phone width.
+   A site that chose 4:3 or square keeps its choice. A browser without aspect-ratio keeps the old strip. ---- */
+@supports (aspect-ratio: 1 / 1) {
+  @media (max-width: 600px) {
+    .twd-ap-articles:not(.twd-ap-thumbs-4-3):not(.twd-ap-thumbs-square) .twd-ap-article-thumb,
+    .twd-ap-articles:not(.twd-ap-thumbs-4-3):not(.twd-ap-thumbs-square) .twd-ap-articles-grid:has(> .twd-ap-article-card:only-child) .twd-ap-article-thumb {
+      height: auto !important;
+      aspect-ratio: 3 / 2 !important;
+    }
+  }
+}

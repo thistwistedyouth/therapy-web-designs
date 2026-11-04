@@ -449,3 +449,7 @@ generic caution — skipping it is how this shipped wrong the first time.
 
 - **Found on graham:** the site has no Customizer logo (Site Kit draws its own header from a PNG), so the swipe book fell back to the site name in the logo slot AND printed it again as the heading. Fixed in `swipebook.js`: no logo plus a heading equal to the site name leaves the logo slot out. A custom heading that differs keeps the name there.
 - **A white mark was made for a dark book without any plugin change:** the site's own star PNG recoloured white with PHP GD (alpha kept), imported to the Media Library as a new file, set as "Swipe book logo" with the pill set to None. The original file is untouched. This is setting data on graham, not plugin code.
+
+## Phone card pictures (v1.50.6, test build)
+
+- **The wide default strip was a fixed `height: 170px`.** At phone width the card is about 325px wide, so about 1.9:1, which crops a normal 3:2 photo hard. At 600px and under the default shape is now `aspect-ratio: 3 / 2` (about 217px tall at 325px wide). Sites that chose 4:3 or square keep it; desktop is unchanged (170px). Asked for by Clive through a Tell us note on graham, page 35.
