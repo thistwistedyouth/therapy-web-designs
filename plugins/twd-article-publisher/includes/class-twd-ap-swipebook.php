@@ -575,6 +575,15 @@ class TWD_AP_Swipebook {
 			)
 		);
 
+		// 1.50.7: the article's featured picture, faded behind the cover page only. Follows the same
+		// two switches as the picture at the top of the article (the site-wide tick and the article's own).
+		if ( ! empty( $settings['article_hero'] ) && ! get_post_meta( $post->ID, '_twd_ap_hide_hero', true ) && has_post_thumbnail( $post ) ) {
+			$cover = get_the_post_thumbnail_url( $post, 'large' );
+			if ( $cover ) {
+				$payload['coverImage'] = $cover;
+			}
+		}
+
 		// A companion link to the curated Summary Book, only when one's
 		// actually been published for this article -- swipebook.js renders
 		// this as a small footer link, opened the same way the "More

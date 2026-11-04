@@ -899,3 +899,29 @@ body {
     font-size: calc(17px * var(--twd-sb-s, 1)) !important;
   }
 }
+
+/* ---- 1.50.7: the article's featured picture, faded behind the cover page only ---- */
+.twd-sb-card--cover {
+  overflow: hidden !important;
+}
+.twd-sb-card--cover::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  border-radius: inherit !important;
+  background-image: var(--twd-sb-cover-img) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  opacity: 0.3 !important;
+  pointer-events: none !important;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, #000 45%, rgba(0, 0, 0, 0.25) 95%) !important;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, #000 45%, rgba(0, 0, 0, 0.25) 95%) !important;
+}
+.twd-sb-backdrop.twd-sb-theme-light .twd-sb-card--cover::before {
+  opacity: 0.22 !important;
+}
+.twd-sb-card--cover > * {
+  position: relative !important;
+  z-index: 1 !important;
+}

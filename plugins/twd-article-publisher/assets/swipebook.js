@@ -106,9 +106,11 @@
 	}
 
 	/** One slide's section. src is the source slide it came from, scale the text size multiplier the fit step chose. */
-	function sectionHtml(headerHtml, body, i, src, scale) {
+	function sectionHtml(headerHtml, body, i, src, scale, coverUrl) {
 		var style = scale && scale < 0.999 ? ' style="--twd-sb-s:' + scale.toFixed(3) + '"' : '';
-		return '<section class="twd-sb-slide' + (0 === i ? ' is-active' : '') + '" data-index="' + i + '" data-src="' + src + '"><div class="twd-sb-card">' +
+		// 1.50.7: the cover page (the first page only) carries the faded featured picture.
+		var cover = (0 === i && coverUrl) ? ' twd-sb-card--cover" style="--twd-sb-cover-img:url(&quot;' + escapeAttr(coverUrl) + '&quot;)' : '';
+		return '<section class="twd-sb-slide' + (0 === i ? ' is-active' : '') + '" data-index="' + i + '" data-src="' + src + '"><div class="twd-sb-card' + cover + '">' +
 			headerHtml +
 			'<div class="twd-sb-card-body"' + style + '>' + body + '</div>' +
 		'</div></section>';
@@ -123,7 +125,7 @@
 	function buildMarkup(data) {
 		var cardHeader = cardHeaderHtml(data);
 		var slidesHtml = data.slides.map(function (slide, i) {
-			return sectionHtml(cardHeader, slideBodyHtml(slide), i, i, 1);
+			return sectionHtml(cardHeader, slideBodyHtml(slide), i, i, 1, data.coverImage);
 		}).join('');
 		var segsHtml = segsMarkup(data.slides.length);
 
@@ -920,7 +922,7 @@
 		// they all follow the new pages.
 		function applyPlan(plan) {
 			var header = cardHeaderHtml(fitData);
-			slidesWrap.innerHTML = plan.map(function (p, i) { return sectionHtml(header, slideBodyHtml(p.slide), i, p.src, p.scale); }).join('');
+			slidesWrap.innerHTML = plan.map(function (p, i) { return sectionHtml(header, slideBodyHtml(p.slide), i, p.src, p.scale, fitData.coverImage); }).join('');
 			progressEl.innerHTML = segsMarkup(plan.length);
 			slides = Array.prototype.slice.call(slidesWrap.querySelectorAll('.twd-sb-slide'));
 			segs = Array.prototype.slice.call(backdrop.querySelectorAll('.twd-sb-seg'));
