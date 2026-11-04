@@ -1,10 +1,17 @@
 name: Deploy TWD Article Publisher
 
+# PAUSED (4 Nov 2026, Clive): the automatic push trigger is off because the FTPS login to
+# therapyresourcedirectory.com has been failing ("530 Login failed", most likely an out of date
+# TWD_FTP_USERNAME / TWD_FTP_PASSWORD secret). Client sites do NOT depend on this workflow: they
+# update through Check for updates, which reads dist/twd-article-publisher-update.json from main.
+# To switch it back on, fix the two secrets (GitHub > Settings > Secrets and variables > Actions)
+# and put the "push" block back as it was:
+#   push:
+#     branches: [main]
+#     paths:
+#       - "plugins/twd-article-publisher/**"
+# It can still be run by hand from the Actions tab (workflow_dispatch).
 on:
-  push:
-    branches: [main]
-    paths:
-      - "plugins/twd-article-publisher/**"
   workflow_dispatch: {}
 
 jobs:
