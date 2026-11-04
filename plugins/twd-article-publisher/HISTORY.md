@@ -444,3 +444,8 @@ generic caution — skipping it is how this shipped wrong the first time.
 - **Known small flash:** the pills arrive after the facets request, so the dropdown shows for a moment first. Fixing it means printing the categories in the server HTML; left for later.
 - **Card markup changed in two places that must stay in step** (`TWD_AP_Cards::card_html()` and `cardHtml()`): the category is now its own `.twd-ap-article-eyebrow` span. A page cached before this build shows the old line until its cache clears.
 - **TWD Site Kit already skins the grid on its pages** (`.twd-sk-page .twd-ap-*`, higher specificity). Not touched. The plugin's base CSS now reads the same site tokens so a site without that skin gets a close match.
+
+## Swipe book header with no logo (v1.50.5, test build)
+
+- **Found on graham:** the site has no Customizer logo (Site Kit draws its own header from a PNG), so the swipe book fell back to the site name in the logo slot AND printed it again as the heading. Fixed in `swipebook.js`: no logo plus a heading equal to the site name leaves the logo slot out. A custom heading that differs keeps the name there.
+- **A white mark was made for a dark book without any plugin change:** the site's own star PNG recoloured white with PHP GD (alpha kept), imported to the Media Library as a new file, set as "Swipe book logo" with the pill set to None. The original file is untouched. This is setting data on graham, not plugin code.

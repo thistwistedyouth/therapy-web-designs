@@ -28,6 +28,8 @@
 		var mastOpen = siteUrl ? '<a class="twd-sb-mast-link" href="' + escapeAttr(siteUrl) + '" target="_blank" rel="noopener">' : '';
 		var mastClose = siteUrl ? '</a>' : '';
 		var headingText = data.siteHeading || data.siteName || '';
+		// 1.50.5: with no logo, the site name in the mast would just repeat the heading beside it. Only keep it when the heading says something else.
+		if (!data.logoUrl && headingText === (data.siteName || '')) { mastHtml = ''; }
 		var headingOpen = siteUrl ? '<a class="twd-sb-sitename-link" href="' + escapeAttr(siteUrl) + '" target="_blank" rel="noopener">' : '';
 		var headingClose = siteUrl ? '</a>' : '';
 		var headingHtml = headingText
@@ -35,7 +37,7 @@
 			: '';
 		var logoBgClass = 'twd-sb-mast-bg-' + (data.logoBg || 'light');
 		var html = '<div class="twd-sb-card-header">' +
-			'<div class="twd-sb-mast ' + logoBgClass + '">' + mastOpen + mastHtml + mastClose + '</div>' +
+			(mastHtml ? '<div class="twd-sb-mast ' + logoBgClass + '">' + mastOpen + mastHtml + mastClose + '</div>' : '') +
 			'<div class="twd-sb-header-text">' +
 				headingHtml +
 				'<div class="twd-sb-title">' + escapeHtml(data.label || 'Swipe Book') + '</div>' +
