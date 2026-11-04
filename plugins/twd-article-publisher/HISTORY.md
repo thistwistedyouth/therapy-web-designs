@@ -437,3 +437,10 @@ generic caution — skipping it is how this shipped wrong the first time.
 - **The SEO block used to appear only with Yoast.** `defined( 'WPSEO_VERSION' )` was checked in three places; now one function, `TWD_AP_Seo::keys()` (filter `twd_ap_seo_keys`). The popup's element ids still say yoast, deliberately unchanged.
 - **Generate from article is a suggestion, never a save.** It fills the boxes; the author reads, edits and saves. Dashes are stripped and lengths cut at a word boundary on the server.
 - **Hide picture has two levels:** per article (meta) and site-wide (setting). The picture still shows on grid cards and in share tags.
+
+## Resources grid: category pills and card details (v1.50.4, test build)
+
+- **Pills are a second face on the existing select, not a replacement.** The select stays in the page and does the work; a pill sets its value and fires `change`, so the search reset, grouped view, "See all" and load more paths did not need touching. The select is hidden only once pills have been built (`.twd-ap-has-pills`), so a failed facets fetch leaves the dropdown working.
+- **Known small flash:** the pills arrive after the facets request, so the dropdown shows for a moment first. Fixing it means printing the categories in the server HTML; left for later.
+- **Card markup changed in two places that must stay in step** (`TWD_AP_Cards::card_html()` and `cardHtml()`): the category is now its own `.twd-ap-article-eyebrow` span. A page cached before this build shows the old line until its cache clears.
+- **TWD Site Kit already skins the grid on its pages** (`.twd-sk-page .twd-ap-*`, higher specificity). Not touched. The plugin's base CSS now reads the same site tokens so a site without that skin gets a close match.

@@ -144,6 +144,7 @@
 		var loadMoreBtn = root.querySelector('.twd-ap-articles-loadmore');
 		var searchEl    = root.querySelector('.twd-ap-articles-search');
 		var selectEl    = root.querySelector('.twd-ap-articles-category-select');
+		var pillsEl     = null;
 		var settingsBtn = root.querySelector('.twd-ap-articles-settings-btn');
 		var newArticleBtn = root.querySelector('.twd-ap-articles-new-btn');
 		// A page cached before this version has no such element; the stub
@@ -284,6 +285,7 @@
 			selectEl.addEventListener('change', function () {
 				// The last option, "All", and the first, "Select a category", both mean the default landing view.
 				state.category = '__all__' === selectEl.value ? '' : selectEl.value;
+				syncPills();
 				state.offset = 0;
 				// The empty-value "Show all" option means a full return to
 				// the default landing view, not just clearing the category
@@ -381,6 +383,41 @@
 			html += '<option value="__all__">All</option>';
 			selectEl.innerHTML = html;
 			selectEl.value = state.category;
+			renderPills(categories);
+		}
+
+		// 1.50.4: the categories as a row of pills in front of the select. The select stays in the
+		// page (hidden by CSS once the pills exist) and does the work: a pill sets its value and
+		// fires its change event, so every existing path (search reset, grouped view, load more) is unchanged.
+		function renderPills(categories) {
+			if (!categories.length) { return; }
+			if (!pillsEl) {
+				pillsEl = document.createElement('div');
+				pillsEl.className = 'twd-ap-articles-pills';
+				pillsEl.setAttribute('role', 'group');
+				pillsEl.setAttribute('aria-label', 'Filter by category');
+				selectEl.parentNode.insertBefore(pillsEl, selectEl.nextSibling);
+				pillsEl.addEventListener('click', function (e) {
+					var btn = e.target.closest ? e.target.closest('.twd-ap-articles-pill') : null;
+					if (!btn) { return; }
+					selectEl.value = btn.getAttribute('data-slug') || '__all__';
+					selectEl.dispatchEvent(new Event('change'));
+				});
+			}
+			var html = '<button type="button" class="twd-ap-articles-pill" data-slug="">All</button>';
+			categories.forEach(function (cat) {
+				html += '<button type="button" class="twd-ap-articles-pill" data-slug="' + escapeHtml(cat.slug) + '">' + escapeHtml(cat.name) + '</button>';
+			});
+			pillsEl.innerHTML = html;
+			root.classList.add('twd-ap-has-pills');
+			syncPills();
+		}
+
+		function syncPills() {
+			if (!pillsEl) { return; }
+			Array.prototype.forEach.call(pillsEl.querySelectorAll('.twd-ap-articles-pill'), function (b) {
+				b.setAttribute('aria-pressed', (b.getAttribute('data-slug') || '') === (state.category || '') ? 'true' : 'false');
+			});
 		}
 
 		function fetchGrouped() {
@@ -433,6 +470,7 @@
 							state.category = btn.dataset.slug;
 							state.offset = 0;
 							if (selectEl) { selectEl.value = state.category; }
+							syncPills();
 							fetchArticles(true);
 							root.scrollIntoView({ behavior: 'smooth', block: 'start' });
 						});
@@ -533,7 +571,7 @@
 					? '<span class="twd-ap-article-thumb" style="background-image:url(\'' + escapeUrl(item.thumbnail) + '\')"></span>'
 					: '<span class="twd-ap-article-thumb twd-ap-article-thumb-placeholder" aria-hidden="true">' + PLACEHOLDER_SVG + '</span>')
 				: '';
-			var eyebrow = item.category ? escapeHtml(item.category) + ' &middot; ' : '';
+			var eyebrow = item.category ? '<span class="twd-ap-article-eyebrow">' + escapeHtml(item.category) + '</span>' : '';
 			var edit = (item.can_edit && typeof window.TWD_AP_OpenEditor === 'function')
 				? '<span class="twd-ap-card-edit" role="button" tabindex="0" data-edit-id="' + parseInt(item.id, 10) + '" aria-label="Edit this article" title="Edit this article">' + PENCIL_SVG + '</span>'
 				: '';
@@ -542,7 +580,8 @@
 				edit +
 				thumb +
 				'<span class="twd-ap-article-body">' +
-					'<span class="twd-ap-article-date">' + eyebrow + escapeHtml(item.date) + ' &middot; ' + parseInt(item.reading_time, 10) + ' min read</span>' +
+					eyebrow +
+					'<span class="twd-ap-article-date">' + escapeHtml(item.date) + ' &middot; ' + parseInt(item.reading_time, 10) + ' min read</span>' +
 					'<span class="twd-ap-article-title">' + escapeHtml(item.title) + '</span>' +
 					'<span class="twd-ap-article-excerpt">' + escapeHtml(item.excerpt) + '</span>' +
 					'<span class="twd-ap-article-readmore">Read more</span>' +

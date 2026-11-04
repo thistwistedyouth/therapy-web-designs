@@ -452,12 +452,13 @@ class TWD_AP_Cards {
 				$thumb = '<span class="twd-ap-article-thumb twd-ap-article-thumb-placeholder" aria-hidden="true">' . self::PLACEHOLDER_SVG . '</span>';
 			}
 		}
-		$eyebrow = ! empty( $item['category'] ) ? esc_html( $item['category'] ) . ' &middot; ' : '';
+		$eyebrow = ! empty( $item['category'] ) ? '<span class="twd-ap-article-eyebrow">' . esc_html( $item['category'] ) . '</span>' : '';
 
 		return '<a class="twd-ap-article-card" href="' . esc_url( $item['link'] ) . '">' .
 			$thumb .
 			'<span class="twd-ap-article-body">' .
-				'<span class="twd-ap-article-date">' . $eyebrow . esc_html( $item['date'] ) . ' &middot; ' . (int) $item['reading_time'] . ' min read</span>' .
+				$eyebrow .
+				'<span class="twd-ap-article-date">' . esc_html( $item['date'] ) . ' &middot; ' . (int) $item['reading_time'] . ' min read</span>' .
 				'<span class="twd-ap-article-title">' . esc_html( $item['title'] ) . '</span>' .
 				'<span class="twd-ap-article-excerpt">' . esc_html( $item['excerpt'] ) . '</span>' .
 				'<span class="twd-ap-article-readmore">Read more</span>' .
