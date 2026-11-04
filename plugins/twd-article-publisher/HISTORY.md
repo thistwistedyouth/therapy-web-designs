@@ -459,3 +459,7 @@ generic caution — skipping it is how this shipped wrong the first time.
 - **Decision (Clive picked option B):** the article's featured picture faded behind the cover page only, not an inline picture, because the cover card has no spare height on a phone. Later pages stay plain so text stays readable.
 - **How:** the payload carries `coverImage` (large size) only when the site-wide "show the featured picture" tick is on and the article's own "do not show" tick is off, the same two switches as the picture at the top of the article. `swipebook.js` adds `.twd-sb-card--cover` and a `--twd-sb-cover-img` variable to page 0 only; CSS draws it as a `::before` layer at 22 to 30 percent opacity with a mask that is lighter behind the header and the foot. Summary Book payloads do not carry it, so they are unchanged.
 - **Export checked:** html2canvas (Save as image, Download as PDF) was run on the cover card with the capture class on; the picture renders. If it ever draws badly, hide `.twd-sb-card--cover::before` inside `.twd-sb-capture`.
+
+## Swipe book logo size with no pill (v1.50.8, test build)
+
+- **Clive:** the white star was too big. With the logo background set to None the mark is now capped at 38px tall (about the height of the two lines of writing beside it, 37px against 36px measured on graham, was 63px). With a Light or Dark pill the old 64px cap is unchanged, so a wide wordmark logo on a pill is not affected. A wordmark set to None would also be capped at 38px.

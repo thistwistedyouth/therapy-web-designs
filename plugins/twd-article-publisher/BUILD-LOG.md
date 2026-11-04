@@ -4,6 +4,7 @@ At the start of every session read CLAUDE.md and this file. Update this file in 
 
 ## Where we are
 
+- **1.50.8 TEST BUILD (4 Nov 2026), graham only, not pushed.** Swipe book: a logo with no pill behind it is capped at 38px tall (was 64px), so the white star matches the two lines of writing. Includes 1.50.7.
 - **1.50.7 TEST BUILD (4 Nov 2026), graham only, not pushed.** Swipe book: the featured picture faded behind the cover page only (option B, chosen by Clive). Follows the same two ticks as the picture at the top of the article. Checked on desktop, phone and in the image export path. 1.50.6 (3:2 card pictures on phones) is included.
 - **1.50.6 TEST BUILD (4 Nov 2026), graham only, not pushed.** Resources grid on a phone: card picture was a fixed 170px (about 2:1 on a 325px card) so 3:2 photos were cropped hard; the default shape is now 3:2 at 600px and under (4:3 and square choices unchanged). Requested by Clive via a Tell us note on graham page 35.
 - **1.50.5 TEST BUILD (4 Nov 2026), graham only, not pushed.** Swipe book header: with no logo the site name was shown twice (dim in the logo slot, then as the heading). Now the logo slot is left out when there is no logo and the heading is the site name. On graham a white copy of the site's star mark was made (Media Library, new file, original untouched) and set as the swipe book logo with no pill behind it (Customise this grid > Swipe book logo).

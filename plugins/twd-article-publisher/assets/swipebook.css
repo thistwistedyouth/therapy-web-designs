@@ -326,6 +326,9 @@ body {
 .twd-sb-mast-bg-none .twd-sb-mast-logo {
   background: none !important;
   padding: 0 !important;
+  /* 1.50.8: with no pill behind it a mark is a small sign beside the two lines of writing, not a badge. */
+  max-height: 38px !important;
+  max-width: 120px !important;
 }
 .twd-sb-mast-text {
   font-family: "Cormorant Garamond", Garamond, Georgia, serif !important;
