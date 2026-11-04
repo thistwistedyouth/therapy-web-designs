@@ -430,3 +430,10 @@ generic caution — skipping it is how this shipped wrong the first time.
 - **Header block is in the content (`the_content` priority 12), not a theme override**, so it works with any theme. Lead line uses the excerpt only when one was written by hand (`has_excerpt`), since an automatic excerpt repeats paragraph one. Picture goes at the top, not after paragraph two: inserting mid-text breaks on articles that open with a list, quote or video. Off with `add_filter( 'twd_ap_article_header', '__return_false' )`.
 - **Theme title and tag line are aligned by CSS scoped to `body.single-post .page-header` and `.post-tags` (Hello Elementor classes).** Harmless on themes without them. Tags hide the word "Tagged" and the commas with zero font size and show chips.
 - **Related block:** the default accent (#2563eb) becomes `var(--twd-site-color-accent-text,#2563eb)`; a site that chose its own accent keeps it.
+
+## Hide featured picture and SEO from article (v1.50.1 to 1.50.2, test build)
+
+- **TWD Site Kit prints search details for pages only (`is_singular( 'page' )`), so writing an article's SEO into Site Kit's fields would have been saved and never shown.** Found by reading its `printing_for()` before building. The Articles plugin therefore owns the fields on sites with no SEO plugin and prints them itself, independent of Site Kit and of Elementor. If Site Kit ever prints for posts, the two must be reconciled (only one description tag).
+- **The SEO block used to appear only with Yoast.** `defined( 'WPSEO_VERSION' )` was checked in three places; now one function, `TWD_AP_Seo::keys()` (filter `twd_ap_seo_keys`). The popup's element ids still say yoast, deliberately unchanged.
+- **Generate from article is a suggestion, never a save.** It fills the boxes; the author reads, edits and saves. Dashes are stripped and lengths cut at a word boundary on the server.
+- **Hide picture has two levels:** per article (meta) and site-wide (setting). The picture still shows on grid cards and in share tags.

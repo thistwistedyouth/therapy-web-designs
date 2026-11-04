@@ -212,6 +212,16 @@ class TWD_AP_REST {
 			)
 		);
 
+		register_rest_route(
+			self::NAMESPACE,
+			'/seo-suggest',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'suggest_seo' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			)
+		);
+
 		// Generates an article directly on this site with the client's own
 		// Anthropic key (Settings > Article Publisher) -- gated the same
 		// way category creation is (any allowed editor, no specific post
@@ -225,6 +235,27 @@ class TWD_AP_REST {
 				'permission_callback' => array( $this, 'check_permission' ),
 			)
 		);
+	}
+
+	/**
+	 * "Generate from article" in the popup's SEO block: a suggested SEO title and meta
+	 * description from the text sent. Saves nothing; the author reads and edits first.
+	 */
+	public function suggest_seo( $request ) {
+		if ( ! TWD_AP_AI_Generate::is_configured() ) {
+			return new WP_Error( 'twd_ap_ai_not_configured', __( 'No API key is set up for this site yet.', 'twd-article-publisher' ), array( 'status' => 400 ) );
+		}
+		if ( TWD_AP_AI_Generate::count() >= TWD_AP_AI_Generate::RATE_LIMIT ) {
+			return new WP_Error( 'twd_ap_ai_rate_limited', __( 'You have reached today\'s generation limit on this site. Try again tomorrow.', 'twd-article-publisher' ), array( 'status' => 429 ) );
+		}
+		$title  = isset( $request['title'] ) ? sanitize_text_field( wp_unslash( $request['title'] ) ) : '';
+		$html   = isset( $request['content_html'] ) ? wp_kses_post( wp_unslash( $request['content_html'] ) ) : '';
+		$result = TWD_AP_Seo::suggest( $title, $html );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		TWD_AP_AI_Generate::increment();
+		return rest_ensure_response( $result );
 	}
 
 	public function import_book( $request ) {
@@ -655,22 +686,33 @@ class TWD_AP_REST {
 			}
 		}
 
-		// Yoast fields, only if Yoast SEO is active on this site.
-		if ( defined( 'WPSEO_VERSION' ) ) {
+		// Hide the picture at the top of this article (1.50.0).
+		if ( isset( $request['hide_hero'] ) ) {
+			if ( $request['hide_hero'] ) {
+				update_post_meta( $post_id, '_twd_ap_hide_hero', 1 );
+			} else {
+				delete_post_meta( $post_id, '_twd_ap_hide_hero' );
+			}
+		}
+
+		// Search title and description: Yoast's fields, or Site Kit's own when there is no
+		// SEO plugin (1.50.0). TWD_AP_Seo::keys() is null when nothing would print them.
+		$seo_keys = TWD_AP_Seo::keys();
+		if ( $seo_keys ) {
 			if ( isset( $request['yoast_title'] ) ) {
 				$val = TWD_AP_Sanitizer::strip_dashes( sanitize_text_field( wp_unslash( $request['yoast_title'] ) ) );
 				if ( '' !== $val ) {
-					update_post_meta( $post_id, '_yoast_wpseo_title', $val );
+					update_post_meta( $post_id, $seo_keys[0], $val );
 				} else {
-					delete_post_meta( $post_id, '_yoast_wpseo_title' );
+					delete_post_meta( $post_id, $seo_keys[0] );
 				}
 			}
 			if ( isset( $request['yoast_desc'] ) ) {
 				$val = TWD_AP_Sanitizer::strip_dashes( sanitize_textarea_field( wp_unslash( $request['yoast_desc'] ) ) );
 				if ( '' !== $val ) {
-					update_post_meta( $post_id, '_yoast_wpseo_metadesc', $val );
+					update_post_meta( $post_id, $seo_keys[1], $val );
 				} else {
-					delete_post_meta( $post_id, '_yoast_wpseo_metadesc' );
+					delete_post_meta( $post_id, $seo_keys[1] );
 				}
 			}
 		}
@@ -726,8 +768,10 @@ class TWD_AP_REST {
 		if ( $for_edit ) {
 			$data['content_html'] = $post->post_content;
 			$data['edit_url']     = (string) get_edit_post_link( $post_id, '' );
-			$data['yoast_title']  = get_post_meta( $post_id, '_yoast_wpseo_title', true );
-			$data['yoast_desc']   = get_post_meta( $post_id, '_yoast_wpseo_metadesc', true );
+			$seo_keys             = TWD_AP_Seo::keys();
+			$data['yoast_title']  = $seo_keys ? get_post_meta( $post_id, $seo_keys[0], true ) : '';
+			$data['yoast_desc']   = $seo_keys ? get_post_meta( $post_id, $seo_keys[1], true ) : '';
+			$data['hide_hero']    = (bool) get_post_meta( $post_id, '_twd_ap_hide_hero', true );
 			$post_tags            = wp_get_post_tags( $post_id, array( 'fields' => 'names' ) );
 			$data['tags']         = implode( ', ', $post_tags );
 			$data['featured']     = (bool) get_post_meta( $post_id, '_twd_ap_featured', true );
@@ -867,6 +911,7 @@ class TWD_AP_REST {
 				'look_size'           => $settings['look_size'],
 				'look_spacing'        => $settings['look_spacing'],
 				'look_tidy_lines'     => (bool) $settings['look_tidy_lines'],
+				'article_hero'        => (bool) $settings['article_hero'],
 				'look_h2_size'        => (int) $settings['look_h2_size'],
 				'look_h3_size'        => (int) $settings['look_h3_size'],
 				'look_h4_size'        => (int) $settings['look_h4_size'],

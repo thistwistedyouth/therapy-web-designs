@@ -399,6 +399,7 @@ class TWD_AP_Shortcode {
 								<option value="relaxed"><?php esc_html_e( 'Relaxed', 'twd-article-publisher' ); ?></option>
 							</select>
 							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-look-tidy" /> <?php esc_html_e( 'Tidy line endings: keep a short word (a, so, we, an) with the word after it', 'twd-article-publisher' ); ?></label>
+							<label class="twd-ap-checkbox-label twd-ap-spaced"><input type="checkbox" id="twd-ap-gs-article-hero" /> <?php esc_html_e( 'Show the featured picture at the top of every article', 'twd-article-publisher' ); ?></label>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Stops a line ending on a one or two letter word, in English text. Headings are also balanced and paragraphs avoid a lonely last word in browsers that support it.', 'twd-article-publisher' ); ?></p>
 							<div class="twd-ap-gs-look-preview" id="twd-ap-gs-look-preview" aria-hidden="true">
 								<h2><?php esc_html_e( 'A main heading', 'twd-article-publisher' ); ?></h2>

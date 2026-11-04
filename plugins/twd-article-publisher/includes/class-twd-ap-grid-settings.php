@@ -75,6 +75,7 @@ class TWD_AP_Grid_Settings {
 			// 1.46.0: keep one and two letter words with the word after them, so a
 			// line never ends on "so" or "we".
 			'look_tidy_lines'    => true,
+			'article_hero'       => true,
 			// 1.48.0: the size in pixels of the H2, H3 and H4 headings in an article's
 			// text (0 means the plugin's own size: 26, 21 and 18).
 			'look_h2_size'       => 0,
@@ -185,6 +186,7 @@ class TWD_AP_Grid_Settings {
 			'look_size'          => $current['look_size'],
 			'look_spacing'       => $current['look_spacing'],
 			'look_tidy_lines'    => $current['look_tidy_lines'],
+			'article_hero'       => $current['article_hero'],
 			'look_h2_size'       => $current['look_h2_size'],
 			'look_h3_size'       => $current['look_h3_size'],
 			'look_h4_size'       => $current['look_h4_size'],
@@ -257,6 +259,9 @@ class TWD_AP_Grid_Settings {
 		}
 		if ( isset( $input['swipebook_top_shortcode'] ) ) {
 			$output['swipebook_top_shortcode'] = (bool) $input['swipebook_top_shortcode'];
+		}
+		if ( isset( $input['article_hero'] ) ) {
+			$output['article_hero'] = (bool) $input['article_hero'];
 		}
 		if ( isset( $input['look_tidy_lines'] ) ) {
 			$output['look_tidy_lines'] = (bool) $input['look_tidy_lines'];

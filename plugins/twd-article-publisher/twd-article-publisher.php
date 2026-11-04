@@ -3,7 +3,7 @@
  * Plugin Name: Articles & Resource Production Plugin
  * Plugin URI: https://therapywebdesigns.co.uk/
  * Description: Lets approved users publish and edit blog articles from the live site in a popup, without going into wp-admin. Paste AI-formatted HTML or write visually, tag categories, set a featured image, and publish.
- * Version: 1.50.0
+ * Version: 1.50.2
  * Author: Therapy Web Designs
  * Author URI: https://therapywebdesigns.co.uk/
  * License: GPL v2 or later
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TWD_AP_VERSION', '1.50.0' );
+define( 'TWD_AP_VERSION', '1.50.2' );
 define( 'TWD_AP_PATH', plugin_dir_path( __FILE__ ) );
 define( 'TWD_AP_URL', plugin_dir_url( __FILE__ ) );
 define( 'TWD_AP_ARTICLE_ASSIST_URL', 'https://therapyresourcedirectory.com/article-assist/?aa=open' );
@@ -25,6 +25,7 @@ require_once TWD_AP_PATH . 'includes/class-twd-ap-sanitizer.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-converter.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-settings.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-ai-generate.php';
+require_once TWD_AP_PATH . 'includes/class-twd-ap-seo.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-grid-settings.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-cards.php';
 require_once TWD_AP_PATH . 'includes/class-twd-ap-rest.php';
@@ -57,6 +58,7 @@ final class TWD_Article_Publisher {
 	private function __construct() {
 		TWD_AP_Settings::instance();
 		TWD_AP_AI_Generate::init();
+		TWD_AP_Seo::init();
 		TWD_AP_REST::instance();
 		TWD_AP_Frontend::instance();
 		TWD_AP_Shortcode::instance();

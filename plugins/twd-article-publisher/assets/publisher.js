@@ -118,6 +118,10 @@
 		els.yoastWrap = document.getElementById('twd-ap-yoast-fields');
 		els.yoastTitle = document.getElementById('twd-ap-yoast-title');
 		els.yoastDesc = document.getElementById('twd-ap-yoast-desc');
+		els.hideHero = document.getElementById('twd-ap-hide-hero');
+		els.seoSuggest = document.getElementById('twd-ap-seo-suggest');
+		els.seoSuggestRow = document.getElementById('twd-ap-seo-suggest-row');
+		els.seoSuggestNote = document.getElementById('twd-ap-seo-suggest-note');
 		els.scheduleToggle = document.getElementById('twd-ap-schedule-toggle');
 		els.scheduleDate = document.getElementById('twd-ap-schedule-date');
 		els.draftBtn = document.getElementById('twd-ap-draft-btn');
@@ -342,6 +346,8 @@
 		});
 
 		els.featuredSelect.addEventListener('click', openFeaturedImageFrame);
+		if (els.hideHero) { els.hideHero.addEventListener('change', markDirty); }
+		if (els.seoSuggest) { els.seoSuggest.addEventListener('click', suggestSeo); }
 		els.featuredRemove.addEventListener('click', function () {
 			state.featuredMediaId = 0;
 			renderFeaturedPreview('');
@@ -1002,6 +1008,36 @@
 	 * (title/seo_title/meta_description/category/tags/html/summary_book),
 	 * so this never needs to know which one produced it.
 	 */
+	// "Generate from article" in the SEO block: asks the server for a suggested title and
+	// description from the text as it stands now. Fills the two boxes; saves nothing.
+	function suggestSeo() {
+		var note = els.seoSuggestNote;
+		var original = note ? note.textContent : '';
+		els.seoSuggest.disabled = true;
+		if (note) { note.textContent = 'Reading the article...'; }
+		fetch(TWD_AP.restUrl + '/seo-suggest', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': TWD_AP.nonce },
+			body: JSON.stringify({ title: els.title.value, content_html: currentBodyHtml() }),
+		})
+			.then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+			.then(function (result) {
+				els.seoSuggest.disabled = false;
+				if (!result.ok) {
+					if (note) { note.textContent = (result.data && result.data.message) ? result.data.message : 'Something went wrong. Please try again.'; }
+					return;
+				}
+				els.yoastTitle.value = result.data.seo_title || '';
+				els.yoastDesc.value = result.data.meta_description || '';
+				markDirty();
+				if (note) { note.textContent = 'Filled in. Read and edit before you save.'; }
+			})
+			.catch(function () {
+				els.seoSuggest.disabled = false;
+				if (note) { note.textContent = original + ' (Something went wrong, please try again.)'; }
+			});
+	}
+
 	function applyGeneratedData(data, successMessage) {
 		if (data.title) {
 			els.title.value = data.title;
@@ -1462,6 +1498,7 @@
 		updateSummaryBookButton();
 		els.yoastTitle.value = '';
 		els.yoastDesc.value = '';
+		if (els.hideHero) { els.hideHero.checked = false; }
 		els.scheduleToggle.checked = false;
 		els.scheduleDate.hidden = true;
 		els.scheduleDate.value = '';
@@ -1471,6 +1508,7 @@
 		state.dirty = false;
 		hideStatus();
 		els.yoastWrap.hidden = !TWD_AP.yoastEnabled;
+		if (els.seoSuggestRow) { els.seoSuggestRow.hidden = !(parseInt(TWD_AP.aiKeyConfigured, 10) || 0); }
 		state.primaryCategoryId = 0;
 		renderCategories([]);
 		updateSwipebookLink('', '');
@@ -1559,6 +1597,7 @@
 				els.excerpt.value = data.excerpt || '';
 				els.tags.value = data.tags || '';
 				els.featuredToggle.checked = !!data.featured;
+				if (els.hideHero) { els.hideHero.checked = !!data.hide_hero; }
 				setGridOrder(data.grid_order > 0 ? String(data.grid_order) : '');
 				els.includeBioToggle.checked = !!data.include_bio;
 				state.bioTouched = false;
@@ -1713,6 +1752,7 @@
 			category_ids: getCheckedCategoryIds(),
 			primary_category: state.primaryCategoryId,
 			featured_media: state.featuredMediaId,
+			hide_hero: !!(els.hideHero && els.hideHero.checked),
 			status: status,
 		};
 		// The bio tick goes with the save only when the author changed it: otherwise the article keeps following the site-wide tick.

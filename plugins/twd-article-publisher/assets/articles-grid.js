@@ -615,6 +615,7 @@
 		var topicsAlign = overlay.querySelector('#twd-ap-gs-topics-align');
 		var profileAll = overlay.querySelector('#twd-ap-gs-profile-all');
 		var lookTidy = overlay.querySelector('#twd-ap-gs-look-tidy');
+		var articleHero = overlay.querySelector('#twd-ap-gs-article-hero');
 		var ctaHeading = overlay.querySelector('#twd-ap-gs-cta-heading');
 		var ctaText = overlay.querySelector('#twd-ap-gs-cta-text');
 		var ctaLabel = overlay.querySelector('#twd-ap-gs-cta-label');
@@ -911,6 +912,7 @@
 				if (topicsAlign) { topicsAlign.value = 'center' === data.topics_align ? 'center' : 'left'; }
 				if (profileAll) { profileAll.checked = !!data.profile_in_all_books; }
 				if (lookTidy) { lookTidy.checked = false !== data.look_tidy_lines; }
+				if (articleHero) { articleHero.checked = false !== data.article_hero; }
 				// A page cached before an update can carry an older popup without
 				// some of these fields; they are skipped here and on save.
 				if (ctaHeading) {
@@ -982,6 +984,7 @@
 			if (topicsAlign) { payload.topics_align = topicsAlign.value; }
 			if (profileAll) { payload.profile_in_all_books = !!profileAll.checked; }
 			if (lookTidy) { payload.look_tidy_lines = !!lookTidy.checked; }
+			if (articleHero) { payload.article_hero = !!articleHero.checked; }
 			if (ctaHeading) {
 				payload.cta_heading = ctaHeading.value;
 				payload.cta_text = ctaText.value;

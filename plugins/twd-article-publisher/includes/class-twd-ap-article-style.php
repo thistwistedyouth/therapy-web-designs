@@ -204,7 +204,8 @@ class TWD_AP_Article_Style {
 			$bits[] = '<span>' . (int) max( 1, ceil( $words / 200 ) ) . ' min read</span>';
 		}
 		$out .= '<p class="twd-ap-article-meta">' . implode( '<span class="twd-ap-article-meta-dot" aria-hidden="true">&middot;</span>', $bits ) . '</p>';
-		if ( has_post_thumbnail( $post ) ) {
+		$show_hero = ! empty( TWD_AP_Grid_Settings::get()['article_hero'] ) && ! get_post_meta( $post->ID, '_twd_ap_hide_hero', true );
+		if ( $show_hero && has_post_thumbnail( $post ) ) {
 			$img = get_the_post_thumbnail( $post, 'large', array( 'class' => 'twd-ap-article-hero-img', 'loading' => 'eager' ) );
 			if ( '' !== $img ) {
 				$out .= '<figure class="twd-ap-article-hero">' . $img . '</figure>';

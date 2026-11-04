@@ -169,6 +169,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<button type="button" id="twd-ap-featured-select" class="twd-ap-btn-secondary"><?php esc_html_e( 'Choose Image', 'twd-article-publisher' ); ?></button>
 								<button type="button" id="twd-ap-featured-remove" class="twd-ap-btn-text" hidden><?php esc_html_e( 'Remove', 'twd-article-publisher' ); ?></button>
 							</div>
+							<label class="twd-ap-checkbox-label twd-ap-spaced">
+								<input type="checkbox" id="twd-ap-hide-hero" />
+								<?php esc_html_e( 'Do not show this picture at the top of the article (it still shows on the resources grid)', 'twd-article-publisher' ); ?>
+							</label>
 						</div>
 
 						<div class="twd-ap-field-col">
@@ -195,6 +199,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<input type="text" id="twd-ap-yoast-title" class="twd-ap-input" />
 					<label class="twd-ap-label" for="twd-ap-yoast-desc"><?php esc_html_e( 'Meta description', 'twd-article-publisher' ); ?></label>
 					<textarea id="twd-ap-yoast-desc" class="twd-ap-textarea-small"></textarea>
+					<div class="twd-ap-btn-row" id="twd-ap-seo-suggest-row" hidden>
+						<button type="button" id="twd-ap-seo-suggest" class="twd-ap-btn-secondary"><?php esc_html_e( 'Generate from article', 'twd-article-publisher' ); ?></button>
+						<span id="twd-ap-seo-suggest-note" class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Fills both boxes from the article text. Read and edit before you save.', 'twd-article-publisher' ); ?></span>
+					</div>
 				</div>
 
 				<div class="twd-ap-schedule-row">
