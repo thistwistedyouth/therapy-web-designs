@@ -477,3 +477,7 @@ generic caution — skipping it is how this shipped wrong the first time.
 - **One place decides, and only the unfiltered grid obeys it.** `TWD_AP_Cards::query_args()` adds `category__not_in` only when no category and no tag was asked for, so every path that builds the main list (server printed first view, REST `/articles`, featured, search) is covered by one line, and `grouped()` and the facets list (the category buttons) apply the same ids. A list for one category or tag, a category or tag page, and the article are explicit and show everything. Children of a ticked category are hidden too (`get_term_children`).
 - **Rule: hidden if it is in ANY ticked category**, not only when all its categories are ticked. Simple and predictable; the popup says so. An article in Essays and Relationships is hidden from the main grid.
 - **Left alone on purpose:** the Browse by topic row (its own ticks), the article index page (a crawlable list of everything), the related block, tag buttons. Say if a site wants any of these to follow the setting.
+
+## Article index styling (v1.52.1, test build)
+
+- **Ask (Clive):** the index page had no room to breathe and used generic fonts. CSS only, appended to `articles-grid.css` so the original rules stay as the fallback. It reads the same `--twd-site-*` tokens as the rest of the plugin. The index keeps the width of the theme's content column (a narrower centred column would not line up with the theme's own page title, which the plugin does not control).
