@@ -1268,3 +1268,12 @@ body.admin-bar .twd-ap-edit-pencil {
     right: 10px !important;
   }
 }
+
+/* 1.51.0: the preview of the picture for the top of the article is a wide strip. */
+.twd-ap-top-preview {
+  height: 90px !important;
+  margin-bottom: 8px !important;
+}
+.twd-ap-top-preview[hidden] {
+  display: none !important;
+}

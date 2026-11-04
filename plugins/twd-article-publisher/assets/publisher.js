@@ -119,6 +119,10 @@
 		els.yoastTitle = document.getElementById('twd-ap-yoast-title');
 		els.yoastDesc = document.getElementById('twd-ap-yoast-desc');
 		els.hideHero = document.getElementById('twd-ap-hide-hero');
+		els.topPreview = document.getElementById('twd-ap-top-preview');
+		els.topSelect = document.getElementById('twd-ap-top-select');
+		els.topRemove = document.getElementById('twd-ap-top-remove');
+		els.topFull = document.getElementById('twd-ap-top-full');
 		els.seoSuggest = document.getElementById('twd-ap-seo-suggest');
 		els.seoSuggestRow = document.getElementById('twd-ap-seo-suggest-row');
 		els.seoSuggestNote = document.getElementById('twd-ap-seo-suggest-note');
@@ -347,6 +351,15 @@
 
 		els.featuredSelect.addEventListener('click', openFeaturedImageFrame);
 		if (els.hideHero) { els.hideHero.addEventListener('change', markDirty); }
+		if (els.topFull) { els.topFull.addEventListener('change', markDirty); }
+		if (els.topSelect) { els.topSelect.addEventListener('click', openTopImageFrame); }
+		if (els.topRemove) {
+			els.topRemove.addEventListener('click', function () {
+				state.topMediaId = 0;
+				renderTopPreview('');
+				markDirty();
+			});
+		}
 		if (els.seoSuggest) { els.seoSuggest.addEventListener('click', suggestSeo); }
 		els.featuredRemove.addEventListener('click', function () {
 			state.featuredMediaId = 0;
@@ -464,6 +477,32 @@
 			});
 		}
 		featuredFrame.open();
+	}
+
+	// 1.51.0: the picture for the top of the article (Media Library, which also has an Upload tab).
+	var topFrame = null;
+	function openTopImageFrame() {
+		if (!window.wp || !wp.media) {
+			return;
+		}
+		if (!topFrame) {
+			topFrame = wp.media({ title: 'Choose the picture for the top of the article', multiple: false, library: { type: 'image' } });
+			topFrame.on('select', function () {
+				var att = topFrame.state().get('selection').first().toJSON();
+				state.topMediaId = att.id;
+				var url = (att.sizes && att.sizes.medium) ? att.sizes.medium.url : att.url;
+				renderTopPreview(url);
+				markDirty();
+			});
+		}
+		topFrame.open();
+	}
+
+	function renderTopPreview(url) {
+		if (!els.topPreview) { return; }
+		els.topPreview.style.backgroundImage = url ? 'url(' + url + ')' : '';
+		els.topPreview.hidden = !url;
+		if (els.topRemove) { els.topRemove.hidden = !url; }
 	}
 
 	function openInlineImageFrame() {
@@ -1499,6 +1538,9 @@
 		els.yoastTitle.value = '';
 		els.yoastDesc.value = '';
 		if (els.hideHero) { els.hideHero.checked = false; }
+		state.topMediaId = 0;
+		renderTopPreview('');
+		if (els.topFull) { els.topFull.checked = false; }
 		els.scheduleToggle.checked = false;
 		els.scheduleDate.hidden = true;
 		els.scheduleDate.value = '';
@@ -1598,6 +1640,9 @@
 				els.tags.value = data.tags || '';
 				els.featuredToggle.checked = !!data.featured;
 				if (els.hideHero) { els.hideHero.checked = !!data.hide_hero; }
+				state.topMediaId = data.top_media || 0;
+				renderTopPreview(data.top_media_url || '');
+				if (els.topFull) { els.topFull.checked = !!data.top_full; }
 				setGridOrder(data.grid_order > 0 ? String(data.grid_order) : '');
 				els.includeBioToggle.checked = !!data.include_bio;
 				state.bioTouched = false;
@@ -1753,6 +1798,8 @@
 			primary_category: state.primaryCategoryId,
 			featured_media: state.featuredMediaId,
 			hide_hero: !!(els.hideHero && els.hideHero.checked),
+			top_media: state.topMediaId || 0,
+			top_full: !!(els.topFull && els.topFull.checked),
 			status: status,
 		};
 		// The bio tick goes with the save only when the author changed it: otherwise the article keeps following the site-wide tick.

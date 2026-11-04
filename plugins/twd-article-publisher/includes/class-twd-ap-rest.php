@@ -695,6 +695,23 @@ class TWD_AP_REST {
 			}
 		}
 
+		// The picture for the top of the article and whether it is a full width banner (1.51.0).
+		if ( isset( $request['top_media'] ) ) {
+			$top = absint( $request['top_media'] );
+			if ( $top && wp_attachment_is_image( $top ) ) {
+				update_post_meta( $post_id, '_twd_ap_top_image', $top );
+			} else {
+				delete_post_meta( $post_id, '_twd_ap_top_image' );
+			}
+		}
+		if ( isset( $request['top_full'] ) ) {
+			if ( $request['top_full'] ) {
+				update_post_meta( $post_id, '_twd_ap_top_full', 1 );
+			} else {
+				delete_post_meta( $post_id, '_twd_ap_top_full' );
+			}
+		}
+
 		// Search title and description: Yoast's fields, or Site Kit's own when there is no
 		// SEO plugin (1.50.0). TWD_AP_Seo::keys() is null when nothing would print them.
 		$seo_keys = TWD_AP_Seo::keys();
@@ -772,6 +789,10 @@ class TWD_AP_REST {
 			$data['yoast_title']  = $seo_keys ? get_post_meta( $post_id, $seo_keys[0], true ) : '';
 			$data['yoast_desc']   = $seo_keys ? get_post_meta( $post_id, $seo_keys[1], true ) : '';
 			$data['hide_hero']    = (bool) get_post_meta( $post_id, '_twd_ap_hide_hero', true );
+			$top_id               = (int) get_post_meta( $post_id, '_twd_ap_top_image', true );
+			$data['top_media']     = ( $top_id && wp_attachment_is_image( $top_id ) ) ? $top_id : 0;
+			$data['top_media_url'] = $data['top_media'] ? (string) wp_get_attachment_image_url( $top_id, 'medium' ) : '';
+			$data['top_full']      = (bool) get_post_meta( $post_id, '_twd_ap_top_full', true );
 			$post_tags            = wp_get_post_tags( $post_id, array( 'fields' => 'names' ) );
 			$data['tags']         = implode( ', ', $post_tags );
 			$data['featured']     = (bool) get_post_meta( $post_id, '_twd_ap_featured', true );

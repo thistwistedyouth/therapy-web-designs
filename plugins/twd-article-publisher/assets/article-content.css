@@ -370,3 +370,30 @@ body.single-post .post-tags .tag-links a:hover {
   border-color: var(--twd-site-color-accent-text, #2563eb);
   color: var(--twd-site-color-accent-text, #2563eb);
 }
+
+/* ---- 1.51.0: the picture chosen for the top of an article, and the full width banner ---- */
+.twd-ap-article-banner {
+  position: relative !important;
+  left: 50% !important;
+  width: var(--twd-ap-vw, 100vw) !important;
+  max-width: var(--twd-ap-vw, 100vw) !important;
+  margin: 0 0 32px calc(var(--twd-ap-vw, 100vw) / -2) !important;
+  padding: 0 !important;
+}
+.twd-ap-article-banner-img {
+  display: block !important;
+  width: 100% !important;
+  height: clamp(200px, 34vw, 440px) !important;
+  max-width: none !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  border-radius: 0 !important;
+}
+/* The page width without the scrollbar is set by the banner's own script (--twd-ap-vw); 100vw includes the scrollbar, which left the banner a few pixels off. The clip below is only a safety net. */
+body.twd-ap-has-banner {
+  overflow-x: clip;
+}
+/* Moved in front of the theme's title block, the banner has no space above it. */
+main > .twd-ap-article-banner {
+  margin-top: 0 !important;
+}

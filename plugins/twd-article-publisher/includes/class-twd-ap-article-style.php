@@ -32,6 +32,7 @@ class TWD_AP_Article_Style {
 		// 1.50.0: the article's own header block (lead line, details, picture). After the
 		// swipe book buttons were put at the start (11) so it sits above them.
 		add_filter( 'the_content', array( $this, 'prepend_header' ), 12 );
+		add_filter( 'body_class', array( $this, 'banner_body_class' ) );
 	}
 
 	public function maybe_enqueue() {
@@ -204,14 +205,68 @@ class TWD_AP_Article_Style {
 			$bits[] = '<span>' . (int) max( 1, ceil( $words / 200 ) ) . ' min read</span>';
 		}
 		$out .= '<p class="twd-ap-article-meta">' . implode( '<span class="twd-ap-article-meta-dot" aria-hidden="true">&middot;</span>', $bits ) . '</p>';
-		$show_hero = ! empty( TWD_AP_Grid_Settings::get()['article_hero'] ) && ! get_post_meta( $post->ID, '_twd_ap_hide_hero', true );
-		if ( $show_hero && has_post_thumbnail( $post ) ) {
-			$img = get_the_post_thumbnail( $post, 'large', array( 'class' => 'twd-ap-article-hero-img', 'loading' => 'eager' ) );
+		$pic_id = self::top_image_id( $post );
+		if ( $pic_id && ! self::banner_active( $post ) ) {
+			$img = wp_get_attachment_image( $pic_id, 'large', false, array( 'class' => 'twd-ap-article-hero-img', 'loading' => 'eager' ) );
 			if ( '' !== $img ) {
 				$out .= '<figure class="twd-ap-article-hero">' . $img . '</figure>';
 			}
 		}
-		return '<div class="twd-ap-article-header">' . $out . '</div>';
+		return self::banner_html( $post ) . '<div class="twd-ap-article-header">' . $out . '</div>';
+	}
+
+	/**
+	 * 1.51.0: the picture for the top of an article: the one chosen for it in the editor
+	 * (_twd_ap_top_image), otherwise the featured image. A picture chosen for the article is shown
+	 * even when the site-wide tick (article_hero) is off: that tick only decides whether articles
+	 * show their featured image by default. This article's own tick (_twd_ap_hide_hero) hides either.
+	 * 0 when there is none or the stored id is no longer an image.
+	 */
+	public static function top_image_id( $post ) {
+		$post = get_post( $post );
+		if ( ! $post || get_post_meta( $post->ID, '_twd_ap_hide_hero', true ) ) {
+			return 0;
+		}
+		$own = (int) get_post_meta( $post->ID, '_twd_ap_top_image', true );
+		if ( $own && wp_attachment_is_image( $own ) ) {
+			return $own;
+		}
+		if ( empty( TWD_AP_Grid_Settings::get()['article_hero'] ) ) {
+			return 0;
+		}
+		$thumb = (int) get_post_thumbnail_id( $post );
+		return ( $thumb && wp_attachment_is_image( $thumb ) ) ? $thumb : 0;
+	}
+
+	/** True when this article shows its picture as a full width banner above the title. */
+	public static function banner_active( $post ) {
+		$post = get_post( $post );
+		return $post && get_post_meta( $post->ID, '_twd_ap_top_full', true ) && self::top_image_id( $post ) > 0;
+	}
+
+	/**
+	 * The banner: a wide strip, picture cropped from the centre. It is printed first in the article
+	 * text, and a one-line script placed straight after it moves it in front of the theme's own title
+	 * block (Hello Elementor's .page-header, or the h1 .entry-title) before the page is painted.
+	 * With no script, or a theme whose title cannot be found, it stays where it is, still full width.
+	 */
+	public static function banner_html( $post ) {
+		if ( ! self::banner_active( $post ) ) {
+			return '';
+		}
+		$img = wp_get_attachment_image( self::top_image_id( $post ), 'full', false, array( 'class' => 'twd-ap-article-banner-img', 'loading' => 'eager', 'sizes' => '100vw' ) );
+		if ( '' === $img ) {
+			return '';
+		}
+		return '<figure class="twd-ap-article-banner">' . $img . '</figure>' .
+			'<script>(function(){var d=document.documentElement;function w(){d.style.setProperty("--twd-ap-vw",d.clientWidth+"px");}w();window.addEventListener("resize",w);var s=document.currentScript,b=s&&s.previousElementSibling;if(!b||!b.classList.contains("twd-ap-article-banner"))return;var h=document.querySelector("main .page-header")||document.querySelector("h1.entry-title");var t=h&&(h.closest(".page-header")||h);if(t&&t.parentNode&&!t.contains(b)){t.parentNode.insertBefore(b,t);}})();</script>';
+	}
+
+	public function banner_body_class( $classes ) {
+		if ( is_singular( 'post' ) && self::banner_active( get_queried_object_id() ) ) {
+			$classes[] = 'twd-ap-has-banner';
+		}
+		return $classes;
 	}
 
 	public function wrap_content( $content ) {

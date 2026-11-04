@@ -577,8 +577,9 @@ class TWD_AP_Swipebook {
 
 		// 1.50.7: the article's featured picture, faded behind the cover page only. Follows the same
 		// two switches as the picture at the top of the article (the site-wide tick and the article's own).
-		if ( ! empty( $settings['article_hero'] ) && ! get_post_meta( $post->ID, '_twd_ap_hide_hero', true ) && has_post_thumbnail( $post ) ) {
-			$cover = get_the_post_thumbnail_url( $post, 'large' );
+		$cover_id = TWD_AP_Article_Style::top_image_id( $post );
+		if ( $cover_id ) {
+			$cover = wp_get_attachment_image_url( $cover_id, 'large' );
 			if ( $cover ) {
 				$payload['coverImage'] = $cover;
 			}
