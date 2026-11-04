@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.52.0
+Stable tag: 1.52.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,8 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.52.1): the article index page has more room and uses the site's own fonts and colours: serif topic headings with a count, one row per article with a thin line between, the date after the title, and the jump links as soft pills. Styling only; nothing it lists has changed.
 
 NEW (1.52.0): a picture for the top of an article that can differ from the featured image, with a tick to show it as a full width banner above the title (under Featured image in the editor). A picture chosen for one article shows even when pictures are switched off for the site. Customise this grid can now hide chosen categories from the main grid, its search and its category buttons (for example essays linked by hand); the articles stay published and category pages still show them. Nothing changes on a site that uses neither.
 
