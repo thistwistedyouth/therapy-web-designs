@@ -130,6 +130,7 @@ require $plugin . 'includes/class-twd-ap-cta.php';
 require $plugin . 'includes/class-twd-ap-intro.php';
 require $plugin . 'includes/class-twd-ap-index.php';
 require $plugin . 'includes/class-twd-ap-shortcode.php';
+require $plugin . 'includes/class-twd-ap-seo.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
 
 $dump = array(); // filled for the browser test when TWD_SSR_DUMP is set
@@ -193,7 +194,7 @@ t( 'order: featured first, then newest', 'https://example.test/post-10/' === $li
 t( 'order: identical to the REST route', $links === rest_links( array( 'per_page' => 9, 'offset' => 0 ) ), json_encode( $links ) );
 t( 'order: both callers build the same query arguments', TWD_AP_Cards::query_args( 9, 0 ) === TWD_AP_Cards::query_args( 9, 0, '', '', '' ) );
 t( 'uncategorized is never shown as a category', false === stripos( $html, 'Uncategorized' ) );
-t( 'a post in a real category shows it as the eyebrow', false !== strpos( $html, 'Anxiety &middot; 5 January 2026' ) );
+t( 'a post in a real category shows it as the eyebrow', false !== strpos( $html, '<span class="twd-ap-article-eyebrow">Anxiety</span><span class="twd-ap-article-date">5 January 2026' ) );
 t( 'escaping: a tag in a title is not output raw', false === strpos( $html, '<b>quiet</b>' ) && false !== strpos( $html, '&lt;b&gt;quiet&lt;/b&gt;' ) );
 t( 'escaping: quotes and ampersands are escaped', false !== strpos( $html, '&amp;' ) && false !== strpos( $html, '&quot;day&quot;' ) );
 t( 'entities: the curly apostrophe is a real character, not double-encoded', false !== strpos( $html, 'Tom’s' ) && false === strpos( $html, '&amp;#8217;' ) && false === strpos( $html, '&#8217;' ) );

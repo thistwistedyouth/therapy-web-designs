@@ -30,6 +30,7 @@ class TWD_AP_Settings { static $key = ''; static function get_settings() { retur
 class TWD_AP_Sanitizer { static function strip_dashes( $s ) { return $s; } static function clean( $s ) { return $s; } }
 class TWD_AP_Summary_Book { static function sanitize_cards( $c ) { return $c; } }
 require $plugin . 'includes/class-twd-ap-ai-generate.php';
+require $plugin . 'includes/class-twd-ap-seo.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
 TWD_AP_AI_Generate::init();
 

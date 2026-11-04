@@ -58,6 +58,7 @@ require $plugin . 'includes/class-twd-ap-article-style.php';
 require $plugin . 'includes/class-twd-ap-swipebook.php';
 require $plugin . 'includes/class-twd-ap-summary-book.php';
 require $plugin . 'includes/class-twd-ap-cards.php';
+require $plugin . 'includes/class-twd-ap-seo.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
 require $plugin . 'includes/class-twd-ap-frontend.php';
 

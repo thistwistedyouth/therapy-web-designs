@@ -33,6 +33,10 @@ function __( $s ) { return $s; }
 require $plugin . 'includes/class-twd-ap-grid-settings.php';
 require $plugin . 'includes/class-twd-ap-swipebook-colours.php';
 require $plugin . 'includes/class-twd-ap-swipebook.php';
+// Read by the REST settings payload (site context default, 1.50.3).
+if ( ! function_exists( 'wp_strip_all_tags' ) ) { function wp_strip_all_tags( $s ) { return strip_tags( (string) $s ); } }
+if ( ! function_exists( 'get_bloginfo' ) ) { function get_bloginfo( $k = '' ) { return ''; } }
+require $plugin . 'includes/class-twd-ap-seo.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
 
 $pass = 0; $fail = 0;

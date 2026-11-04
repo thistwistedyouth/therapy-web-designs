@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.49.0
+Stable tag: 1.50.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,8 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.50.8): articles look at home on a Site Kit site. An article page now reads the site's own fonts and colours when the theme publishes them, and has a header under the title with a lead line (from a hand-written excerpt), the topic, date and reading time, and the featured picture (switch it off for one article in the editor, or for every article in Customise this grid). The theme's title and tag line line up with the text, and tags show as small chips. The editor's SEO box now also appears on sites with no SEO plugin, where the plugin prints the search title, description and share tags itself, and has a Generate from article button that fills the two boxes for you to read and edit (Customise this grid has a site context line for it). The resources grid has category pills instead of a dropdown, the category on its own line on each card, equal height cards, and 3:2 pictures on a phone. In a swipe book the featured picture is faded behind the cover page, a book with no logo no longer shows the site name twice, and a logo with no pill behind it is smaller.
 
 NEW (1.49.0): swipe book polish and a tidier resources page. Save as image
 now gives one even background colour. The logo is bigger. The Book a Session

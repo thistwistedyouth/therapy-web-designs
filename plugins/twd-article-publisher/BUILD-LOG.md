@@ -4,6 +4,7 @@ At the start of every session read CLAUDE.md and this file. Update this file in 
 
 ## Where we are
 
+- **RELEASE 1.50.8 PREPARED (4 Nov 2026), waiting for Clive's yes. Nothing pushed or merged.** Branch `claude/articles-display-636f5d` carries 1.50.0 to 1.50.8 (one release), `dist/twd-article-publisher-latest.zip` (35 files) and `dist/twd-article-publisher-update.json` (1.50.8) built and checked, the zip installed on graham with `wp plugin install --force`, tests passing except `archive-test.php` (also failing on main). Steps, risks and undo are in `RELEASE-1.50.8.md` at the repo root (outside the plugin folder so it never ships).
 - **1.50.8 TEST BUILD (4 Nov 2026), graham only, not pushed.** Swipe book: a logo with no pill behind it is capped at 38px tall (was 64px), so the white star matches the two lines of writing. Includes 1.50.7.
 - **1.50.7 TEST BUILD (4 Nov 2026), graham only, not pushed.** Swipe book: the featured picture faded behind the cover page only (option B, chosen by Clive). Follows the same two ticks as the picture at the top of the article. Checked on desktop, phone and in the image export path. 1.50.6 (3:2 card pictures on phones) is included.
 - **1.50.6 TEST BUILD (4 Nov 2026), graham only, not pushed.** Resources grid on a phone: card picture was a fixed 170px (about 2:1 on a 325px card) so 3:2 photos were cropped hard; the default shape is now 3:2 at 600px and under (4:3 and square choices unchanged). Requested by Clive via a Tell us note on graham page 35.

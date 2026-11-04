@@ -112,7 +112,7 @@ t( 'block: never lists the article itself', false === strpos( $html, 'post-1/' )
 t( 'block: nothing from another category and no drafts', false === strpos( $html, 'post-20/' ) && false === strpos( $html, 'post-21/' ) );
 t( 'block: the heading is "More in" plus a link to the category page', false !== strpos( $html, '<h2 class="twd-ap-related-title">More in <a href="https://example.test/category/anxiety/">Anxiety</a></h2>' ) );
 t( 'block: each link carries the date', false !== strpos( $html, '<span class="twd-ap-related-date">8 February 2026</span>' ) );
-t( 'block: it carries the saved accent colour and the writing colour for it (white on that blue)', false !== strpos( $html, 'style="--twd-ap-accent-color:#2563eb;--twd-ap-accent-ink:#ffffff;"' ), $html );
+t( 'block: it carries the saved accent colour and the writing colour for it (white on that blue)', false !== strpos( $html, 'style="--twd-ap-accent-color:var(--twd-site-color-accent-text,#2563eb);--twd-ap-accent-ink:#ffffff;"' ), $html );
 $GLOBALS['meta'][3]['_twd_ap_featured'] = 1;
 t( 'block: a featured article in the category comes first, like the grid', 'https://example.test/post-3/' === links( TWD_AP_Related::html( 1 ) )[0] );
 $GLOBALS['meta'] = array();

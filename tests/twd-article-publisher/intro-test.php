@@ -26,6 +26,7 @@ function wp_update_term( $id, $tax, $args ) { $GLOBALS['updates'][] = array( $id
 class TWD_AP_Frontend { static function current_user_allowed() { return ! empty( $GLOBALS['allowed'] ); } }
 require $plugin . 'includes/class-twd-ap-sanitizer.php';
 require $plugin . 'includes/class-twd-ap-intro.php';
+require $plugin . 'includes/class-twd-ap-seo.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
 
 class Req { public $p; function __construct( $p ) { $this->p = $p; } function get_json_params() { return $this->p; } }

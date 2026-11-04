@@ -34,6 +34,10 @@ class WP_Error {}
 class WP_REST_Server { const READABLE = 'GET'; const CREATABLE = 'POST'; const EDITABLE = 'PUT'; const DELETABLE = 'DELETE'; }
 function register_rest_route() {}
 function __( $s ) { return $s; }
+// Read by the REST settings payload (site context default, 1.50.3).
+if ( ! function_exists( 'wp_strip_all_tags' ) ) { function wp_strip_all_tags( $s ) { return strip_tags( (string) $s ); } }
+if ( ! function_exists( 'get_bloginfo' ) ) { function get_bloginfo( $k = '' ) { return ''; } }
+require $plugin . 'includes/class-twd-ap-seo.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
 
 $pass = 0; $fail = 0;

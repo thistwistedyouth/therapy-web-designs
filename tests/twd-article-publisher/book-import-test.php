@@ -38,6 +38,7 @@ class TWD_AP_AI_Generate { const MAX_INPUT_CHARS = 25000; }
 class TWD_AP_Settings {}
 class TWD_AP_Grid_Settings {}
 class TWD_AP_Swipebook {}
+require $plugin . 'includes/class-twd-ap-seo.php';
 require $plugin . 'includes/class-twd-ap-rest.php';
 
 $pass = 0; $fail = 0;

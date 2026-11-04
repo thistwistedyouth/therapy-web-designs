@@ -63,7 +63,7 @@ t( 'saving: changing something else leaves the look alone', '#112233' === TWD_AP
 // ---------- the style on the article wrapper ----------
 $css = TWD_AP_Article_Style::look_style();
 t( 'style: text, link and quote colours become the matching variables', false !== strpos( $css, '--twd-ap-content-text:#112233;' ) && false !== strpos( $css, '--twd-ap-content-link:#7a9b76;' ) && false !== strpos( $css, '--twd-ap-content-quote:#abc;' ) );
-t( 'style: a cleared heading colour prints no heading variable (headings follow the text)', false === strpos( $css, '--twd-ap-content-heading' ) );
+t( 'style: a cleared heading colour prints no heading variable (headings follow the text)', false === strpos( $css, '--twd-ap-content-heading:' ) );
 t( 'style: serif font, large size and relaxed spacing', false !== strpos( $css, '--twd-ap-content-font:Georgia' ) && false !== strpos( $css, '--twd-ap-content-size:19px;' ) && false !== strpos( $css, '--twd-ap-content-size-m:17px;' ) && false !== strpos( $css, '--twd-ap-content-leading:1.95;' ) );
 TWD_AP_Grid_Settings::save( array( 'look_font' => 'theme', 'look_spacing' => 'compact', 'look_size' => 'medium', 'look_heading_color' => '#445566' ) );
 $css = TWD_AP_Article_Style::look_style();
@@ -91,7 +91,7 @@ $dump['headings'] = wrap();
 t( 'headings: the sizes are on the article wrapper', false !== strpos( $dump['headings'], '--twd-ap-content-h2-size:40px' ) );
 TWD_AP_Grid_Settings::save( array( 'look_h2_size' => 0, 'look_h3_size' => 0, 'look_h4_size' => 0 ) );
 $cs = file_get_contents( $plugin . 'assets/article-content.css' );
-t( 'css: each heading reads its size variable and falls back to the plugin size (26, 21, 18 and on a phone 22, 19, 18)', false !== strpos( $cs, 'font-size: var(--twd-ap-content-h2-size, 26px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h3-size, 21px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h4-size, 18px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h2-size-m, 22px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h3-size-m, 19px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h4-size-m, 18px) !important;' ) );
+t( 'css: each heading reads its size variable and falls back to the plugin size (26, 21, 18 and on a phone 22, 19, 18)', false !== strpos( $cs, 'font-size: var(--twd-ap-content-h2-size, var(--twd-site-size-h2, 26px)) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h3-size, var(--twd-site-size-h3, 21px)) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h4-size, 18px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h2-size-m, var(--twd-site-size-h2-sm, 22px)) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h3-size-m, 19px) !important;' ) && false !== strpos( $cs, 'font-size: var(--twd-ap-content-h4-size-m, 18px) !important;' ) );
 
 // A value that somehow got into the option directly still cannot break out of the attribute.
 $GLOBALS['opt']['twd_ap_grid_settings']['look_text_color'] = '#fff"><script>alert(1)</script>';
@@ -103,7 +103,7 @@ t( 'wrapper: a bad stored font is dropped, never printed', false === strpos( TWD
 $c = file_get_contents( $plugin . 'assets/article-content.css' );
 t( 'css: headings use the heading variable and fall back to the text colour', 3 === substr_count( $c, 'color: var(--twd-ap-content-heading, var(--twd-ap-content-text)) !important;' ) );
 t( 'css: the quote uses the quote variable and falls back to the old link bar and muted text', false !== strpos( $c, 'border-left: 3px solid var(--twd-ap-content-quote, var(--twd-ap-content-link)) !important;' ) && false !== strpos( $c, 'color: var(--twd-ap-content-quote, var(--twd-ap-content-muted)) !important;' ) );
-t( 'css: font, size and line spacing read their variables with the old values as fallbacks', false !== strpos( $c, 'font-size: var(--twd-ap-content-size, 17px) !important;' ) && false !== strpos( $c, 'line-height: var(--twd-ap-content-leading, 1.75) !important;' ) && false !== strpos( $c, 'font-family: var(--twd-ap-content-font, -apple-system' ) && false !== strpos( $c, 'font-size: var(--twd-ap-content-size-m, 16px) !important;' ) );
+t( 'css: font, size and line spacing read their variables with the old values as fallbacks', false !== strpos( $c, 'font-size: var(--twd-ap-content-size, var(--twd-site-size-body, 17px)) !important;' ) && false !== strpos( $c, 'line-height: var(--twd-ap-content-leading, 1.75) !important;' ) && false !== strpos( $c, 'font-family: var(--twd-ap-content-font, var(--twd-site-font-body, -apple-system' ) && false !== strpos( $c, 'font-size: var(--twd-ap-content-size-m, 16px) !important;' ) );
 
 if ( getenv( 'TWD_LOOK_DUMP' ) ) { file_put_contents( getenv( 'TWD_LOOK_DUMP' ), json_encode( $dump ) ); }
 echo "\n$pass passed, $fail failed\n";
