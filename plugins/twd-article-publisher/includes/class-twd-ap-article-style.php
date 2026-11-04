@@ -13,6 +13,7 @@ class TWD_AP_Article_Style {
 
 	private static $instance = null;
 	private static $wrapped = false;
+	private static $header_done = false;
 
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -28,6 +29,9 @@ class TWD_AP_Article_Style {
 		// registered earlier) and before the swipe book buttons are added (11
 		// and 15), so the buttons' own words are left alone.
 		add_filter( 'the_content', array( $this, 'tidy_content' ), 10 );
+		// 1.50.0: the article's own header block (lead line, details, picture). After the
+		// swipe book buttons were put at the start (11) so it sits above them.
+		add_filter( 'the_content', array( $this, 'prepend_header' ), 12 );
 	}
 
 	public function maybe_enqueue() {
@@ -165,6 +169,50 @@ class TWD_AP_Article_Style {
 		);
 	}
 
+	/**
+	 * 1.50.0: under the theme's own title, a lead line (the article's excerpt, only when
+	 * someone wrote one: an automatic excerpt would just repeat the first paragraph), a
+	 * details line (topic, date, minutes to read) and the featured picture. Each part
+	 * appears only when it exists. Switch the whole block off with
+	 * add_filter( 'twd_ap_article_header', '__return_false' ).
+	 */
+	public function prepend_header( $content ) {
+		if ( self::$header_done || is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
+			return $content;
+		}
+		if ( ! apply_filters( 'twd_ap_article_header', true ) ) {
+			return $content;
+		}
+		self::$header_done = true;
+		return self::header_html( get_post() ) . $content;
+	}
+
+	public static function header_html( $post ) {
+		$out  = '';
+		$lead = has_excerpt( $post ) ? trim( wp_strip_all_tags( get_the_excerpt( $post ) ) ) : '';
+		if ( '' !== $lead ) {
+			$out .= '<p class="twd-ap-article-lead">' . esc_html( $lead ) . '</p>';
+		}
+		$bits  = array();
+		$topic = class_exists( 'TWD_AP_Related' ) ? TWD_AP_Related::topic_for( $post->ID ) : null;
+		if ( $topic ) {
+			$bits[] = '<span class="twd-ap-article-topic">' . esc_html( html_entity_decode( $topic->name, ENT_QUOTES, 'UTF-8' ) ) . '</span>';
+		}
+		$bits[] = '<span>' . esc_html( get_the_date( '', $post ) ) . '</span>';
+		$words  = str_word_count( wp_strip_all_tags( strip_shortcodes( (string) $post->post_content ) ) );
+		if ( $words > 0 ) {
+			$bits[] = '<span>' . (int) max( 1, ceil( $words / 200 ) ) . ' min read</span>';
+		}
+		$out .= '<p class="twd-ap-article-meta">' . implode( '<span class="twd-ap-article-meta-dot" aria-hidden="true">&middot;</span>', $bits ) . '</p>';
+		if ( has_post_thumbnail( $post ) ) {
+			$img = get_the_post_thumbnail( $post, 'large', array( 'class' => 'twd-ap-article-hero-img', 'loading' => 'eager' ) );
+			if ( '' !== $img ) {
+				$out .= '<figure class="twd-ap-article-hero">' . $img . '</figure>';
+			}
+		}
+		return '<div class="twd-ap-article-header">' . $out . '</div>';
+	}
+
 	public function wrap_content( $content ) {
 		if ( self::$wrapped || is_admin() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
 			return $content;
@@ -197,11 +245,13 @@ class TWD_AP_Article_Style {
 		}
 		if ( 'serif' === $s['look_font'] ) {
 			$vars[] = '--twd-ap-content-font:Georgia, "Times New Roman", Times, serif';
+			$vars[] = '--twd-ap-content-heading-font:Georgia, "Times New Roman", Times, serif';
 		} elseif ( 'theme' === $s['look_font'] ) {
 			// Not a variable: a CSS-wide keyword such as inherit cannot be the
 			// value of a custom property (it would mean "inherit the
 			// variable"). Inline !important beats the stylesheet's own.
 			$vars[] = 'font-family:inherit !important';
+			$vars[] = '--twd-ap-content-heading-font:inherit';
 		}
 		if ( 'large' === $s['look_size'] ) {
 			$vars[] = '--twd-ap-content-size:19px';

@@ -5,10 +5,13 @@
 }
 
 .twd-ap-article-content {
-  --twd-ap-content-text: #1f2937;
-  --twd-ap-content-muted: #6b7280;
-  --twd-ap-content-link: #2563eb;
-  --twd-ap-content-border: #e5e7eb;
+  /* 1.50.0: every colour, font and size reads the site's own --twd-site-* tokens
+     when a theme or Site Kit publishes them, and falls back to the plugin's own
+     values when it does not, so a site without tokens looks exactly as before. */
+  --twd-ap-content-text: var(--twd-site-color-body, #1f2937);
+  --twd-ap-content-muted: var(--twd-site-color-muted, #6b7280);
+  --twd-ap-content-link: var(--twd-site-color-accent-text, #2563eb);
+  --twd-ap-content-border: var(--twd-site-color-border, #e5e7eb);
   /* Centers itself regardless of what the theme's own Single Post
      template does with its content column. Without this, a theme whose
      template gives the_content a wide, uncentered container (no max-width
@@ -19,8 +22,8 @@
   width: 100% !important;
   margin-left: auto !important;
   margin-right: auto !important;
-  font-family: var(--twd-ap-content-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif) !important;
-  font-size: var(--twd-ap-content-size, 17px) !important;
+  font-family: var(--twd-ap-content-font, var(--twd-site-font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif)) !important;
+  font-size: var(--twd-ap-content-size, var(--twd-site-size-body, 17px)) !important;
   line-height: var(--twd-ap-content-leading, 1.75) !important;
   color: var(--twd-ap-content-text) !important;
 }
@@ -47,14 +50,14 @@
 }
 
 .twd-ap-article-content h2 {
-  font-size: var(--twd-ap-content-h2-size, 26px) !important;
+  font-size: var(--twd-ap-content-h2-size, var(--twd-site-size-h2, 26px)) !important;
   font-weight: 700 !important;
   line-height: 1.3 !important;
   margin: 1.6em 0 0.6em !important;
   color: var(--twd-ap-content-heading, var(--twd-ap-content-text)) !important;
 }
 .twd-ap-article-content h3 {
-  font-size: var(--twd-ap-content-h3-size, 21px) !important;
+  font-size: var(--twd-ap-content-h3-size, var(--twd-site-size-h3, 21px)) !important;
   font-weight: 700 !important;
   line-height: 1.35 !important;
   margin: 1.4em 0 0.5em !important;
@@ -242,7 +245,7 @@ a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover {
     font-size: var(--twd-ap-content-size-m, 16px) !important;
   }
   .twd-ap-article-content h2 {
-    font-size: var(--twd-ap-content-h2-size-m, 22px) !important;
+    font-size: var(--twd-ap-content-h2-size-m, var(--twd-site-size-h2-sm, 22px)) !important;
   }
   .twd-ap-article-content h3 {
     font-size: var(--twd-ap-content-h3-size-m, 19px) !important;
@@ -262,4 +265,108 @@ a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover {
 }
 .twd-ap-swipebook-top .twd-ap-swipebook-row {
   margin: 0 !important;
+}
+
+/* ---- 1.50.0: headings, header block, tags, aligned title (site tokens with fallbacks) ---- */
+.twd-ap-article-content h2,
+.twd-ap-article-content h3,
+.twd-ap-article-content h4 {
+  font-family: var(--twd-ap-content-heading-font, var(--twd-site-font-heading, inherit)) !important;
+  font-style: var(--twd-site-heading-style, normal) !important;
+  font-weight: var(--twd-site-heading-weight, 700) !important;
+}
+.twd-ap-article-content .twd-ap-article-header {
+  margin: 0 0 1.6em !important;
+}
+.twd-ap-article-content .twd-ap-article-lead {
+  margin: 0 0 0.8em !important;
+  font-size: var(--twd-site-size-lead, 20px) !important;
+  line-height: 1.5 !important;
+  color: var(--twd-ap-content-muted) !important;
+}
+.twd-ap-article-content .twd-ap-article-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 4px 10px !important;
+  margin: 0 0 1.2em !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  color: var(--twd-ap-content-muted) !important;
+}
+.twd-ap-article-content .twd-ap-article-topic {
+  font-weight: 600 !important;
+  color: var(--twd-site-color-eyebrow, var(--twd-ap-content-link)) !important;
+}
+.twd-ap-article-content .twd-ap-article-hero {
+  margin: 0 0 1.4em !important;
+}
+.twd-ap-article-content .twd-ap-article-hero-img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 420px !important;
+  object-fit: cover !important;
+  border-radius: var(--twd-site-radius-image, 12px) !important;
+}
+
+/* The theme's own title and tag line (Hello Elementor markup), lined up with the text column. */
+body.single-post .page-header,
+body.single-post .page-content > .post-tags {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: 0;
+  padding-right: 0;
+}
+body.single-post .page-header .entry-title {
+  margin: 32px 0 16px;
+  padding-left: 0;
+  padding-right: 0;
+  font-family: var(--twd-site-font-heading, inherit);
+  font-size: var(--twd-site-size-page-title, 40px);
+  font-weight: var(--twd-site-title-weight, 600);
+  font-style: var(--twd-site-title-style, normal);
+  line-height: var(--twd-site-line-heading, 1.2);
+  color: var(--twd-site-color-title, inherit);
+  text-wrap: balance;
+}
+@media (max-width: 600px) {
+  .twd-ap-article-content .twd-ap-article-lead {
+    font-size: 18px !important;
+  }
+  body.single-post .page-header .entry-title {
+    font-size: var(--twd-site-size-page-title-sm, 30px);
+  }
+}
+/* "Tagged a, b, c" as small chips: the word and the commas are hidden by zero font size. */
+body.single-post .post-tags {
+  margin-top: 28px;
+  margin-bottom: 48px;
+  padding-top: 18px;
+  border-top: 1px solid var(--twd-site-color-border, #e5e7eb);
+}
+body.single-post .post-tags .tag-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0;
+  line-height: 0;
+}
+body.single-post .post-tags .tag-links a {
+  display: inline-block;
+  padding: 5px 14px;
+  border: 1px solid var(--twd-site-color-border, #d1d5db);
+  border-radius: var(--twd-site-radius-pill, 999px);
+  background: var(--twd-site-color-surface, #f9fafb);
+  color: var(--twd-site-color-body, #374151);
+  font-size: 13px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+body.single-post .post-tags .tag-links a:hover {
+  border-color: var(--twd-site-color-accent-text, #2563eb);
+  color: var(--twd-site-color-accent-text, #2563eb);
 }
