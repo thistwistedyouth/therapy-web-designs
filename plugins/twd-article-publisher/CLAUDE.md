@@ -4,7 +4,7 @@ A WordPress plugin, generic and reusable across every Therapy Web Designs client
 
 Not tied to any one client's design. Header, footer, page CSS, per-site palettes and the "single HTML widget per page" Elementor build method (documented separately in Therapy Web Designs' own build notes) are unrelated to this plugin and live in each client site's own theme/Elementor content, not here.
 
-**At the start of every session read this file and BUILD-LOG.md. At the end of every piece of work, without being asked, update BUILD-LOG.md in the same commit. Complex changes are discussed first. Other repos are read only; changes there go as written briefs.**
+**At the start of every session read this file and BUILD-LOG.md. At the end of every piece of work, without being asked, update BUILD-LOG.md in the same commit. Complex changes are discussed first. Other repos are read only; changes there go as written briefs.** To find something in the owner's other repos (for example Site Kit), type `/hub`, which reads the owner's private repo index. Never copy anything from a private repo into this public one.
 
 This file is the short version: rules, not stories. **HISTORY.md** has the full incident write-ups (what broke, what was tried, why the fix looks the way it does) for anything below that has one — only worth opening if you're debugging something in that specific area.
 
