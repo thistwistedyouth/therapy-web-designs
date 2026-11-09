@@ -86,11 +86,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 				</div>
 
-				<div id="twd-ap-original-bar" class="twd-ap-original-bar" hidden>
-					<span id="twd-ap-original-text" class="twd-ap-original-text"></span>
-					<button type="button" id="twd-ap-original-toggle" class="twd-ap-original-toggle"></button>
-				</div>
 			<?php endif; ?>
+
+			<?php // The "original / AI version" bar: after an improve or format run (key sites) and after a Remix (every site). ?>
+			<div id="twd-ap-original-bar" class="twd-ap-original-bar" hidden>
+				<span id="twd-ap-original-text" class="twd-ap-original-text"></span>
+				<button type="button" id="twd-ap-original-toggle" class="twd-ap-original-toggle"></button>
+			</div>
 
 			<div id="twd-ap-title-wrap">
 				<label class="twd-ap-label" for="twd-ap-title"><?php esc_html_e( 'Title', 'twd-article-publisher' ); ?></label>
@@ -102,6 +104,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<button type="button" id="twd-ap-tab-visual" class="twd-ap-tab twd-ap-tab-active" data-tab="visual"><?php esc_html_e( 'Visual', 'twd-article-publisher' ); ?></button>
 				<button type="button" id="twd-ap-tab-html" class="twd-ap-tab" data-tab="html"><?php esc_html_e( 'HTML', 'twd-article-publisher' ); ?></button>
 				<button type="button" id="twd-ap-tab-json" class="twd-ap-tab" data-tab="json"><?php esc_html_e( 'Paste JSON', 'twd-article-publisher' ); ?></button>
+				<button type="button" id="twd-ap-tab-remix" class="twd-ap-tab" data-tab="remix" hidden><?php esc_html_e( 'Remix', 'twd-article-publisher' ); ?></button>
 			</div>
 
 			<div id="twd-ap-toolbar" class="twd-ap-toolbar">
@@ -127,6 +130,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<button type="button" id="twd-ap-json-fill-btn" class="twd-ap-btn-primary"><?php esc_html_e( 'Fill fields from JSON', 'twd-article-publisher' ); ?></button>
 				</div>
 			</div>
+
+			<div id="twd-ap-remix-panel" class="twd-ap-json-panel twd-ap-remix-panel" hidden>
+				<p class="twd-ap-muted"><?php esc_html_e( 'Remix asks an AI assistant to check the facts in this article with a web search, then rewrite it more concisely. Nothing changes on your site until you have read the result and clicked Update.', 'twd-article-publisher' ); ?></p>
+
+				<p class="twd-ap-remix-step"><?php esc_html_e( '1. How much shorter?', 'twd-article-publisher' ); ?></p>
+				<div class="twd-ap-remix-lengths" role="radiogroup" aria-label="<?php esc_attr_e( 'How much shorter', 'twd-article-publisher' ); ?>">
+					<label class="twd-ap-remix-length"><input type="radio" name="twd-ap-remix-length" value="two-thirds" checked /> <?php esc_html_e( 'About two thirds', 'twd-article-publisher' ); ?></label>
+					<label class="twd-ap-remix-length"><input type="radio" name="twd-ap-remix-length" value="half" /> <?php esc_html_e( 'About half', 'twd-article-publisher' ); ?></label>
+					<label class="twd-ap-remix-length"><input type="radio" name="twd-ap-remix-length" value="same" /> <?php esc_html_e( 'Same length, just tightened', 'twd-article-publisher' ); ?></label>
+				</div>
+
+				<p class="twd-ap-remix-step"><?php esc_html_e( '2. Copy the prompt and paste it into an AI assistant that can search the web', 'twd-article-publisher' ); ?></p>
+				<p class="twd-ap-muted"><?php esc_html_e( 'For example Claude. The prompt carries this article as it is in the editor now, including changes you have not saved. Leave out anything private.', 'twd-article-publisher' ); ?></p>
+				<div class="twd-ap-btn-row">
+					<button type="button" id="twd-ap-remix-copy" class="twd-ap-btn-secondary"><?php esc_html_e( 'Copy the remix prompt', 'twd-article-publisher' ); ?></button>
+					<a href="https://claude.ai/new" id="twd-ap-remix-open" class="twd-ap-remix-open" target="_blank" rel="noopener"><?php esc_html_e( 'Open Claude ↗', 'twd-article-publisher' ); ?></a>
+				</div>
+				<p id="twd-ap-remix-copy-note" class="twd-ap-muted" hidden></p>
+				<textarea id="twd-ap-remix-prompt" class="twd-ap-html-editor twd-ap-remix-prompt" rows="5" readonly hidden aria-label="<?php esc_attr_e( 'The remix prompt', 'twd-article-publisher' ); ?>"></textarea>
+
+				<p class="twd-ap-remix-step"><?php esc_html_e( '3. Paste the reply here', 'twd-article-publisher' ); ?></p>
+				<textarea id="twd-ap-remix-input" class="twd-ap-html-editor" rows="7" placeholder="<?php esc_attr_e( 'Paste the code block from the reply (it starts with {)', 'twd-article-publisher' ); ?>"></textarea>
+				<div class="twd-ap-btn-row twd-ap-spaced">
+					<button type="button" id="twd-ap-remix-check" class="twd-ap-btn-primary"><?php esc_html_e( 'Check and preview', 'twd-article-publisher' ); ?></button>
+				</div>
+			</div>
+
+			<?php // Filled by showRemixReport() in publisher.js. Only the editor sees it; nothing in it is saved or published. ?>
+			<div id="twd-ap-remix-report" class="twd-ap-remix-report" hidden></div>
 
 			<div id="twd-ap-fields-wrap">
 				<label class="twd-ap-label twd-ap-spaced" for="twd-ap-excerpt"><?php esc_html_e( 'Excerpt (shown on article cards)', 'twd-article-publisher' ); ?></label>
@@ -263,6 +295,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<li><?php esc_html_e( 'A new article starts with one box: write, dictate or paste your idea, a rough draft or a finished article, choose which it is, and click Generate. The editor then opens with the title, summary, tags and article filled in. After a draft or finished article, a button lets you swap back to your own text and forward again. Click "Write it myself instead" to skip this.', 'twd-article-publisher' ); ?></li>
 				<?php endif; ?>
 				<li><?php esc_html_e( 'Write directly in the Visual tab, or write with an AI assistant and paste the HTML into the HTML tab (see the AI prompt below).', 'twd-article-publisher' ); ?></li>
+				<li><?php esc_html_e( 'Remix (when editing an article): choose how much shorter, copy the prompt into an AI assistant that can search the web (for example Claude), and paste its reply back. The shorter version goes into the editor with a fact-check report under it: what was confirmed, what was corrected and why, with the sources, and what could not be confirmed. A button swaps back to your original text. Nothing is saved until you click Update, and the report is never published.', 'twd-article-publisher' ); ?></li>
 				<li><?php esc_html_e( 'Use the toolbar for headings, bold/italic, lists and quotes. Only H2/H3/H4 are available; any H1 you paste in is automatically changed to H2 so it never clashes with the page\'s own title.', 'twd-article-publisher' ); ?></li>
 				<li><?php esc_html_e( 'Click the Image button to insert a photo inline from your Media Library or by uploading a new one.', 'twd-article-publisher' ); ?></li>
 				<li><?php esc_html_e( 'Click the YouTube button and paste a video link to embed it. It only loads when a visitor clicks play.', 'twd-article-publisher' ); ?></li>

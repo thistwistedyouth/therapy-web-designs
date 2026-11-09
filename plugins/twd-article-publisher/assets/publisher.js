@@ -24,6 +24,8 @@
 		// between the AI version and the therapist's own text, both ways,
 		// without losing either.
 		swap: null,
+		// Remix (1.54.0): the suggested title and summary from the last remix, and the ones before it.
+		remix: null,
 		// Set by a successful Publish or Update, acted on when the popup
 		// closes, so the page behind shows the change. Not set by a draft
 		// or a scheduled save: those make the article non-public, and a
@@ -97,6 +99,14 @@
 		els.jsonPanel = document.getElementById('twd-ap-json-panel');
 		els.jsonInput = document.getElementById('twd-ap-json-input');
 		els.jsonFillBtn = document.getElementById('twd-ap-json-fill-btn');
+		els.tabRemix = document.getElementById('twd-ap-tab-remix');
+		els.remixPanel = document.getElementById('twd-ap-remix-panel');
+		els.remixCopy = document.getElementById('twd-ap-remix-copy');
+		els.remixCopyNote = document.getElementById('twd-ap-remix-copy-note');
+		els.remixPrompt = document.getElementById('twd-ap-remix-prompt');
+		els.remixInput = document.getElementById('twd-ap-remix-input');
+		els.remixCheck = document.getElementById('twd-ap-remix-check');
+		els.remixReport = document.getElementById('twd-ap-remix-report');
 		els.start = document.getElementById('twd-ap-start');
 		els.startInput = document.getElementById('twd-ap-start-input');
 		els.startCount = document.getElementById('twd-ap-start-count');
@@ -235,6 +245,20 @@
 		});
 		els.jsonFillBtn.addEventListener('click', fillFromJson);
 
+		if (els.tabRemix) {
+			els.tabRemix.addEventListener('click', function () {
+				switchTab('remix');
+			});
+			els.remixCopy.addEventListener('click', copyRemixPrompt);
+			els.remixCheck.addEventListener('click', checkRemix);
+			els.remixReport.addEventListener('click', onRemixReportClick);
+		}
+		// The original / AI version bar is used by the start screen (key
+		// sites) and by Remix (every site), so it is bound on every site.
+		if (els.originalToggle) {
+			els.originalToggle.addEventListener('click', toggleOriginal);
+		}
+
 		els.swipebookToggle.addEventListener('change', function () {
 			markDirty();
 			updateSwipebookLink(state.lastStatus, state.lastLink);
@@ -248,7 +272,6 @@
 					updateStartHint();
 				}
 			});
-			els.originalToggle.addEventListener('click', toggleOriginal);
 			els.startInput.addEventListener('input', function () {
 				state.dirty = els.startInput.value.trim() !== '';
 				updateStartCount();
@@ -409,20 +432,15 @@
 			return;
 		}
 		deselectImage();
-		if (state.activeTab === 'visual' && tab === 'html') {
-			els.htmlEditor.value = els.visualEditor.innerHTML.trim();
-		} else if (state.activeTab === 'html' && tab === 'visual') {
+		// The Visual editor holds the text whenever the HTML tab is not open
+		// (Remix reads it from there), so leaving the HTML tab for any other
+		// tab copies the HTML back, and opening it copies the Visual text in.
+		if (state.activeTab === 'html' && tab !== 'html') {
 			els.visualEditor.innerHTML = els.htmlEditor.value;
+		} else if (tab === 'html') {
+			els.htmlEditor.value = els.visualEditor.innerHTML.trim();
 		}
-		state.activeTab = tab;
-		els.tabVisual.classList.toggle('twd-ap-tab-active', tab === 'visual');
-		els.tabHtml.classList.toggle('twd-ap-tab-active', tab === 'html');
-		els.tabJson.classList.toggle('twd-ap-tab-active', tab === 'json');
-		els.visualEditor.hidden = tab !== 'visual';
-		els.htmlEditor.hidden = tab !== 'html';
-		els.jsonPanel.hidden = tab !== 'json';
-		els.toolbar.style.display = tab === 'visual' ? 'flex' : 'none';
-		setFieldsVisible(tab !== 'json');
+		switchTabImmediate(tab);
 	}
 
 	// On the Paste JSON tab, nothing has been filled in yet, so the title
@@ -1282,8 +1300,11 @@
 			els.originalBar.hidden = true;
 			return;
 		}
-		var label = 'improve' === state.swap.mode ? 'improved version' : 'formatted version';
-		if ('ai' === state.swap.showing) {
+		var label = 'improve' === state.swap.mode ? 'improved version' : ('remix' === state.swap.mode ? 'remixed version' : 'formatted version');
+		if ('ai' === state.swap.showing && 'remix' === state.swap.mode) {
+			els.originalText.textContent = 'Showing the remixed version. Read the fact-check report below the text before you click Update.';
+			els.originalToggle.textContent = 'Use my original text instead';
+		} else if ('ai' === state.swap.showing) {
 			els.originalText.textContent = 'Showing the ' + label + ' of your text. Title, summary and tags were also filled in.';
 			els.originalToggle.textContent = 'Use my original text instead';
 		} else {
@@ -1501,6 +1522,291 @@
 		});
 	}
 
+	// ---- Remix (1.54.0): fact-check and shorten an article by copy and paste ----
+	// Nothing here calls an AI service. The prompt goes out by the clipboard,
+	// the reply comes back by pasting, the server's /remix-check cleans and
+	// reads it (TWD_AP_Remix::check()), and the result only fills the editor.
+	// Nothing is saved until the person clicks Update.
+
+	function resetRemix() {
+		state.remix = null;
+		if (!els.tabRemix) {
+			return;
+		}
+		els.tabRemix.hidden = true;
+		els.remixPanel.hidden = true;
+		els.remixInput.value = '';
+		els.remixPrompt.value = '';
+		els.remixPrompt.hidden = true;
+		els.remixCopyNote.hidden = true;
+		els.remixCheck.disabled = false;
+		var first = els.remixPanel.querySelector('input[name="twd-ap-remix-length"][value="two-thirds"]');
+		if (first) { first.checked = true; }
+		hideRemixReport();
+	}
+
+	function remixLength() {
+		var picked = els.remixPanel.querySelector('input[name="twd-ap-remix-length"]:checked');
+		return picked ? picked.value : 'two-thirds';
+	}
+
+	// The same as TWD_AP_Remix::prompt() in PHP: one pass, so text in the
+	// article that happens to look like a placeholder is left alone.
+	function buildRemixPrompt(title, html, length) {
+		var lengths = TWD_AP.remixLengths || {};
+		var words = lengths[length] || lengths['two-thirds'] || 'about two thirds of its current length';
+		var values = { LENGTH: words, TITLE: title, HTML: html };
+		return String(TWD_AP.remixPrompt || '').replace(/\{(LENGTH|TITLE|HTML)\}/g, function (m, key) {
+			return values[key];
+		});
+	}
+
+	function remixSourceHtml() {
+		// While the Remix tab is open the Visual editor holds the text (see switchTab()).
+		return els.visualEditor.innerHTML.trim();
+	}
+
+	function copyRemixPrompt() {
+		var html = remixSourceHtml();
+		if ('' === html.replace(/<[^>]*>/g, '').trim()) {
+			showStatus('There is no article text to remix yet.', false);
+			return;
+		}
+		if (!TWD_AP.remixPrompt) {
+			showStatus('The remix prompt is missing. Reload the page and try again.', false);
+			return;
+		}
+		var prompt = buildRemixPrompt(els.title.value.trim(), html, remixLength());
+		// The prompt is always shown too, so it can be copied by hand where
+		// the browser does not allow the copy button.
+		els.remixPrompt.value = prompt;
+		els.remixPrompt.hidden = false;
+		var note = els.remixCopyNote;
+		function manual() {
+			note.textContent = 'Your browser did not let the button copy. Click in the box below, select all (Ctrl+A, or Cmd+A on a Mac) and copy (Ctrl+C or Cmd+C).';
+			note.hidden = false;
+			els.remixPrompt.focus();
+			els.remixPrompt.select();
+		}
+		if (!navigator.clipboard || !navigator.clipboard.writeText) {
+			manual();
+			return;
+		}
+		navigator.clipboard.writeText(prompt).then(function () {
+			els.remixCopy.textContent = 'Copied!';
+			note.textContent = 'Copied. Paste it into the assistant with web search switched on, wait for the whole reply, then copy its code block and paste it in step 3.';
+			note.hidden = false;
+			setTimeout(function () {
+				els.remixCopy.textContent = 'Copy the remix prompt';
+			}, 1500);
+		}, manual);
+	}
+
+	function checkRemix() {
+		var reply = els.remixInput.value.trim();
+		if (!reply) {
+			showStatus('Paste the reply from the AI assistant first.', false);
+			return;
+		}
+		var original = remixSourceHtml();
+		els.remixCheck.disabled = true;
+		showStatus('Checking the reply...', true);
+		fetch(TWD_AP.restUrl + '/remix-check', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': TWD_AP.nonce },
+			body: JSON.stringify({ reply: reply, original_html: original }),
+		})
+			.then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+			.then(function (result) {
+				els.remixCheck.disabled = false;
+				if (!result.ok || !result.data || !result.data.html) {
+					showStatus((result.data && result.data.message) ? result.data.message : 'That reply could not be read. Please try again.', false);
+					return;
+				}
+				applyRemix(result.data, original);
+			})
+			.catch(function () {
+				els.remixCheck.disabled = false;
+				showStatus('Something went wrong checking the reply. Please try again.', false);
+			});
+	}
+
+	function applyRemix(data, original) {
+		// A second remix keeps the person's real original, not the first remix.
+		var keep = original;
+		if (state.swap && 'remix' === state.swap.mode && 'ai' === state.swap.showing) {
+			keep = state.swap.original;
+		}
+		var oldTitle = state.remix ? state.remix.oldTitle : els.title.value.trim();
+		var oldExcerpt = state.remix ? state.remix.oldExcerpt : els.excerpt.value.trim();
+		state.swap = { mode: 'remix', original: keep, ai: data.html, showing: 'ai' };
+		state.remix = {
+			title: data.title || '',
+			meta: data.meta_description || '',
+			oldTitle: oldTitle,
+			oldExcerpt: oldExcerpt,
+		};
+		setBodyHtml(data.html);
+		els.remixInput.value = '';
+		switchTabImmediate('visual');
+		markDirty();
+		refreshOriginalBar();
+		showRemixReport(data);
+		showStatus('Remix ready. Read the fact-check report under the text, then click Update when you are happy. Nothing has been saved yet.', true);
+	}
+
+	function hideRemixReport() {
+		if (els.remixReport) {
+			els.remixReport.hidden = true;
+			els.remixReport.textContent = '';
+		}
+	}
+
+	function el(tag, cls, text) {
+		var node = document.createElement(tag);
+		if (cls) { node.className = cls; }
+		if (undefined !== text && null !== text) { node.textContent = text; }
+		return node;
+	}
+
+	// Built with textContent and element properties only, never innerHTML,
+	// so nothing in a pasted reply can become markup on this page.
+	function showRemixReport(data) {
+		var box = els.remixReport;
+		box.textContent = '';
+
+		var head = el('div', 'twd-ap-remix-report-head');
+		head.appendChild(el('p', 'twd-ap-remix-report-title', 'Fact-check report'));
+		var hide = el('button', 'twd-ap-remix-hide', 'Hide report');
+		hide.type = 'button';
+		hide.setAttribute('data-remix-action', 'hide');
+		head.appendChild(hide);
+		box.appendChild(head);
+		box.appendChild(el('p', 'twd-ap-remix-private', 'Only you can see this. It is not saved or published.'));
+
+		var c = data.counts || {};
+		box.appendChild(el('p', 'twd-ap-remix-words',
+			'Words: ' + (data.words_before || 0) + ' before, ' + (data.words_after || 0) + ' after. ' +
+			(c.not_confirmed || 0) + ' not confirmed, ' + (c.corrected || 0) + ' corrected, ' + (c.confirmed || 0) + ' confirmed.'));
+
+		var warnings = [];
+		var missing = Array.isArray(data.missing_media) ? data.missing_media : [];
+		if (missing.length) {
+			warnings.push((1 === missing.length ? '1 picture or video from your article is missing from the remix (listed below).' : missing.length + ' pictures or videos from your article are missing from the remix (listed below).') + ' Put them back with the Image or YouTube button, or use your original text.');
+		}
+		(Array.isArray(data.notes) ? data.notes : []).forEach(function (n) { warnings.push(n); });
+		if (!Array.isArray(data.fact_check) || !data.fact_check.length) {
+			warnings.push('The reply has no fact check in it. Ask the assistant to check the facts with a web search, or check them yourself before you update.');
+		}
+		var links = Array.isArray(data.new_links) ? data.new_links : [];
+		if (links.length) {
+			warnings.push((1 === links.length ? 'The remix adds a link' : 'The remix adds ' + links.length + ' links') + ' your article did not have. Check ' + (1 === links.length ? 'it' : 'them') + ' before you update: ' + links.join(', '));
+		}
+		warnings.forEach(function (w, i) {
+			box.appendChild(el('p', 'twd-ap-remix-warning', w));
+			// The missing pictures are listed straight under their own warning (always the first).
+			if (0 === i && missing.length) {
+				var ml = el('ul', 'twd-ap-remix-missing');
+				missing.forEach(function (m) {
+					ml.appendChild(el('li', '', ('video' === m.type ? 'Video: ' : 'Picture: ') + m.src));
+				});
+				box.appendChild(ml);
+			}
+		});
+
+		if (data.changes) {
+			box.appendChild(el('p', 'twd-ap-remix-changes', 'What changed: ' + data.changes));
+		}
+
+		var r = state.remix || {};
+		if (r.title && r.title !== r.oldTitle) {
+			box.appendChild(suggestionRow('Suggested title: ', r.title, 'title', 'Use this title'));
+		}
+		if (r.meta && r.meta !== r.oldExcerpt) {
+			box.appendChild(suggestionRow('Suggested summary: ', r.meta, 'meta', 'Use this summary'));
+		}
+
+		var groups = [
+			['not_confirmed', 'Not confirmed: check these yourself', 'twd-ap-remix-group-not'],
+			['corrected', 'Corrected', 'twd-ap-remix-group-corrected'],
+			['confirmed', 'Confirmed', 'twd-ap-remix-group-confirmed'],
+		];
+		var claims = Array.isArray(data.fact_check) ? data.fact_check : [];
+		groups.forEach(function (g) {
+			var items = claims.filter(function (x) { return x.result === g[0]; });
+			if (!items.length) {
+				return;
+			}
+			var section = el('div', 'twd-ap-remix-group ' + g[2]);
+			section.appendChild(el('p', 'twd-ap-remix-group-title', g[1] + ' (' + items.length + ')'));
+			var list = el('ul', 'twd-ap-remix-claims');
+			items.forEach(function (x) {
+				var li = el('li', 'twd-ap-remix-claim');
+				li.appendChild(el('span', 'twd-ap-remix-claim-text', x.claim));
+				if (x.note) {
+					li.appendChild(el('span', 'twd-ap-remix-claim-note', x.note));
+				}
+				var sources = (Array.isArray(x.sources) ? x.sources : []).filter(function (s) {
+					return s && /^https?:\/\//i.test(String(s.url || ''));
+				});
+				if (sources.length) {
+					var src = el('span', 'twd-ap-remix-sources', 'Sources: ');
+					sources.forEach(function (s, i) {
+						if (i > 0) { src.appendChild(document.createTextNode(', ')); }
+						var a = el('a', '', s.label || s.url);
+						a.href = s.url;
+						a.target = '_blank';
+						a.rel = 'noopener noreferrer';
+						src.appendChild(a);
+					});
+					li.appendChild(src);
+				}
+				list.appendChild(li);
+			});
+			section.appendChild(list);
+			box.appendChild(section);
+		});
+
+		box.hidden = false;
+	}
+
+	function suggestionRow(label, value, which, buttonText) {
+		var row = el('p', 'twd-ap-remix-suggestion');
+		row.appendChild(el('strong', '', label));
+		row.appendChild(el('span', 'twd-ap-remix-suggestion-text', value));
+		row.appendChild(document.createTextNode(' '));
+		var btn = el('button', 'twd-ap-remix-use', buttonText);
+		btn.type = 'button';
+		btn.setAttribute('data-remix-action', which);
+		row.appendChild(btn);
+		return row;
+	}
+
+	function onRemixReportClick(e) {
+		var btn = e.target && e.target.closest ? e.target.closest('[data-remix-action]') : null;
+		if (!btn) {
+			return;
+		}
+		var action = btn.getAttribute('data-remix-action');
+		var r = state.remix || {};
+		if ('hide' === action) {
+			els.remixReport.hidden = true;
+		} else if ('title' === action && r.title) {
+			els.title.value = r.title;
+			markDirty();
+			btn.textContent = 'Used';
+			btn.disabled = true;
+		} else if ('meta' === action && r.meta) {
+			els.excerpt.value = r.meta;
+			if (TWD_AP.yoastEnabled && els.yoastDesc) {
+				els.yoastDesc.value = r.meta;
+			}
+			markDirty();
+			btn.textContent = 'Used';
+			btn.disabled = true;
+		}
+	}
+
 	function escapeHtml(str) {
 		var div = document.createElement('div');
 		div.textContent = str;
@@ -1519,6 +1825,7 @@
 		els.htmlEditor.value = '';
 		els.jsonInput.value = '';
 		clearOriginalBar();
+		resetRemix();
 		els.excerpt.value = '';
 		els.tags.value = '';
 		els.catAddInput.value = '';
@@ -1561,11 +1868,15 @@
 		els.tabVisual.classList.toggle('twd-ap-tab-active', tab === 'visual');
 		els.tabHtml.classList.toggle('twd-ap-tab-active', tab === 'html');
 		els.tabJson.classList.toggle('twd-ap-tab-active', tab === 'json');
+		if (els.tabRemix) {
+			els.tabRemix.classList.toggle('twd-ap-tab-active', tab === 'remix');
+			els.remixPanel.hidden = tab !== 'remix';
+		}
 		els.visualEditor.hidden = tab !== 'visual';
 		els.htmlEditor.hidden = tab !== 'html';
 		els.jsonPanel.hidden = tab !== 'json';
 		els.toolbar.style.display = tab === 'visual' ? 'flex' : 'none';
-		setFieldsVisible(tab !== 'json');
+		setFieldsVisible(tab !== 'json' && tab !== 'remix');
 	}
 
 	function updateSwipebookLink(status, link) {
@@ -1636,6 +1947,10 @@
 			.then(function (data) {
 				els.title.value = data.title || '';
 				els.visualEditor.innerHTML = data.content_html || '';
+				// Remix is offered for an article that already has text.
+				if (els.tabRemix) {
+					els.tabRemix.hidden = '' === String(data.content_html || '').replace(/<[^>]*>/g, '').trim();
+				}
 				els.excerpt.value = data.excerpt || '';
 				els.tags.value = data.tags || '';
 				els.featuredToggle.checked = !!data.featured;
