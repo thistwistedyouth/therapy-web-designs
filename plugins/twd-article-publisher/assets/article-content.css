@@ -397,3 +397,34 @@ body.twd-ap-has-banner {
 main > .twd-ap-article-banner {
   margin-top: 0 !important;
 }
+
+/* ---- 1.52.2: the swipe book link under the title is a quiet text link, not a pill button ----
+   Only the copy under the title (and the [twd_swipebook_button] shortcode); the "Share as a swipe book"
+   button at the end of the article keeps its pill. The colour is still the site's swipe book colour. */
+.twd-ap-swipebook-top a.twd-ap-swipebook-btn.twd-ap-swipebook-btn {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transform: none !important;
+  text-decoration: none !important;
+}
+.twd-ap-swipebook-top a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover,
+.twd-ap-swipebook-top a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:focus-visible {
+  background: none !important;
+  color: var(--twd-site-color-accent-text, var(--twd-ap-swipebook-color, #5b8a72)) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  transform: none !important;
+}
+/* Sits close under the details line of the article header. */
+.twd-ap-article-header:has(+ .twd-ap-swipebook-top) {
+  margin-bottom: 0.4em !important;
+}
+.twd-ap-article-header:has(+ .twd-ap-swipebook-top) .twd-ap-article-meta {
+  margin-bottom: 0.5em !important;
+}

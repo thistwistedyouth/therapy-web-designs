@@ -481,3 +481,7 @@ generic caution — skipping it is how this shipped wrong the first time.
 ## Article index styling (v1.52.1, test build)
 
 - **Ask (Clive):** the index page had no room to breathe and used generic fonts. CSS only, appended to `articles-grid.css` so the original rules stay as the fallback. It reads the same `--twd-site-*` tokens as the rest of the plugin. The index keeps the width of the theme's content column (a narrower centred column would not line up with the theme's own page title, which the plugin does not control).
+
+## Swipe book link as text (v1.52.2, test build)
+
+- **Ask (Clive):** the pill button under the title was "a bit too much". The copy under the title (`.twd-ap-swipebook-top`, also the `[twd_swipebook_button]` shortcode) is restyled to a text link in CSS only, after the details line; the end-of-article share button keeps its pill. Markup is unchanged, so nothing else that finds the button (the overlay script, the tests) is affected. The other option raised, putting the link inline after the reading time, would need the link inside the header block and the top-button logic changed, so it was not done. With a picture in the column the link sits under the picture rather than the details line.
