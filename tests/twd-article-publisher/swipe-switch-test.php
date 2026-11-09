@@ -316,7 +316,7 @@ if ( ! function_exists( 'get_theme_mod' ) ) { function get_theme_mod() { return 
 if ( ! function_exists( 'admin_url' ) ) { function admin_url( $p = '' ) { return 'https://example.test/wp-admin/' . $p; } }
 if ( ! function_exists( 'site_url' ) ) { function site_url( $p = '' ) { return 'https://example.test' . $p; } }
 if ( ! function_exists( 'wp_kses_post' ) ) { function wp_kses_post( $s ) { return $s; } }
-if ( ! class_exists( 'TWD_AP_AI_Generate' ) ) { class TWD_AP_AI_Generate { const RATE_LIMIT = 30; const MAX_INPUT_CHARS = 25000; static function is_configured() { return false; } static function remaining() { return 30; } } }
+if ( ! class_exists( 'TWD_AP_AI_Generate' ) ) { class TWD_AP_AI_Generate { const MODEL = 'claude-sonnet-5-5'; const RATE_LIMIT = 30; const MAX_INPUT_CHARS = 25000; static function is_configured() { return false; } static function remaining() { return 30; } } }
 if ( ! defined( 'TWD_AP_PATH' ) ) { define( 'TWD_AP_PATH', dirname( __DIR__, 2 ) . '/plugins/twd-article-publisher/' ); }
 if ( ! defined( 'TWD_AP_ARTICLE_ASSIST_URL' ) ) { define( 'TWD_AP_ARTICLE_ASSIST_URL', 'https://example.test/article-assist/' ); }
 $render = function () use ( $ft ) { $o = ( new ReflectionClass( 'TWD_AP_Frontend' ) )->newInstanceWithoutConstructor(); ob_start(); $o->render_buttons_and_modal(); return ob_get_clean(); };

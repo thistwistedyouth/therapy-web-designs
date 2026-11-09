@@ -264,7 +264,7 @@ const css = (page, sel, prop) => page.locator(sel).first().evaluate((el, p) => g
 		const btns = await page.$$eval('.twd-ap-swipebook-top .twd-ap-swipebook-btn', (b) => b.map((x) => Math.round(x.getBoundingClientRect().top)));
 		t('swipe top: the swipe book and Summary Book buttons sit side by side', btns.length === 2 && btns[0] === btns[1], JSON.stringify(btns));
 		const style = await page.locator('.twd-ap-swipebook-top .twd-ap-swipebook-btn').first().evaluate((el) => { const c = getComputedStyle(el); return { color: c.color, border: c.borderTopColor, radius: parseFloat(c.borderTopLeftRadius), deco: c.textDecorationLine }; });
-		t('swipe top: it looks like the pill (sage colour, rounded, no underline) whatever the theme does to links', style.color === 'rgb(91, 138, 114)' && style.radius >= 20 && style.deco === 'none', JSON.stringify(style));
+		t('swipe top: it is a quiet text link (sage colour, square, no underline at rest, 1.52.2) whatever the theme does to links', style.color === 'rgb(91, 138, 114)' && style.radius === 0 && style.deco === 'none', JSON.stringify(style));
 		t('swipe both: the same button is also after the text', (await page.locator('.twd-ap-swipebook-btn').count()) === 4 && (await page.locator('.twd-ap-swipebook-btn').nth(2).boundingBox()).y > (await page.locator('.twd-ap-article-content p').first().boundingBox()).y);
 		t('swipe top: no JavaScript errors', errors.length === 0, errors.join(' | '));
 		// The button at the end of the article: "Share as a swipe book", on the right.

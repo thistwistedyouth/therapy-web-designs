@@ -58,7 +58,7 @@ class TWD_AP_Remix {
 	 * {TITLE} and {HTML}. Generic on purpose (every kind of site uses it).
 	 */
 	public static function template() {
-		return <<<PROMPT
+		$template = <<<PROMPT
 You are helping the owner of the website {SITE} improve one of their published articles. Do two jobs, in this order.
 
 JOB 1: CHECK THE FACTS WITH A WEB SEARCH.
@@ -97,6 +97,8 @@ Title: {TITLE}
 
 {HTML}
 PROMPT;
+		// Plain line endings whatever the checkout used (a Windows checkout gives CRLF).
+		return str_replace( "\r\n", "\n", $template );
 	}
 
 	/**
