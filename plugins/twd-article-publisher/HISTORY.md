@@ -481,3 +481,11 @@ generic caution — skipping it is how this shipped wrong the first time.
 ## Article index styling (v1.52.1, test build)
 
 - **Ask (Clive):** the index page had no room to breathe and used generic fonts. CSS only, appended to `articles-grid.css` so the original rules stay as the fallback. It reads the same `--twd-site-*` tokens as the rest of the plugin. The index keeps the width of the theme's content column (a narrower centred column would not line up with the theme's own page title, which the plugin does not control).
+
+## Remix (v1.54.0, test build)
+
+- **Ask (Clive, 9 Nov 2026):** a Remix option on every article that asks the AI to check the article for accuracy with a web lookup, then rewrite it more concisely. His example was a history article on an antique jewellery shop's site, so the prompt had to be generic, not therapy-specific.
+- **Why copy and paste, not a button that calls the AI:** most sites carry no key, the ecosystem rule is that nothing AI-written goes live without a person clicking, and a web search is something the assistant on claude.ai already does well and shows its sources for. The on-site API path would need the paid web search tool and a change to `call_anthropic()`, which Site Kit and the Site Planner also depend on. Left as a later stage.
+- **Why the server reads the reply instead of the popup putting it straight into the editor (as Paste JSON does):** the reply is untrusted text; going through `TWD_AP_Sanitizer::clean()` before it is shown, and comparing pictures and links with the original, is what lets the report say "a picture is missing" and "a picture you did not have was taken out". Assistants do invent picture addresses.
+- **Why the title and summary are offered, not filled:** changing a published article's title is a bigger decision than tightening its text; one click puts either in, and nothing changes if it is ignored.
+- **Found on the way:** going from the HTML tab to Paste JSON (and now Remix) left the Visual editor with the text from before the HTML edit. Harmless for Paste JSON (it replaces the text), wrong for Remix (the prompt would carry the old text). Fixed in `switchTab()`.
