@@ -1277,3 +1277,154 @@ body.admin-bar .twd-ap-edit-pencil {
 .twd-ap-top-preview[hidden] {
   display: none !important;
 }
+
+/* Remix (1.54.0): the panel on the Remix tab and the fact-check report
+   under the editor. Same rules as the rest of this file: every visual
+   property carries !important (page builder styles win otherwise). */
+.twd-ap-remix-step {
+  margin: 16px 0 8px !important;
+  color: var(--twd-ap-text) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+.twd-ap-remix-lengths {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px 18px !important;
+}
+.twd-ap-remix-length {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: var(--twd-ap-text) !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  cursor: pointer !important;
+}
+.twd-ap-remix-panel .twd-ap-btn-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 14px !important;
+}
+.twd-ap-remix-open {
+  color: var(--twd-ap-primary-dark) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-decoration: underline !important;
+}
+.twd-ap-remix-panel .twd-ap-html-editor {
+  min-height: 0 !important;
+  margin-top: 6px !important;
+  border-radius: 8px !important;
+}
+.twd-ap-remix-prompt {
+  background: var(--twd-ap-bg-soft) !important;
+  color: var(--twd-ap-text) !important;
+}
+.twd-ap-remix-report {
+  margin: 14px 0 6px !important;
+  padding: 14px 16px !important;
+  border: 1px solid var(--twd-ap-border) !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: var(--twd-ap-text) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+.twd-ap-remix-report[hidden] {
+  display: none !important;
+}
+.twd-ap-remix-report p {
+  margin: 0 0 8px !important;
+}
+.twd-ap-remix-report-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+}
+.twd-ap-remix-report .twd-ap-remix-report-title {
+  margin: 0 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+.twd-ap-remix-private {
+  color: var(--twd-ap-muted) !important;
+  font-size: 13px !important;
+}
+.twd-ap-remix-hide,
+.twd-ap-remix-use {
+  padding: 4px 12px !important;
+  border: 1px solid var(--twd-ap-primary) !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  color: var(--twd-ap-primary-dark) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  text-transform: none !important;
+  cursor: pointer !important;
+}
+.twd-ap-remix-use[disabled] {
+  opacity: 0.6 !important;
+  cursor: default !important;
+}
+.twd-ap-remix-report .twd-ap-remix-warning {
+  padding: 8px 12px !important;
+  border-left: 4px solid #b7791f !important;
+  border-radius: 6px !important;
+  background: #fdf3e1 !important;
+  color: #5c3d00 !important;
+}
+.twd-ap-remix-missing,
+.twd-ap-remix-claims {
+  margin: 0 0 10px !important;
+  padding: 0 0 0 20px !important;
+}
+.twd-ap-remix-missing li {
+  word-break: break-all !important;
+  font-size: 13px !important;
+}
+.twd-ap-remix-group {
+  margin: 12px 0 0 !important;
+  padding: 10px 12px 2px !important;
+  border-radius: 8px !important;
+}
+.twd-ap-remix-group-not {
+  background: #fdf3e1 !important;
+  color: #5c3d00 !important;
+}
+.twd-ap-remix-group-corrected {
+  background: #eef2f9 !important;
+  color: #243756 !important;
+}
+.twd-ap-remix-group-confirmed {
+  background: #eef4ee !important;
+  color: #2f4d3c !important;
+}
+.twd-ap-remix-report .twd-ap-remix-group-title {
+  margin: 0 0 6px !important;
+  font-weight: 700 !important;
+}
+.twd-ap-remix-claim {
+  margin: 0 0 8px !important;
+}
+.twd-ap-remix-claim-text,
+.twd-ap-remix-claim-note,
+.twd-ap-remix-sources {
+  display: block !important;
+}
+.twd-ap-remix-claim-text {
+  font-weight: 600 !important;
+}
+.twd-ap-remix-claim-note,
+.twd-ap-remix-sources {
+  font-size: 13px !important;
+}
+.twd-ap-remix-sources a {
+  color: inherit !important;
+  text-decoration: underline !important;
+  word-break: break-word !important;
+}

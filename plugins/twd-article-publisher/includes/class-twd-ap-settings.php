@@ -26,6 +26,7 @@ class TWD_AP_Settings {
 			'default_category'  => (int) get_option( 'default_category' ),
 			'show_everywhere'   => 'shortcode_page',
 			'anthropic_api_key' => '',
+			'ai_model'          => class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::MODEL : 'claude-sonnet-5-5',
 			'converter_enabled' => 0,
 			'converter_rules'   => class_exists( 'TWD_AP_Converter' ) ? TWD_AP_Converter::default_rules() : '',
 		);
@@ -93,6 +94,18 @@ class TWD_AP_Settings {
 			$output['anthropic_api_key'] = sanitize_text_field( wp_unslash( $input['anthropic_api_key'] ) );
 		} else {
 			$output['anthropic_api_key'] = $existing['anthropic_api_key'];
+		}
+
+		// AI model (1.53.0): only an id from the plugin's fixed list is saved.
+		// Anything else posted becomes the default; a form that never showed
+		// the field keeps what was there.
+		$models        = class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::models() : array();
+		$default_model = class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::MODEL : 'claude-sonnet-5-5';
+		if ( isset( $input['ai_model'] ) ) {
+			$model              = sanitize_text_field( wp_unslash( $input['ai_model'] ) );
+			$output['ai_model'] = array_key_exists( $model, $models ) ? $model : $default_model;
+		} else {
+			$output['ai_model'] = array_key_exists( $existing['ai_model'], $models ) ? $existing['ai_model'] : $default_model;
 		}
 
 		// Elementor converter: off unless ticked. The rules box is only
@@ -194,6 +207,21 @@ class TWD_AP_Settings {
 							</p>
 						</td>
 					</tr>
+					<?php if ( class_exists( 'TWD_AP_AI_Generate' ) ) : ?>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'AI model', 'twd-article-publisher' ); ?></th>
+							<td>
+								<select name="twd_ap_settings[ai_model]">
+									<?php foreach ( TWD_AP_AI_Generate::models() as $model_id => $model_label ) : ?>
+										<option value="<?php echo esc_attr( $model_id ); ?>" <?php selected( $settings['ai_model'], $model_id ); ?>><?php echo esc_html( $model_label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+								<p class="description">
+									<?php esc_html_e( 'The Claude model that writes articles on this site. Other plugins that ask this one for AI use it too, unless they name a model of their own. Sonnet 5.5 is the right choice for most sites. Opus 5.5 is the stronger model at about twice the price per token: 4 and 20 dollars per million tokens in and out, against 2 and 10 for Sonnet 5.5 (prices as of 6 Nov 2026).', 'twd-article-publisher' ); ?>
+								</p>
+							</td>
+						</tr>
+					<?php endif; ?>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Elementor converter', 'twd-article-publisher' ); ?></th>
 						<td>
