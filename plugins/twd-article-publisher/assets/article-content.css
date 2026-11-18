@@ -301,7 +301,8 @@ a.twd-ap-swipebook-btn.twd-ap-swipebook-btn:hover {
 .twd-ap-article-content .twd-ap-article-hero {
   margin: 0 0 1.4em !important;
 }
-.twd-ap-article-content .twd-ap-article-hero-img {
+.twd-ap-article-content .twd-ap-article-hero-img,
+.twd-ap-article-content .twd-ap-article-hero-img img {
   display: block !important;
   width: 100% !important;
   height: auto !important;
