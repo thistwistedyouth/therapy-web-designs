@@ -190,7 +190,9 @@ class TWD_AP_Article_Style {
 
 	public static function header_html( $post ) {
 		$out  = '';
-		$lead = has_excerpt( $post ) ? trim( wp_strip_all_tags( get_the_excerpt( $post ) ) ) : '';
+		// 1.52.2: the per-article tick _twd_ap_hide_lead hides this lead line on the article page only.
+		// The excerpt is still used by the grid cards, the SEO description and the swipe book.
+		$lead = ( has_excerpt( $post ) && ! get_post_meta( $post->ID, '_twd_ap_hide_lead', true ) ) ? trim( wp_strip_all_tags( get_the_excerpt( $post ) ) ) : '';
 		if ( '' !== $lead ) {
 			$out .= '<p class="twd-ap-article-lead">' . esc_html( $lead ) . '</p>';
 		}

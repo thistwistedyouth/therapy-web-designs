@@ -481,3 +481,9 @@ generic caution — skipping it is how this shipped wrong the first time.
 ## Article index styling (v1.52.1, test build)
 
 - **Ask (Clive):** the index page had no room to breathe and used generic fonts. CSS only, appended to `articles-grid.css` so the original rules stay as the fallback. It reads the same `--twd-site-*` tokens as the rest of the plugin. The index keeps the width of the theme's content column (a narrower centred column would not line up with the theme's own page title, which the plugin does not control).
+
+## Hide the lead line under the title (v1.52.2, test build)
+
+- **Ask (Clive, 20 Nov 2026):** an option to hide the excerpt on the article page so only the title shows above the picture.
+- **Decisions made without asking (overrule if wrong):** it is a per-article tick, not a site-wide setting (the owner asked for "an option" next to the existing picture tick, and a site-wide switch would hide hand-written excerpts on articles where they are wanted); stored as its own meta `_twd_ap_hide_lead`, not folded into `_twd_ap_hide_hero`, so the two choices stay independent; default off so no existing article changes; the tick hides the lead paragraph only, the topic, date and minutes to read line stays. A site-wide switch is a possible later addition (setting would default off, per-article tick would then override it either way).
+- **Why the excerpt is untouched elsewhere:** the excerpt is the grid card text, the SEO description fallback and the swipe book intro. Only `TWD_AP_Article_Style::header_html()` reads the new key, and `article-lead-test.php` fails if any other class mentions it.
