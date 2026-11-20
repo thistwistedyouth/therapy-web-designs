@@ -212,6 +212,19 @@ class TWD_AP_REST {
 			)
 		);
 
+		// Remix (1.54.0): reads a pasted fact-check-and-rewrite reply and
+		// returns the cleaned text and report for the editor. Saves nothing,
+		// calls no AI service, so it needs only the same gate as /book-import.
+		register_rest_route(
+			self::NAMESPACE,
+			'/remix-check',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'remix_check' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			)
+		);
+
 		register_rest_route(
 			self::NAMESPACE,
 			'/seo-suggest',
@@ -260,6 +273,17 @@ class TWD_AP_REST {
 
 	public function import_book( $request ) {
 		$result = TWD_AP_Book_Import::convert( $request->get_json_params() );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		return rest_ensure_response( $result );
+	}
+
+	public function remix_check( $request ) {
+		$params   = $request->get_json_params();
+		$reply    = isset( $params['reply'] ) && is_string( $params['reply'] ) ? $params['reply'] : '';
+		$original = isset( $params['original_html'] ) && is_string( $params['original_html'] ) ? $params['original_html'] : '';
+		$result   = TWD_AP_Remix::check( $reply, $original );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}

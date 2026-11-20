@@ -105,6 +105,10 @@ class TWD_AP_Frontend {
 				'aiLimit'         => class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::RATE_LIMIT : 0,
 				'aiRemaining'     => ( class_exists( 'TWD_AP_AI_Generate' ) && TWD_AP_AI_Generate::is_configured() ) ? TWD_AP_AI_Generate::remaining() : 0,
 				'aiMaxChars'      => class_exists( 'TWD_AP_AI_Generate' ) ? TWD_AP_AI_Generate::MAX_INPUT_CHARS : 0,
+				// 1.54.0: Remix. The prompt template and the length choices; the
+				// popup fills in the article (buildRemixPrompt() in publisher.js).
+				'remixPrompt'     => class_exists( 'TWD_AP_Remix' ) ? str_replace( '{SITE}', TWD_AP_Remix::site_line(), TWD_AP_Remix::template() ) : '',
+				'remixLengths'    => class_exists( 'TWD_AP_Remix' ) ? TWD_AP_Remix::lengths() : array(),
 				// 1.48.0: a new article's "Include bio page" tick starts as the site-wide tick says.
 				'profileInAllBooks' => ! empty( TWD_AP_Grid_Settings::get()['profile_in_all_books'] ) ? 1 : 0,
 				'i18n'          => array(

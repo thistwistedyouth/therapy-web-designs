@@ -19,11 +19,20 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The one exception is init(), which registers the two filters this
  * plugin offers to other plugins (twd_ai_is_configured, twd_ai_complete).
  * They let TWD Site Kit use this site's saved key without ever seeing it.
+ * Since 1.53.0 twd_ai_complete takes an optional fifth argument, an
+ * options array with 'model' and 'effort', so another plugin (the TWD
+ * Site Planner) can ask for the stronger model or a cheaper effort per
+ * call; four-argument callers are unchanged.
  */
 class TWD_AP_AI_Generate {
 
-	const MODEL      = 'claude-sonnet-5-5';
-	const MAX_TOKENS = 5000;
+	// The default model. Settings > Article Publisher can choose another
+	// from models(), and a twd_ai_complete caller can name one per call.
+	// Effort is the one cost control (thinking is adaptive on both models,
+	// so no 'thinking' or 'temperature' parameter is ever sent).
+	const MODEL          = 'claude-sonnet-5-5';
+	const DEFAULT_EFFORT = 'medium';
+	const MAX_TOKENS     = 5000;
 
 	// Bounds for the twd_ai_complete filter only.
 	const COMPLETE_MIN_TOKENS = 256;
@@ -59,7 +68,7 @@ class TWD_AP_AI_Generate {
 	 */
 	public static function init() {
 		add_filter( 'twd_ai_is_configured', array( __CLASS__, 'filter_is_configured' ), 10, 1 );
-		add_filter( 'twd_ai_complete', array( __CLASS__, 'filter_complete' ), 10, 4 );
+		add_filter( 'twd_ai_complete', array( __CLASS__, 'filter_complete' ), 10, 5 );
 	}
 
 	/**
@@ -71,28 +80,36 @@ class TWD_AP_AI_Generate {
 	}
 
 	/**
-	 * apply_filters( 'twd_ai_complete', null, $system, $message, $max_tokens ):
+	 * apply_filters( 'twd_ai_complete', null, $system, $message, $max_tokens, $options ):
 	 * returns null when no key is saved (nothing answered), otherwise the
 	 * reply text or a WP_Error from complete().
+	 *
+	 * $options (since 1.53.0) is an optional array: 'model' (one of
+	 * models(), otherwise the model chosen in Settings) and 'effort'
+	 * ('low', 'medium' or 'high', otherwise 'medium'). A caller sending
+	 * four arguments, as TWD Site Kit does, gets exactly the behaviour it
+	 * had before: the setting's model at medium effort.
 	 */
-	public static function filter_complete( $result, $system = '', $message = '', $max_tokens = self::MAX_TOKENS ) {
+	public static function filter_complete( $result, $system = '', $message = '', $max_tokens = self::MAX_TOKENS, $options = array() ) {
 		if ( null !== $result || ! self::is_configured() ) {
 			return $result;
 		}
-		return self::complete( $system, $message, $max_tokens );
+		return self::complete( $system, $message, $max_tokens, $options );
 	}
 
 	/**
 	 * One plain system + user message round trip using this site's own
-	 * key. Reuses call_anthropic() unchanged apart from max_tokens, so the
-	 * endpoint, model, headers, timeout and error messages are identical to
-	 * generate(). Not counted against the daily article limit: that count
-	 * lives in the REST layer, and callers (TWD Site Kit) have their own
-	 * rate limit and permission checks.
+	 * key. Reuses call_anthropic(), so the endpoint, headers, timeout and
+	 * error messages are identical to generate(). The model is the one
+	 * chosen in Settings unless $options['model'] names another from
+	 * models(); the effort is $options['effort'] when it is low, medium or
+	 * high, otherwise medium. Not counted against the daily article limit:
+	 * that count lives in the REST layer, and callers (TWD Site Kit) have
+	 * their own rate limit and permission checks.
 	 *
 	 * Returns the reply text, a WP_Error, or null when no key is saved.
 	 */
-	public static function complete( $system, $message, $max_tokens = self::MAX_TOKENS ) {
+	public static function complete( $system, $message, $max_tokens = self::MAX_TOKENS, $options = array() ) {
 		$key = self::get_key();
 		if ( '' === $key ) {
 			return null;
@@ -102,12 +119,11 @@ class TWD_AP_AI_Generate {
 			return new WP_Error( 'twd_ap_ai_bad_request', __( 'The AI request was empty or in the wrong form.', 'twd-article-publisher' ) );
 		}
 
-		$reply = self::call_anthropic( $key, $system, $message, self::clamp_max_tokens( $max_tokens ) );
-		if ( is_wp_error( $reply ) ) {
-			return $reply;
-		}
+		$options = is_array( $options ) ? $options : array();
+		$model   = self::pick_model( isset( $options['model'] ) ? $options['model'] : '' );
+		$effort  = self::pick_effort( isset( $options['effort'] ) ? $options['effort'] : '' );
 
-		return $reply;
+		return self::call_anthropic( $key, $system, $message, self::clamp_max_tokens( $max_tokens ), self::DEFAULT_TIMEOUT, $model, $effort );
 	}
 
 	/**
@@ -119,6 +135,55 @@ class TWD_AP_AI_Generate {
 			return self::MAX_TOKENS;
 		}
 		return (int) max( self::COMPLETE_MIN_TOKENS, min( self::COMPLETE_MAX_TOKENS, (int) $value ) );
+	}
+
+	/**
+	 * The models a site may choose, id => label, the default first. A fixed
+	 * list on purpose: the settings screen, the saved setting and the
+	 * twd_ai_complete 'model' option are all checked against it, so a typo
+	 * or an unknown id can never reach the API. Prices as of 6 Nov 2026:
+	 * Sonnet 5.5 is 2 and 10 dollars per million tokens in and out, Opus
+	 * 5.5 is 4 and 20.
+	 */
+	public static function models() {
+		return array(
+			'claude-sonnet-5-5' => __( 'Claude Sonnet 5.5 (default)', 'twd-article-publisher' ),
+			'claude-opus-5-5'   => __( 'Claude Opus 5.5 (stronger, about twice the price)', 'twd-article-publisher' ),
+		);
+	}
+
+	/**
+	 * The effort levels a twd_ai_complete caller may ask for.
+	 */
+	public static function efforts() {
+		return array( 'low', 'medium', 'high' );
+	}
+
+	/**
+	 * The model chosen under Settings > Article Publisher, or MODEL when
+	 * nothing valid is saved. Used by generate() and, when a caller names
+	 * no model, by the twd_ai_complete filter.
+	 */
+	public static function model() {
+		$settings = TWD_AP_Settings::get_settings();
+		$saved    = isset( $settings['ai_model'] ) && is_string( $settings['ai_model'] ) ? trim( $settings['ai_model'] ) : '';
+		return array_key_exists( $saved, self::models() ) ? $saved : self::MODEL;
+	}
+
+	/**
+	 * $wanted when it is one of models(), otherwise the setting's model.
+	 */
+	public static function pick_model( $wanted ) {
+		$wanted = is_string( $wanted ) ? trim( $wanted ) : '';
+		return array_key_exists( $wanted, self::models() ) ? $wanted : self::model();
+	}
+
+	/**
+	 * $wanted when it is low, medium or high, otherwise medium.
+	 */
+	public static function pick_effort( $wanted ) {
+		$wanted = is_string( $wanted ) ? strtolower( trim( $wanted ) ) : '';
+		return in_array( $wanted, self::efforts(), true ) ? $wanted : self::DEFAULT_EFFORT;
 	}
 
 	public static function is_configured() {
@@ -298,7 +363,7 @@ PROMPT . self::shared_rules( $category_names );
 			$timeout = self::DEFAULT_TIMEOUT;
 		}
 
-		$reply = self::call_anthropic( $key, $system, $message, $tokens, $timeout );
+		$reply = self::call_anthropic( $key, $system, $message, $tokens, $timeout, self::model(), self::DEFAULT_EFFORT );
 		if ( is_wp_error( $reply ) ) {
 			return $reply;
 		}
@@ -344,15 +409,30 @@ PROMPT . self::shared_rules( $category_names );
 		);
 	}
 
-	private static function call_anthropic( $key, $system, $message, $max_tokens = self::MAX_TOKENS, $timeout = self::DEFAULT_TIMEOUT ) {
+	private static function call_anthropic( $key, $system, $message, $max_tokens = self::MAX_TOKENS, $timeout = self::DEFAULT_TIMEOUT, $model = self::MODEL, $effort = self::DEFAULT_EFFORT ) {
 		$body = array(
-			'model'         => self::MODEL,
+			'model'         => $model,
 			'max_tokens'    => (int) $max_tokens,
-			'system'        => $system,
 			'fallbacks'     => 'default',
 			'messages'      => array( array( 'role' => 'user', 'content' => $message ) ),
-			'output_config' => array( 'effort' => 'medium' ),
+			'output_config' => array( 'effort' => $effort ),
 		);
+
+		// The system text goes as one content block marked for prompt caching,
+		// so a system prompt repeated within a few minutes (the article rules,
+		// or a caller's long brief) is read from the cache instead of being
+		// billed in full again. A system text shorter than the model's minimum
+		// (512 tokens on these two models) is simply not cached, with no error.
+		// The API refuses an empty text block, so none is sent for no system.
+		if ( '' !== trim( (string) $system ) ) {
+			$body['system'] = array(
+				array(
+					'type'          => 'text',
+					'text'          => $system,
+					'cache_control' => array( 'type' => 'ephemeral' ),
+				),
+			);
+		}
 
 		if ( function_exists( 'set_time_limit' ) ) {
 			@set_time_limit( (int) $timeout + 30 );
