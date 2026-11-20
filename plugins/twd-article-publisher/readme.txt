@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.52.1
+Stable tag: 1.52.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,8 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.52.2): a tick in the editor popup, next to the picture tick, hides the introduction line (the excerpt) under the title on that article's page, so only the title shows above the picture. Off by default; the excerpt still shows on the resources grid, in search results and in the swipe book.
 
 NEW (1.52.1): the article index page has more room and uses the site's own fonts and colours: serif topic headings with a count, one row per article with a thin line between, the date after the title, and the jump links as soft pills. Styling only; nothing it lists has changed.
 
