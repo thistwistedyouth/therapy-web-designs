@@ -4,7 +4,7 @@ Tags: blog, articles, popup, editor
 Requires at least: 5.9
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.54.0
+Stable tag: 1.54.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,8 @@ https://github.com/thistwistedyouth/therapy-web-designs (a public repo)
 for a newer version and shows the normal "update available" row in
 Plugins, with a one-click update -- no manual re-zip-and-upload needed
 per site. See includes/class-twd-ap-updater.php.
+
+NEW (1.54.1): a tick in the editor popup, next to the picture tick, hides the introduction line (the excerpt) under the title on that article's page, so only the title shows above the picture. Off by default; the excerpt still shows on the resources grid, in search results and in the swipe book. (This was first released on its own as 1.52.2.)
 
 NEW (1.53.0): Settings > Article Publisher has an AI model choice: Claude Sonnet 5.5 (the default, as before) or Claude Opus 5.5 (stronger, about twice the price per token). Other plugins that ask this plugin for AI can now name a model and an effort level per request, and the instructions sent with every request are marked for caching by the AI service, so repeated requests cost less. A site that leaves the setting alone is unchanged.
 

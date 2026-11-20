@@ -205,6 +205,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<input type="checkbox" id="twd-ap-hide-hero" />
 								<?php esc_html_e( 'Do not show a picture at the top of the article (the featured image still shows on the resources grid)', 'twd-article-publisher' ); ?>
 							</label>
+							<label class="twd-ap-checkbox-label twd-ap-spaced">
+								<input type="checkbox" id="twd-ap-hide-lead" />
+								<?php esc_html_e( 'Do not show the introduction line under the title (the excerpt still shows on the resources grid and in search results)', 'twd-article-publisher' ); ?>
+							</label>
 							<label class="twd-ap-label twd-ap-spaced"><?php esc_html_e( 'Picture at the top of the article', 'twd-article-publisher' ); ?></label>
 							<p class="twd-ap-muted twd-ap-hint"><?php esc_html_e( 'Leave empty to use the featured image. Choose one here to show a different picture on the article page.', 'twd-article-publisher' ); ?></p>
 							<div id="twd-ap-top-preview" class="twd-ap-featured-preview twd-ap-top-preview"></div>
